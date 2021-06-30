@@ -1,1 +1,1 @@
-# SpareDuck
+# spareduck

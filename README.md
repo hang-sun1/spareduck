@@ -1,6 +1,6 @@
 # spareduck
 
-A chess engine written in webassembly
+A chess engine using webassembly
 
 ## Building the project
 

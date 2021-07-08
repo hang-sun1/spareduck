@@ -17,4 +17,7 @@ RUN mv spareduck.js ../www/ && mkdir -p ../www/dist && cp spareduck.wasm ../www/
 
 WORKDIR /usr/src/spareduck/www
 RUN npm install
+RUN npm run build
+RUN ls dist
+EXPOSE 8080
 CMD ["npm", "run", "start"]

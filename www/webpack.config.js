@@ -11,10 +11,10 @@ module.exports = {
     filename: "bundle.js"
   },
   devServer: {
+    host: "0.0.0.0",
     contentBase: path.join(__dirname, "dist"),
     compress: false,
     port: 8080,
-
   },
   // This is necessary due to the fact that emscripten puts both Node and web
   // code into one file. The node part uses Node’s `fs` module to load the wasm

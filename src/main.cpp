@@ -3,9 +3,6 @@
 #include <emscripten.h>
 #endif
 
-#define CATCH_CONFIG_MAIN
-
-
 extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE 

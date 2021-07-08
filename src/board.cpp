@@ -122,3 +122,4 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
     }
     return lookup_table;
 }
+

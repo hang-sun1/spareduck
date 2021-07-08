@@ -85,7 +85,14 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
                 uint8_t bits_upper_to_square = occ >> (square + 1);
                 // find the location of the first piece blocking our piece in the msb direction
                 // (the location is relative to square)
-                uint8_t first_blocker_above = static_cast<uint8_t>(__builtin_ffsll(bits_upper_to_square));
+                #ifndef _MSVC_VER
+                    uint8_t first_blocker_above = static_cast<uint8_t>(__builtin_ffsll(bits_upper_to_square));
+                #endif
+                #ifdef _MSVC_VER
+                    unsigned long first_blocker_above;
+                    _BitScanForward(&first_blocker_above, bits_upper_to_square);
+                    uint8_t first_blocker_above = static_cast<uint8_t>(first_blocker_above); 
+                #endif
                 // check to make sure there are actually squares above  
                 // set the appropriate number of bits to add to the attack map
                 uint8_t bits = 0xff >> (8 - first_blocker_above);
@@ -96,7 +103,14 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
                 // extract bits below the square being tested
                 uint8_t bits_lower_to_square = occ & (0xff >> (8-square));
                 // count how many squares can be attacked below the square
-                uint8_t attackable_squares_lower_to_square = static_cast<uint8_t>(__builtin_clzll(bits_lower_to_square) - 56 - (8-square)+1);
+                #ifndef _MSVC_VER
+                    uint8_t attackable_squares_lower_to_square = static_cast<uint8_t>(__builtin_clzll(bits_lower_to_square) - 56 - (8-square)+1);
+                #endif
+                #ifdef _MSVC_VER
+                    unsigned long attackable_squares_lower_to_square;
+                    _BitScanReverse(&attackable_squares_lower_to_square, bits_lower_to_square);
+                    uint8_t attackable_squares_lower_to_square = static_cast<uint8_t>(attackable_squares_lower_to_square);
+                #endif
                 // find the index of the first piece (or edge of board) that blocks the piece's movement 
                 int first_blocker_below_index = square - attackable_squares_lower_to_square;
                 // add this half into the attack map

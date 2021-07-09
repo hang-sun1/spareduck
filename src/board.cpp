@@ -8,8 +8,11 @@
 
 using std::uint64_t;
 
-static const uint64_t A_FILE_MASK = 0x0101010101010101;
-static const uint64_t MAIN_DIAGONAL = 0x8040201008040201;
+Board::Board() {
+    this->all_per_side[0] = 0x0100;
+    this->all_per_side[0] = 0;
+    this->rank_attack_lookup = Board::generate_rank_attacks();
+}
 
 // returns a array containing the valid moves for a king given
 // the king's square. Indexed by the king's square
@@ -63,6 +66,19 @@ std::array<uint64_t, 64> Board::generate_knight_lookup() {
     return lookup_table;
 }
 
+// return an array containing the available pawn moves, this includes only
+// non capture moves
+std::array<std::array<uint64_t, 64>, 2> Board::generate_pawn_move_lookup() {
+    for (size_t i = 0; i < 2; ++i) {
+        for (size_t s = 0; s < 64; ++s) {
+            // generate moves for white
+            if (i == 0) {
+
+            }
+        }
+    }
+}
+
 /* 
     Creates a 2d array that determines a piece's possible moves along a rank.
     Indexed by the square (0-7) along the rank as well as the rank's occupancy.
@@ -72,7 +88,6 @@ std::array<uint64_t, 64> Board::generate_knight_lookup() {
     can be ignored as they cannot block movement to further squares.
 */
 std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
-    std::cout << "hello world" << std::endl;
     std::array<std::array<uint64_t, 64>, 8> lookup_table;
     for (uint8_t square = 0; square < 8; ++square) {
         for (uint8_t o = 0; o < 64; ++o) {
@@ -122,4 +137,29 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
     }
     return lookup_table;
 }
+
+uint64_t Board::generate_rook_moves(uint8_t square) {
+    // first determine which rank the piece is on
+    auto rank = square >> 3;
+    // get the complete occupancy of the board
+    auto board_occ = this->all_per_side[0] | this->all_per_side[1];
+    // shift the board right so the rank our square is on is now
+    // the first rank
+    auto board_occ_shifted = board_occ >> (8*rank);
+    uint8_t board_occ_byte = static_cast<uint8_t>(board_occ_shifted);
+    uint64_t rank_moves = this->rank_attack_lookup[square][board_occ_byte] << (8 * rank);
+
+    auto file = square & 7;
+    uint64_t a_file_mask = 0x0101010101010101;
+    uint64_t h_file_mask = 0x8080808080808080;
+    uint64_t c2h7_diag_mask = 0x0080402010080400;
+    uint64_t a1h8_diag_mask = 0x8040201008040201;
+
+    board_occ = (board_occ << file) & a_file_mask;
+    board_occ = (c2h7_diag_mask * board_occ) >> 58;
+    board_occ = a1h8_diag_mask * this->rank_attack_lookup[(square^56) >> 3][static_cast<uint8_t>(board_occ)];
+    uint64_t file_moves = (h_file_mask & board_occ) >> (file ^ 7);
+    return file_moves | rank_moves;
+}
+
 

@@ -23,4 +23,8 @@ TEST_CASE("proper moves are generated", "[board]") {
     SECTION("generates correct rook moves") {
         REQUIRE(std::popcount(b.generate_rook_moves(0)) == 14);
     }
+    SECTION("generates correct bishop moves") {
+        REQUIRE(std::popcount(b.generate_bishop_moves(0)) == 7);
+        REQUIRE(std::popcount(b.generate_bishop_moves(6)) == 7);
+    }
 }

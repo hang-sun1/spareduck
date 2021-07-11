@@ -9,9 +9,11 @@
 using std::uint64_t;
 
 Board::Board() {
-    this->all_per_side[0] = 0x0100;
-    this->all_per_side[0] = 0;
+    this->all_per_side[0] = 0x00;
+    this->all_per_side[1] = 0;
     this->rank_attack_lookup = Board::generate_rank_attacks();
+    this->diagonal_mask_lookup = Board::generate_diagonal_mask_map();
+    this->antidiagonal_mask_lookup = Board::generate_antidiagonal_mask_map();
 }
 
 // returns a array containing the valid moves for a king given
@@ -68,15 +70,13 @@ std::array<uint64_t, 64> Board::generate_knight_lookup() {
 
 // return an array containing the available pawn moves, this includes only
 // non capture moves
-std::array<std::array<uint64_t, 64>, 2> Board::generate_pawn_move_lookup() {
-    for (size_t i = 0; i < 2; ++i) {
-        for (size_t s = 0; s < 64; ++s) {
-            // generate moves for white
-            if (i == 0) {
-
-            }
-        }
+std::array<std::array<uint64_t, 64>, 2> Board::generate_pawn_move_lookup(uint8_t square, uint64_t occ) {
+    std::array<std::array<uint64_t, 64>, 2> lookup_tables;
+    for (size_t s = 0; s < 64; ++s) {
+        // generate moves for white
+        
     }
+    return lookup_tables;
 }
 
 /* 
@@ -100,15 +100,8 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
                 uint8_t bits_upper_to_square = occ >> (square + 1);
                 // find the location of the first piece blocking our piece in the msb direction
                 // (the location is relative to square)
-                #ifndef _MSVC_VER
-                    uint8_t first_blocker_above = static_cast<uint8_t>(__builtin_ffsll(bits_upper_to_square));
-                #endif
-                #ifdef _MSVC_VER
-                    unsigned long first_blocker_above;
-                    _BitScanForward(&first_blocker_above, bits_upper_to_square);
-                    uint8_t first_blocker_above = static_cast<uint8_t>(first_blocker_above); 
-                #endif
-                // check to make sure there are actually squares above  
+                uint8_t first_blocker_above = static_cast<uint8_t>(__builtin_ffsll(bits_upper_to_square));
+
                 // set the appropriate number of bits to add to the attack map
                 uint8_t bits = 0xff >> (8 - first_blocker_above);
                 // shift the bits into the attack map
@@ -118,14 +111,7 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
                 // extract bits below the square being tested
                 uint8_t bits_lower_to_square = occ & (0xff >> (8-square));
                 // count how many squares can be attacked below the square
-                #ifndef _MSVC_VER
-                    uint8_t attackable_squares_lower_to_square = static_cast<uint8_t>(__builtin_clzll(bits_lower_to_square) - 56 - (8-square)+1);
-                #endif
-                #ifdef _MSVC_VER
-                    unsigned long attackable_squares_lower_to_square;
-                    _BitScanReverse(&attackable_squares_lower_to_square, bits_lower_to_square);
-                    uint8_t attackable_squares_lower_to_square = static_cast<uint8_t>(attackable_squares_lower_to_square);
-                #endif
+                uint8_t attackable_squares_lower_to_square = static_cast<uint8_t>(__builtin_clzll(bits_lower_to_square) - 56 - (8-square)+1);
                 // find the index of the first piece (or edge of board) that blocks the piece's movement 
                 int first_blocker_below_index = square - attackable_squares_lower_to_square;
                 // add this half into the attack map
@@ -138,6 +124,8 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
     return lookup_table;
 }
 
+// return a bitboard containing legal moves for a rook on
+// the provided square
 uint64_t Board::generate_rook_moves(uint8_t square) {
     // first determine which rank the piece is on
     auto rank = square >> 3;
@@ -162,4 +150,140 @@ uint64_t Board::generate_rook_moves(uint8_t square) {
     return file_moves | rank_moves;
 }
 
+uint64_t Board::generate_bishop_moves(uint8_t square) {
+    auto file = square & 7;
+    uint64_t a_file_mask = 0x0101010101010101;
+    uint64_t b_file_mask = 0x0202020202020202;
 
+    auto board_occ = this->all_per_side[0] | this->all_per_side[1];
+    auto diagonal_attack = this->diagonal_mask_lookup[square] & board_occ;
+    diagonal_attack = (b_file_mask * diagonal_attack) >> 58;
+    diagonal_attack = a_file_mask * this->rank_attack_lookup[file][diagonal_attack];
+    diagonal_attack = diagonal_attack & this->diagonal_mask_lookup[square];
+
+    auto antidiagonal_attack = this->antidiagonal_mask_lookup[square] & board_occ;
+    antidiagonal_attack = this->antidiagonal_mask_lookup[square] & board_occ;
+    antidiagonal_attack = (b_file_mask * antidiagonal_attack) >> 58;
+    antidiagonal_attack = a_file_mask * this-> rank_attack_lookup[file][antidiagonal_attack];
+    antidiagonal_attack = antidiagonal_attack & this->antidiagonal_mask_lookup[square];
+    return antidiagonal_attack | diagonal_attack;
+}
+
+uint64_t Board::generate_queen_moves(uint8_t square) {
+    return Board::generate_bishop_moves(square) | Board::generate_rook_moves(square);
+}
+
+bool on_same_diagonal(uint8_t square1, uint8_t square2) {
+    return ((square2 - square1) & 7) == ((square2 >> 3) - (square1 >> 3));
+}
+
+std::array<uint64_t, 64> Board::generate_diagonal_mask_map() {
+    uint64_t a1h8_mask = 0x8040201008040201;
+    uint64_t b1h7_mask = 0x80402010080402;
+    uint64_t c1h6_mask = 0x804020100804;
+    uint64_t d1h5_mask = 0x8040201008;
+    uint64_t e1h4_mask = 0x80402010;
+    uint64_t f1h3_mask = 0x804020;
+    uint64_t g1h2_mask = 0x8040;
+    uint64_t h1_mask = 0x80;
+    uint64_t a2g8_mask = 0x4020100804020100;
+    uint64_t a3f8_mask = 0x2010080402010000;
+    uint64_t a4e8_mask = 0x1008040201000000;
+    uint64_t a5d8_mask = 0x804020100000000;
+    uint64_t a6c8_mask = 0x402010000000000;
+    uint64_t a7b8_mask = 0x201000000000000;
+    uint64_t a8_mask = 0x100000000000000;
+
+    std::array<uint64_t, 64> lookup_table;
+
+    for (size_t square = 0; square < 64; ++square) {
+        if (on_same_diagonal(square, 0)) {
+            lookup_table[square] = a1h8_mask;
+        } else if (on_same_diagonal(square, 1)) {
+            lookup_table[square] = b1h7_mask;
+        } else if (on_same_diagonal(square, 2)) {
+            lookup_table[square] = c1h6_mask;
+        } else if (on_same_diagonal(square, 3)) {
+            lookup_table[square] = d1h5_mask;
+        } else if (on_same_diagonal(square, 4)) {
+            lookup_table[square] = e1h4_mask;
+        } else if (on_same_diagonal(square, 5)) {
+            lookup_table[square] = f1h3_mask;
+        } else if (on_same_diagonal(square, 6)) {
+            lookup_table[square] = g1h2_mask;
+        } else if (on_same_diagonal(square, 7)) {
+            lookup_table[square] = h1_mask;
+        } else if (on_same_diagonal(square, 8)) {
+            lookup_table[square] = a2g8_mask;
+        } else if (on_same_diagonal(square, 16)) {
+            lookup_table[square] = a3f8_mask;
+        } else if (on_same_diagonal(square, 24)) {
+            lookup_table[square] = a4e8_mask;
+        } else if (on_same_diagonal(square, 32)) {
+            lookup_table[square] = a5d8_mask;
+        } else if (on_same_diagonal(square, 40)) {
+            lookup_table[square] = a6c8_mask;
+        } else if (on_same_diagonal(square, 48)) {
+            lookup_table[square] = a7b8_mask;
+        } else if (on_same_diagonal(square, 54)) {
+            lookup_table[square] = a8_mask;
+        }
+    }
+    return lookup_table;
+}
+
+
+std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
+    uint64_t h1a8_mask = 0x102040810204080; 
+    uint64_t g1a7_mask = 0x1020408102040;
+    uint64_t f1a6_mask = 0x10204081020;
+    uint64_t e1a5_mask = 0x102040810;
+    uint64_t d1a4_mask = 0x1020408;
+    uint64_t c1a3_mask = 0x1020408;
+    uint64_t b1a2_mask = 0x0102;
+    uint64_t a1_mask = 0x01;
+    uint64_t h2b8_mask = 0x204081020408000;
+    uint64_t h3c8_mask = 0x408102040800000;
+    uint64_t h4d8_mask = 0x810204080000000;
+    uint64_t h5e8_mask = 0x1020408000000000;
+    uint64_t h6f8_mask = 0x2040800000000000;
+    uint64_t h7g8_mask = 0x4080000000000000;
+    uint64_t h8_mask = 0x8000000000000000;
+
+    std::array<uint64_t, 64> lookup_table;
+
+    for (size_t square = 0; square < 64; ++square) {
+        if (on_same_diagonal(square, 7)) {
+            lookup_table[square] = h1a8_mask;
+        } else if (on_same_diagonal(square, 6)) {
+            lookup_table[square] = g1a7_mask;
+        } else if (on_same_diagonal(square, 5)) {
+            lookup_table[square] = f1a6_mask;
+        } else if (on_same_diagonal(square, 4)) {
+            lookup_table[square] = e1a5_mask;
+        } else if (on_same_diagonal(square, 3)) {
+            lookup_table[square] = d1a4_mask;
+        } else if (on_same_diagonal(square, 2)) {
+            lookup_table[square] = c1a3_mask;
+        } else if (on_same_diagonal(square, 1)) {
+            lookup_table[square] = b1a2_mask;
+        } else if (on_same_diagonal(square, 0)) {
+            lookup_table[square] = a1_mask;
+        } else if (on_same_diagonal(square, 57)) {
+            lookup_table[square] = h2b8_mask;
+        } else if (on_same_diagonal(square, 58)) {
+            lookup_table[square] = h3c8_mask;
+        } else if (on_same_diagonal(square, 59)) {
+            lookup_table[square] = h4d8_mask;
+        } else if (on_same_diagonal(square, 60)) {
+            lookup_table[square] = h5e8_mask;
+        } else if (on_same_diagonal(square, 61)) {
+            lookup_table[square] = h6f8_mask;
+        } else if (on_same_diagonal(square, 62)) {
+            lookup_table[square] = h7g8_mask;
+        } else if (on_same_diagonal(square, 63)) {
+            lookup_table[square] = h8_mask;
+        }
+    }
+    return lookup_table;
+}

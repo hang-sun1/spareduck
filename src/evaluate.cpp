@@ -1,6 +1,11 @@
 #include "evaluate.h"
 
-int evaluate()
+/* 
+    Move evaluation engine.
+    Powered by gokul.
+*/
+
+int Evaluate::evaluate()
 {
     return -1;
 }

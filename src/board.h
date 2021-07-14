@@ -1,8 +1,18 @@
+#pragma once
+
 #include <cstdint>
 #include <array>
 #include <memory>
+#include <vector>
+
+#include "move.h"
 
 using std::uint64_t;
+
+enum class Side: size_t {
+    WHITE = 0,
+    BLACK = 1,
+};
 
 class Board {
 private:
@@ -18,7 +28,9 @@ private:
     uint64_t generate_rook_moves(uint8_t square);
     uint64_t generate_bishop_moves(uint8_t square);
     uint64_t generate_queen_moves(uint8_t square);
+    Side side_to_move;
 public:
+    using enum Side;
     // initizlizes a board in the starting position
     Board();
     // The below methods generate lookup tables that allow efficient determination of available moves
@@ -30,4 +42,6 @@ public:
     static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
+
+    std::vector<Move> generate_moves();
 };

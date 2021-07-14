@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <array>
 
+#include "move.h"
+
 using std::uint64_t;
 
 Board::Board() {
@@ -286,4 +288,8 @@ std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
         }
     }
     return lookup_table;
+}
+
+std::vector<Move> Board::generate_moves() {
+    
 }

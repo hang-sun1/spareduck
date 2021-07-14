@@ -42,6 +42,6 @@ public:
     static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
-
+    
     std::vector<Move> generate_moves();
 };

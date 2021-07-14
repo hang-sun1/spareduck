@@ -8,17 +8,15 @@ WORKDIR /usr/src/
 RUN mkdir spareduck
 WORKDIR /usr/src/spareduck
 COPY CMakeLists.txt ./
+COPY build.sh ./
 COPY src ./src
+RUN bash build.sh
 COPY test ./test
-COPY www ./www
 COPY test.sh ./
-RUN rm build/ -rf && mkdir build
-WORKDIR /usr/src/spareduck/build
-RUN cmake -D CMAKE_C_COMPILER=emcc -D CMAKE_CXX_COMPILER=em++ .. && make
-RUN mv spareduck.js ../www/ && mkdir -p ../www/dist && cp spareduck.wasm ../www/dist && mv spareduck.wasm ../www && mv ../www/index.html ../www/dist/
-
+COPY www ./www
+RUN cp build/spareduck.js ./www/ && mkdir -p ./www/dist && cp build/spareduck.wasm ./www/dist && cp build/spareduck.wasm ./www && cp ./www/index.html ./www/dist/
+RUN echo $PATH
 WORKDIR /usr/src/spareduck/www
 RUN npm install
-WORKDIR /usr/src/spareduck
 EXPOSE 8080
-CMD ["cd", "www", "&&", "npm", "run", "start"]
+CMD ["npm", "run", "start"]

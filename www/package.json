@@ -6,7 +6,8 @@
   "scripts": {
     "build": "webpack --config webpack.config.js",
     "serve": "webpack serve --config webpack.config.js",
-    "start": "npm run build && npm run serve"
+    "start": "npm run build && npm run serve",
+    "test": "cd .. && bash ./test.sh"
   },
   "keywords": [],
   "author": "",

@@ -30,7 +30,7 @@ private:
     uint64_t generate_queen_moves(uint8_t square);
     Side side_to_move;
 public:
-    using enum Side;
+    // using enum Side;
     // initizlizes a board in the starting position
     Board();
     // The below methods generate lookup tables that allow efficient determination of available moves

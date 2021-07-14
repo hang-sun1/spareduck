@@ -20,6 +20,10 @@ Then, run the Docker image and expose the port to http://localhost:8080.
 
 > docker run -d -p 8080:8080 spareduck:latest
 
+Unit tests can be run with the following.
+
+> docker run spareduck:latest bash -c "./test.sh"
+
 ## Chess programming resources
 
 - [Chess Programming Wiki](https://www.chessprogramming.org/Getting_Started)

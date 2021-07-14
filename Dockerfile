@@ -9,7 +9,9 @@ RUN mkdir spareduck
 WORKDIR /usr/src/spareduck
 COPY CMakeLists.txt ./
 COPY src ./src
+COPY test ./test
 COPY www ./www
+COPY test.sh ./
 RUN rm build/ -rf && mkdir build
 WORKDIR /usr/src/spareduck/build
 RUN cmake -D CMAKE_C_COMPILER=emcc -D CMAKE_CXX_COMPILER=em++ .. && make
@@ -17,7 +19,6 @@ RUN mv spareduck.js ../www/ && mkdir -p ../www/dist && cp spareduck.wasm ../www/
 
 WORKDIR /usr/src/spareduck/www
 RUN npm install
-RUN npm run build
-RUN ls dist
+WORKDIR /usr/src/spareduck
 EXPOSE 8080
-CMD ["npm", "run", "start"]
+CMD ["cd", "www", "&&", "npm", "run", "start"]

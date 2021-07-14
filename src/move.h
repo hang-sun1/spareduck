@@ -20,7 +20,7 @@ enum class MoveType: uint16_t {
 
 class Move {
 public:
-    using enum MoveType;
+    // using enum MoveType;
     Move(uint16_t from, uint16_t to, MoveType type);
 
     uint16_t origin_square();

@@ -234,7 +234,6 @@ std::array<uint64_t, 64> Board::generate_diagonal_mask_map() {
     return lookup_table;
 }
 
-
 std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
     uint64_t h1a8_mask = 0x102040810204080; 
     uint64_t g1a7_mask = 0x1020408102040;
@@ -291,5 +290,6 @@ std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
 }
 
 std::vector<Move> Board::generate_moves() {
+    size_t side = static_cast<size_t>(side_to_move);
     
 }

@@ -2,6 +2,7 @@
 #define SEARCH_H
 
 #include "board.h"
+#include "evaluate.h"
 
 class Search
 {
@@ -9,7 +10,7 @@ class Search
     //abstract the search?
 
 private:
-    int search(int alpha, int beta, int level);
+    int search(int alpha, int beta, int depth);
 };
 
 #endif

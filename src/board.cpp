@@ -11,11 +11,29 @@
 using std::uint64_t;
 
 Board::Board() {
-    this->all_per_side[0] = 0x00;
-    this->all_per_side[1] = 0;
+    this->all_per_side[0] = 0xffff;
+    this->all_per_side[1] = 0xffff000000000000;
+    this->pawns[0] = 0xff00;
+    this->pawns[1] = 0xff000000000000;
+    this->rooks[0] = 0x81;
+    this->rooks[1] = 0x8100000000000000;
+    this->knights[0] = 0x42;
+    this->knights[1] = 0x4200000000000000;
+    this->bishops[0] = 0x24;
+    this->bishops[1] = 0x2400000000000000;
+    this->queens[0] = 0x08;
+    this->queens[1] = 0x800000000000000;
+    this->kings[0] = 0x10;
+    this->kings[1] = 0x1000000000000000;
+    this->side_to_move = Side::WHITE;
+    this->attack_maps[1] = 0xff0000000000;
+    this->defense_maps[1] = 0xffffff0000000000;
     this->rank_attack_lookup = Board::generate_rank_attacks();
     this->diagonal_mask_lookup = Board::generate_diagonal_mask_map();
     this->antidiagonal_mask_lookup = Board::generate_antidiagonal_mask_map();
+    this->king_lookup = Board::generate_king_lookup();
+    this->knight_lookup = Board::generate_knight_lookup();
+    this->moves = this->generate_moves();
 }
 
 // returns a array containing the valid moves for a king given
@@ -149,7 +167,13 @@ uint64_t Board::generate_rook_moves(uint8_t square) {
     board_occ = (c2h7_diag_mask * board_occ) >> 58;
     board_occ = a1h8_diag_mask * this->rank_attack_lookup[(square^56) >> 3][static_cast<uint8_t>(board_occ)];
     uint64_t file_moves = (h_file_mask & board_occ) >> (file ^ 7);
-    return file_moves | rank_moves;
+
+    auto to_move = static_cast<size_t>(side_to_move);
+    auto defended_squares = file_moves | rank_moves;
+    auto attacked_squares = defended_squares & (~all_per_side[to_move]);
+    defense_maps[to_move] |= defended_squares;
+    attack_maps[to_move] |= attacked_squares;
+    return attacked_squares;
 }
 
 uint64_t Board::generate_bishop_moves(uint8_t square) {
@@ -158,21 +182,47 @@ uint64_t Board::generate_bishop_moves(uint8_t square) {
     uint64_t b_file_mask = 0x0202020202020202;
 
     auto board_occ = this->all_per_side[0] | this->all_per_side[1];
-    auto diagonal_attack = this->diagonal_mask_lookup[square] & board_occ;
-    diagonal_attack = (b_file_mask * diagonal_attack) >> 58;
-    diagonal_attack = a_file_mask * this->rank_attack_lookup[file][diagonal_attack];
-    diagonal_attack = diagonal_attack & this->diagonal_mask_lookup[square];
+    auto diagonal_defend = this->diagonal_mask_lookup[square] & board_occ;
+    diagonal_defend = (b_file_mask * diagonal_defend) >> 58;
+    diagonal_defend = a_file_mask * this->rank_attack_lookup[file][diagonal_defend];
+    diagonal_defend = diagonal_defend & this->diagonal_mask_lookup[square];
 
-    auto antidiagonal_attack = this->antidiagonal_mask_lookup[square] & board_occ;
-    antidiagonal_attack = this->antidiagonal_mask_lookup[square] & board_occ;
-    antidiagonal_attack = (b_file_mask * antidiagonal_attack) >> 58;
-    antidiagonal_attack = a_file_mask * this-> rank_attack_lookup[file][antidiagonal_attack];
-    antidiagonal_attack = antidiagonal_attack & this->antidiagonal_mask_lookup[square];
-    return antidiagonal_attack | diagonal_attack;
+    auto antidiagonal_defend = this->antidiagonal_mask_lookup[square] & board_occ;
+    antidiagonal_defend = this->antidiagonal_mask_lookup[square] & board_occ;
+    antidiagonal_defend = (b_file_mask * antidiagonal_defend) >> 58;
+    antidiagonal_defend = a_file_mask * this-> rank_attack_lookup[file][antidiagonal_defend];
+    antidiagonal_defend = antidiagonal_defend & this->antidiagonal_mask_lookup[square];
+    
+    auto to_move = static_cast<size_t>(side_to_move);
+    auto defended_squares = diagonal_defend | antidiagonal_defend;
+    auto attacked_squares = defended_squares & (~all_per_side[to_move]);
+    defense_maps[to_move] |= defended_squares;
+    attack_maps[to_move] |= attacked_squares;
+    return attacked_squares;
 }
 
 uint64_t Board::generate_queen_moves(uint8_t square) {
     return Board::generate_bishop_moves(square) | Board::generate_rook_moves(square);
+}
+
+uint64_t Board::generate_knight_moves(uint8_t square) {
+    size_t current_side = static_cast<size_t>(side_to_move);
+    auto defended_squares = knight_lookup[square];
+    auto attacked_squares = defended_squares & (~all_per_side[current_side]);
+    defense_maps[current_side] |= defended_squares;
+    attack_maps[current_side] |= attacked_squares;
+    
+    return attacked_squares;
+}
+
+uint64_t Board::generate_king_moves(uint8_t square) {
+    auto defended_squares = king_lookup[square];
+    size_t current_side = static_cast<size_t>(side_to_move);
+    size_t other_side = 1 - current_side;
+    auto attacked_squares = defended_squares & (~defense_maps[other_side]) & (~all_per_side[current_side]);
+    defense_maps[current_side] |= defended_squares;
+    attack_maps[current_side] |= attacked_squares;
+    return attacked_squares;
 }
 
 bool on_same_diagonal(uint8_t square1, uint8_t square2) {
@@ -289,7 +339,77 @@ std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
     return lookup_table;
 }
 
+
 std::vector<Move> Board::generate_moves() {
+    // figure out which side is to move
     size_t side = static_cast<size_t>(side_to_move);
+    std::vector<Move> moves;
+    auto queen_moves = moves_for_piece(queens[side], &generate_queen_moves);
+    auto bishop_moves = moves_for_piece(bishops[side], &generate_bishop_moves);
+    auto rook_moves = moves_for_piece(rooks[side], &generate_bishop_moves);
+    auto king_moves = moves_for_piece(kings[side], &generate_king_moves);
+    auto knight_moves = moves_for_piece(knights[side], &generate_knight_moves);
+
+    moves.insert(moves.end(), queen_moves.begin(), queen_moves.end());
+    moves.insert(moves.end(), bishop_moves.begin(), bishop_moves.end());
+    moves.insert(moves.end(), rook_moves.begin(), rook_moves.end());
+    moves.insert(moves.end(), king_moves.begin(), king_moves.end());
+    moves.insert(moves.end(), knight_moves.begin(), knight_moves.end());
+
+
+    // TODO add castles and pawn stuff (including en passant)
+
+    // generate queen moves first
+    return moves;
+}
+
+void Board::make_move(Move move) {
+    size_t current_move = static_cast<size_t>(side_to_move);
+
+    // TODO: Actually move pieces
+
+
+
+    // calling generate_moves again regenerates
+    // the attack and defense maps of the side that
+    // just moved, though doing so is slightly inefficient
+    generate_moves();
+
+    // now flip whose turn it is
+    side_to_move = static_cast<Side>(1 - current_move);
+
+    // generate the moves for the next side (which also updates attack and defenes maps for
+    // the new side to move)
+    this->moves = this->generate_moves();
+}
+
+void Board::unmake_move(Move move) {
     
+}
+
+// This function generates all of the moves for a specific type of piece
+// TODO: make sure to check that the piece being moved isn't pinned, also finish implementing this
+std::vector<Move> Board::moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t)) {
+    size_t to_move = static_cast<size_t>(side_to_move);
+    size_t not_to_move = 1 - to_move;
+
+    std::vector<Move> moves;
+
+    int set_bit = __builtin_ffsll(piece_board);
+    while (set_bit) {
+        uint8_t square_from = static_cast<uint8_t>(set_bit-1);
+        auto move_board = (this->*gen_func)(square_from);
+        int dest_plus_one = __builtin_ffsll(move_board);
+        while(dest_plus_one) {
+            uint16_t dest = static_cast<uint16_t>(dest_plus_one - 1);
+            // TODO figure out what type of move it is (instead of assuming it's quiet);
+            MoveType type = MoveType::QUIET;
+            moves.push_back(Move(square_from, dest, type));
+            move_board &= ~(1 << dest);
+            dest_plus_one = __builtin_ffsll(move_board);
+        }
+        piece_board &= ~(1 << square_from);
+        set_bit = __builtin_ffsll(piece_board);
+    }    
+    return moves;
 }

@@ -4,12 +4,11 @@
 #include "board.h"
 #include "evaluate.h"
 
-class Search
-{
+class Search {
     //public:
     //abstract the search?
 
-private:
+   private:
     int search(int alpha, int beta, int depth);
     int quiesce(int alpha, int beta);
 };

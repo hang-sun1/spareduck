@@ -1,6 +1,6 @@
-#include <cstdint>
-
 #include "move.h"
+
+#include <cstdint>
 
 Move::Move(uint16_t from, uint16_t to, MoveType type) {
     move_repr = (from << 10) | (to << 4) | static_cast<uint16_t>(type);

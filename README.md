@@ -23,3 +23,7 @@ Unit tests can be run with the following.
 - [Chess Programming Wiki](https://www.chessprogramming.org/Getting_Started)
 - [Bitboards](https://en.wikipedia.org/wiki/Bitboard)
 - [Search Functions](https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning)
+
+## VS Code styling settings
+
+`C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0}`

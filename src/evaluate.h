@@ -11,13 +11,12 @@ const int defaultValues[6][10][10] = {
 }
 */
 
-class Evaluate
-{
-public:
-    int evaluate();
+class Evaluate {
+   public:
+    int evaluate(Board board);
 
-    //private:
-    //helper
+   private:
+    int piece_counts(uint64_t piece_board);
 };
 
 #endif

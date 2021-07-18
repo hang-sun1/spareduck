@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-enum class MoveType: uint16_t { 
+enum class MoveType : uint16_t {
     QUIET = 0,
     DOUBLE_PAWN_PUSH = 1,
     CAPTURE = 2,
@@ -19,7 +19,7 @@ enum class MoveType: uint16_t {
 };
 
 class Move {
-public:
+   public:
     // using enum MoveType;
     Move(uint16_t from, uint16_t to, MoveType type);
 
@@ -28,9 +28,7 @@ public:
     uint16_t destination_square();
 
     MoveType type();
-    
 
-private:
+   private:
     uint16_t move_repr;
 };
-

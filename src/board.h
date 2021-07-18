@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -9,13 +9,13 @@
 
 using std::uint64_t;
 
-enum class Side: size_t {
+enum class Side : size_t {
     WHITE = 0,
     BLACK = 1,
 };
 
 class Board {
-private:
+   private:
     std::array<uint64_t, 2> knights;
     std::array<uint64_t, 2> bishops;
     std::array<uint64_t, 2> rooks;
@@ -39,7 +39,8 @@ private:
     std::vector<Move> Board::moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t));
     Side side_to_move;
     std::vector<Move> moves;
-public:
+
+   public:
     // using enum Side;
     // initizlizes a board in the starting position
     Board();
@@ -54,4 +55,10 @@ public:
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
     void make_move(Move move);
     void unmake_move(Move move);
+    std::array<uint64_t, 2> get_knights();
+    std::array<uint64_t, 2> get_bishops();
+    std::array<uint64_t, 2> get_rooks();
+    std::array<uint64_t, 2> get_queens();
+    std::array<uint64_t, 2> get_kings();
+    std::array<uint64_t, 2> get_pawns();
 };

@@ -28,13 +28,19 @@ Board::Board() {
     this->kings[1] = 0x1000000000000000;
     this->side_to_move = Side::WHITE;
     this->attack_maps[1] = 0xff0000000000;
+    this->attack_maps[0] = 0;
     this->defense_maps[1] = 0xffffff0000000000;
+    this->defense_maps[0] = 0;
+    this->all_per_side[0] = pawns[0] | rooks[0] | knights[0] | bishops[0] | queens[0] | kings[0];
+    this->all_per_side[1] = pawns[1] | rooks[1] | knights[1] | bishops[1] | queens[1] | kings[1];
     this->rank_attack_lookup = Board::generate_rank_attacks();
     this->diagonal_mask_lookup = Board::generate_diagonal_mask_map();
     this->antidiagonal_mask_lookup = Board::generate_antidiagonal_mask_map();
     this->king_lookup = Board::generate_king_lookup();
     this->knight_lookup = Board::generate_knight_lookup();
     this->moves = this->generate_moves();
+    // there is no en passant target yet, so just set it to some square off the board
+    this->en_passant_target = 65;
 }
 
 // returns a array containing the valid moves for a king given
@@ -90,12 +96,61 @@ std::array<uint64_t, 64> Board::generate_knight_lookup() {
 
 // return an array containing the available pawn moves, this includes only
 // non capture moves
-std::array<std::array<uint64_t, 64>, 2> Board::generate_pawn_move_lookup(uint8_t square, uint64_t occ) {
-    std::array<std::array<uint64_t, 64>, 2> lookup_tables;
-    for (size_t s = 0; s < 64; ++s) {
-        // generate moves for white
+uint64_t Board::generate_pawn_moves(uint8_t square) {
+    size_t to_move = static_cast<size_t>(side_to_move);
+    size_t not_to_move = 1 - to_move;
+    uint64_t one_piece_board = 1 << square;
+    uint64_t moves = 0;
+    uint64_t all_pieces = all_per_side[not_to_move] | all_per_side[to_move];
+    uint64_t second_rank = 0xff00;
+    uint64_t seventh_rank = 0xff000000000000;
+
+    if (side_to_move == Side::WHITE) {
+        uint64_t one_square = one_piece_board << 8;
+        if (!(one_square & all_pieces)) {
+            moves |= one_square;
+            uint64_t two_square = one_piece_board << 16;
+            if (!(two_square & all_pieces) && (one_piece_board & second_rank)) {
+                moves |= two_square;
+            }
+        }
+    } else if (side_to_move == Side::BLACK) {
+        uint64_t one_square = one_piece_board >> 8;
+        if (!(one_square & all_pieces)) {
+            moves |= one_square;
+            uint64_t two_square = one_piece_board >> 16;
+            if ((two_square & all_pieces) && (one_piece_board & seventh_rank)) {
+                moves |= two_square;
+            }
+        }
     }
-    return lookup_tables;
+    return moves;
+}
+
+uint64_t Board::generate_pawn_attacks(uint8_t square) {
+    uint64_t a_file = 0x0101010101010101;
+    uint64_t h_file = 0x8080808080808080;
+    size_t to_move = static_cast<size_t>(side_to_move);
+    size_t not_to_move = 1 - to_move;
+    uint64_t one_piece_board = 1 << square;
+    uint64_t attackable_squares = all_per_side[not_to_move] | (1 << en_passant_target);
+    uint64_t moves = 0;
+    // uint64_t all_pieces = all_per_side[not_to_move] | all_per_side[to_move];
+    if (side_to_move == Side::WHITE) {
+        uint64_t potential_moves = (one_piece_board << 7) | (one_piece_board << 9);
+        potential_moves &= ~a_file;
+        potential_moves &= ~h_file;
+        defense_maps[to_move] |= potential_moves;
+        moves |= potential_moves & attackable_squares;
+    } else if (side_to_move == Side::BLACK) {
+        uint64_t potential_moves = (one_piece_board >> 7) | (one_piece_board >> 9);
+        potential_moves &= ~a_file;
+        potential_moves &= ~h_file;
+        defense_maps[to_move] |= potential_moves;
+        moves |= potential_moves & attackable_squares;
+    }
+    attack_maps[to_move] |= moves;
+    return moves;
 }
 
 /* 
@@ -147,16 +202,16 @@ std::array<std::array<uint64_t, 64>, 8> Board::generate_rank_attacks() {
 // the provided square
 uint64_t Board::generate_rook_moves(uint8_t square) {
     // first determine which rank the piece is on
-    auto rank = square >> 3;
+    uint8_t rank = square >> 3;
     // get the complete occupancy of the board
-    auto board_occ = this->all_per_side[0] | this->all_per_side[1];
+    uint64_t board_occ = this->all_per_side[0] | this->all_per_side[1];
     // shift the board right so the rank our square is on is now
     // the first rank
-    auto board_occ_shifted = board_occ >> (8 * rank);
-    uint8_t board_occ_byte = static_cast<uint8_t>(board_occ_shifted);
+    uint64_t board_occ_shifted = board_occ >> (8 * rank + 1);
+    uint8_t board_occ_byte = static_cast<uint8_t>(board_occ_shifted) & 63;
     uint64_t rank_moves = this->rank_attack_lookup[square][board_occ_byte] << (8 * rank);
 
-    auto file = square & 7;
+    uint8_t file = square & 7;
     uint64_t a_file_mask = 0x0101010101010101;
     uint64_t h_file_mask = 0x8080808080808080;
     uint64_t c2h7_diag_mask = 0x0080402010080400;
@@ -289,7 +344,7 @@ std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
     uint64_t f1a6_mask = 0x10204081020;
     uint64_t e1a5_mask = 0x102040810;
     uint64_t d1a4_mask = 0x1020408;
-    uint64_t c1a3_mask = 0x1020408;
+    uint64_t c1a3_mask = 0x10204;
     uint64_t b1a2_mask = 0x0102;
     uint64_t a1_mask = 0x01;
     uint64_t h2b8_mask = 0x204081020408000;
@@ -341,18 +396,28 @@ std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
 std::vector<Move> Board::generate_moves() {
     // figure out which side is to move
     size_t side = static_cast<size_t>(side_to_move);
+    size_t other_side = 1 - side;
     std::vector<Move> moves;
-    auto queen_moves = moves_for_piece(queens[side], &generate_queen_moves);
-    auto bishop_moves = moves_for_piece(bishops[side], &generate_bishop_moves);
-    auto rook_moves = moves_for_piece(rooks[side], &generate_bishop_moves);
-    auto king_moves = moves_for_piece(kings[side], &generate_king_moves);
-    auto knight_moves = moves_for_piece(knights[side], &generate_knight_moves);
+    auto queen_moves = moves_for_piece(queens[side], &Board::generate_queen_moves);
+    auto bishop_moves = moves_for_piece(bishops[side], &Board::generate_bishop_moves);
+    auto rook_moves = moves_for_piece(rooks[side], &Board::generate_rook_moves);
+    auto king_moves = moves_for_piece(kings[side], &Board::generate_king_moves);
+    auto knight_moves = moves_for_piece(knights[side], &Board::generate_knight_moves);
+    auto pawn_moves = moves_for_piece(pawns[side], &Board::generate_pawn_moves);
+    auto pawn_captures = moves_for_piece(pawns[side], &Board::generate_pawn_attacks);
 
     moves.insert(moves.end(), queen_moves.begin(), queen_moves.end());
     moves.insert(moves.end(), bishop_moves.begin(), bishop_moves.end());
     moves.insert(moves.end(), rook_moves.begin(), rook_moves.end());
     moves.insert(moves.end(), king_moves.begin(), king_moves.end());
     moves.insert(moves.end(), knight_moves.begin(), knight_moves.end());
+    moves.insert(moves.end(), pawn_moves.begin(), pawn_moves.end());
+    moves.insert(moves.end(), pawn_captures.begin(), pawn_captures.end());
+    
+    // // check if the king is in check
+    // if (kings[side] & attack_maps[other_side]) {
+
+    // }
 
     // TODO add castles and pawn stuff (including en passant)
 
@@ -384,26 +449,32 @@ void Board::unmake_move(Move move) {
 // This function generates all of the moves for a specific type of piece
 // TODO: make sure to check that the piece being moved isn't pinned, also finish implementing this
 std::vector<Move> Board::moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t)) {
+    uint64_t p_board = piece_board;
     size_t to_move = static_cast<size_t>(side_to_move);
     size_t not_to_move = 1 - to_move;
 
     std::vector<Move> moves;
 
-    int set_bit = __builtin_ffsll(piece_board);
+    int set_bit = __builtin_ffsll(p_board);
     while (set_bit) {
         uint8_t square_from = static_cast<uint8_t>(set_bit - 1);
         auto move_board = (this->*gen_func)(square_from);
         int dest_plus_one = __builtin_ffsll(move_board);
         while (dest_plus_one) {
             uint16_t dest = static_cast<uint16_t>(dest_plus_one - 1);
+            // Figure out if the king is in check or if moving the piece would put the king in check
+            // but first check if the piece being moved is the king
+            if (kings[to_move] & (1 << square_from)) {
+
+            }
             // TODO figure out what type of move it is (instead of assuming it's quiet);
             MoveType type = MoveType::QUIET;
             moves.push_back(Move(square_from, dest, type));
             move_board &= ~(1 << dest);
             dest_plus_one = __builtin_ffsll(move_board);
         }
-        piece_board &= ~(1 << square_from);
-        set_bit = __builtin_ffsll(piece_board);
+        p_board &= ~(1 << square_from);
+        set_bit = __builtin_ffsll(p_board);
     }
     return moves;
 }
@@ -436,4 +507,8 @@ std::array<uint64_t, 2> Board::get_kings() {
 
 std::array<uint64_t, 2> Board::get_pawns() {
     return pawns;
+}
+
+std::vector<Move> Board::get_moves() {
+    return moves;
 }

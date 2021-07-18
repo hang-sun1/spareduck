@@ -15,7 +15,6 @@ COPY test ./test
 COPY test.sh ./
 COPY www ./www
 RUN cp build/spareduck.js ./www/ && mkdir -p ./www/dist && cp build/spareduck.wasm ./www/dist && cp build/spareduck.wasm ./www && cp ./www/index.html ./www/dist/
-RUN echo $PATH
 WORKDIR /usr/src/spareduck/www
 RUN npm install
 EXPOSE 8080

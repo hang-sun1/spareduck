@@ -1,3 +1,4 @@
+#include <climits>
 #include "search.h"
 
 /*

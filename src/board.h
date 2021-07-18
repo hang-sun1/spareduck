@@ -23,22 +23,30 @@ class Board {
     std::array<uint64_t, 2> kings;
     std::array<uint64_t, 2> pawns;
     std::array<uint64_t, 2> all_per_side;
+    // a map of the squares which each side attack (subset of defense)
     std::array<uint64_t, 2> attack_maps;
+    // a map of the squares which each side defends
     std::array<uint64_t, 2> defense_maps;
+    // a map of attacks if there were no opposing pieces on the board
+    // essentially the set of attacked squaresif piece movement weren't 
+    // blocked by opposing pieces
+    std::array<uint64_t, 2> unimpeded_maps;
     std::array<std::array<uint64_t, 64>, 8> rank_attack_lookup;
     std::array<uint64_t, 64> diagonal_mask_lookup;
     std::array<uint64_t, 64> antidiagonal_mask_lookup;
     std::array<uint64_t, 64> king_lookup;
     std::array<uint64_t, 64> knight_lookup;
+    uint8_t en_passant_target;
     uint64_t generate_rook_moves(uint8_t square);
     uint64_t generate_bishop_moves(uint8_t square);
     uint64_t generate_queen_moves(uint8_t square);
     uint64_t generate_knight_moves(uint8_t square);
     uint64_t generate_king_moves(uint8_t square);
-    std::vector<Move> Board::moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t));
+    uint64_t generate_pawn_moves(uint8_t square);
+    uint64_t generate_pawn_attacks(uint8_t square);
+    std::vector<Move> moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t));
     Side side_to_move;
     std::vector<Move> moves;
-
    public:
     // using enum Side;
     // initizlizes a board in the starting position
@@ -47,7 +55,6 @@ class Board {
     // for the various pieces, as well as helper functions that assist in this
     static std::array<uint64_t, 64> generate_knight_lookup();
     static std::array<uint64_t, 64> generate_king_lookup();
-    static std::array<std::array<uint64_t, 64>, 2> generate_pawn_move_lookup(uint8_t square, uint64_t occ);
     static std::array<std::array<uint64_t, 64>, 2> generate_pawn_attack_lookup();
     static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
@@ -64,4 +71,5 @@ class Board {
     std::array<uint64_t, 2> get_queens();
     std::array<uint64_t, 2> get_kings();
     std::array<uint64_t, 2> get_pawns();
+    std::vector<Move> get_moves();
 };

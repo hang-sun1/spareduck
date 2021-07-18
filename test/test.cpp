@@ -20,11 +20,8 @@ TEST_CASE("proper moves are generated", "[board]") {
         auto lookup_table = Board::generate_rank_attacks();
         REQUIRE(lookup_table[3][38] == 0b01110100);
     }
-    SECTION("generates correct rook moves") {
-        REQUIRE(std::popcount(b.generate_rook_moves(0)) == 14);
-    }
-    SECTION("generates correct bishop moves") {
-        REQUIRE(std::popcount(b.generate_bishop_moves(0)) == 7);
-        REQUIRE(std::popcount(b.generate_bishop_moves(6)) == 7);
+    SECTION("finds 20 moves from start position") {
+        std::cout << b.defense_maps[0];
+        REQUIRE(b.get_moves().size() == 20);
     }
 }

@@ -408,27 +408,32 @@ std::vector<Move> Board::moves_for_piece(uint64_t piece_board, uint64_t (Board::
     return moves;
 }
 
+// Getter for side to move
+int Board::get_side_to_move() {
+    return static_cast<size_t>(side_to_move);;
+}
+
 // Getters for boards
-std::array<uint64_t, 2> get_knights() {
-    return this->knights;
+std::array<uint64_t, 2> Board::get_knights() {
+    return knights;
 }
 
-std::array<uint64_t, 2> get_bishops() {
-    return this->bishops;
+std::array<uint64_t, 2> Board::get_bishops() {
+    return bishops;
 }
 
-std::array<uint64_t, 2> get_rooks() {
-    return this->rooks;
+std::array<uint64_t, 2> Board::get_rooks() {
+    return rooks;
 }
 
-std::array<uint64_t, 2> get_queens() {
-    return this->queens;
+std::array<uint64_t, 2> Board::get_queens() {
+    return queens;
 }
 
-std::array<uint64_t, 2> get_kings() {
-    return this->kings;
+std::array<uint64_t, 2> Board::get_kings() {
+    return kings;
 }
 
-std::array<uint64_t, 2> get_pawns() {
-    return this->pawns;
+std::array<uint64_t, 2> Board::get_pawns() {
+    return pawns;
 }

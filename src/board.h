@@ -35,7 +35,6 @@ class Board {
     uint64_t generate_queen_moves(uint8_t square);
     uint64_t generate_knight_moves(uint8_t square);
     uint64_t generate_king_moves(uint8_t square);
-    std::vector<Move> generate_moves();
     std::vector<Move> Board::moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t));
     Side side_to_move;
     std::vector<Move> moves;
@@ -53,8 +52,12 @@ class Board {
     static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
+    // move and side functions
+    std::vector<Move> generate_moves();
     void make_move(Move move);
     void unmake_move(Move move);
+    int get_side_to_move();
+    // getters for the current position
     std::array<uint64_t, 2> get_knights();
     std::array<uint64_t, 2> get_bishops();
     std::array<uint64_t, 2> get_rooks();

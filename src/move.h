@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 enum class MoveType : uint16_t {
     QUIET = 0,
@@ -28,6 +29,10 @@ class Move {
     uint16_t destination_square();
 
     MoveType type();
+
+    std::string origin_square_algebraic();
+
+    std::string destination_square_algebraic();
 
    private:
     uint16_t move_repr;

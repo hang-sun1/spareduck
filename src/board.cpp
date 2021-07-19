@@ -421,7 +421,7 @@ std::vector<Move> Board::generate_moves() {
     m.insert(m.end(), knight_moves.begin(), knight_moves.end());
     m.insert(m.end(), pawn_moves.begin(), pawn_moves.end());
     m.insert(m.end(), pawn_captures.begin(), pawn_captures.end());
-    
+
     // // check if the king is in check
     // if (kings[side] & attack_maps[other_side]) {
 
@@ -435,7 +435,7 @@ std::vector<Move> Board::generate_moves() {
 
 void Board::make_move(Move move) {
     size_t current_move = static_cast<size_t>(side_to_move);
-    size_t other_move = 1-current_move;
+    size_t other_move = 1 - current_move;
 
     auto from = move.origin_square();
     auto to = move.destination_square();
@@ -458,7 +458,7 @@ void Board::make_move(Move move) {
     } else if ((pawns[current_move] & (1ULL << from))) {
         pawns[current_move] &= ~(1ULL << from);
         pawns[current_move] |= 1ULL << to;
-    }    
+    }
     if ((bishops[other_move] & (1ULL << to))) {
         bishops[other_move] &= ~(1ULL << to);
     } else if ((knights[other_move] & (1ULL << to))) {
@@ -477,7 +477,7 @@ void Board::make_move(Move move) {
     defense_maps[current_move] = 0;
     all_per_side[current_move] = 0;
     all_per_side[current_move] = rooks[current_move] | bishops[current_move] | knights[current_move] |
-        queens[current_move] | kings[current_move] | pawns[current_move];
+                                 queens[current_move] | kings[current_move] | pawns[current_move];
 
     // calling generate_moves again regenerates
     // the attack and defense maps of the side that
@@ -529,7 +529,7 @@ std::vector<Move> Board::moves_for_piece(uint64_t piece_board, uint64_t (Board::
 
 // Getter for side to move
 int Board::get_side_to_move() {
-    return static_cast<size_t>(side_to_move);;
+    return static_cast<size_t>(side_to_move);
 }
 
 // Getters for boards
@@ -559,4 +559,16 @@ std::array<uint64_t, 2> Board::get_pawns() {
 
 std::vector<Move> Board::get_moves() {
     return moves;
+}
+
+// returns moves as an array of strings / squares where
+// l_moves[i] is the origin and l_moves[i+1] is the destination
+std::vector<std::string> Board::get_moves_algebraic() {
+    std::vector<std::string> l_moves(moves.size() * 2);
+    int j = 0;
+    for (int i = 0; i < moves.size(); i++) {
+        l_moves.at(j++) = moves[i].origin_square_algebraic();
+        l_moves.at(j++) = moves[i].destination_square_algebraic();
+    }
+    return l_moves;
 }

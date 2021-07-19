@@ -6,19 +6,26 @@
 // Returns a map of moves square -> square
 export function toDests(chess) {
   const dests = new Map();
-  let moves = chess._generate_moves();
-  if (!moves) {
-    moves = ['a4'];
+  let moves_vect = chess._get_moves();
+  console.log('moves_vect', moves_vect);
+
+  let moves = ['a2', 'a4'];
+  if (moves_vect) {
+    moves = new Array(moves_vect.size());
+    for (let i = 0; i < moves_vect.size(); i++) moves[i] = moves_vect.get(i);
+    moves_vect.delete();
   }
-  moves.forEach((s) => {
-    /*const ms = chess.moves({ square: s, verbose: true });
-      if (ms.length)
-        dests.set(
-          s,
-          ms.map((m) => m.to),
-        );*/
-    console.log(s);
-  });
+  console.log('moves', moves);
+
+  for (let i = 0; i < moves.length; i += 2) {
+    console.log(moves[i]);
+    if (dests.has(moves[i])) {
+      dests.set(moves[i], dests.get(moves[i]).concat(moves[i + 1]));
+    } else {
+      dests.set(moves[i], [moves[i + 1]]);
+    }
+  }
+
   return dests;
 }
 

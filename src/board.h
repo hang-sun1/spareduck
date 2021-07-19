@@ -28,7 +28,7 @@ class Board {
     // a map of the squares which each side defends
     std::array<uint64_t, 2> defense_maps;
     // a map of attacks if there were no opposing pieces on the board
-    // essentially the set of attacked squaresif piece movement weren't 
+    // essentially the set of attacked squaresif piece movement weren't
     // blocked by opposing pieces
     std::array<uint64_t, 2> unimpeded_maps;
     std::array<std::array<uint64_t, 64>, 8> rank_attack_lookup;
@@ -47,6 +47,8 @@ class Board {
     std::vector<Move> moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t));
     Side side_to_move;
     std::vector<Move> moves;
+    std::vector<Move> generate_moves();
+
    public:
     // using enum Side;
     // initizlizes a board in the starting position
@@ -60,10 +62,11 @@ class Board {
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
     // move and side functions
-    std::vector<Move> generate_moves();
     void make_move(Move move);
     void unmake_move(Move move);
     int get_side_to_move();
+    std::vector<Move> get_moves();
+    std::vector<std::string> get_moves_algebraic();
     // getters for the current position
     std::array<uint64_t, 2> get_knights();
     std::array<uint64_t, 2> get_bishops();
@@ -71,11 +74,10 @@ class Board {
     std::array<uint64_t, 2> get_queens();
     std::array<uint64_t, 2> get_kings();
     std::array<uint64_t, 2> get_pawns();
-    std::vector<Move> get_moves();
+
     unsigned long long perft(unsigned int depth) {
         if (depth == 0) {
             return 1;
         }
-        
     }
 };

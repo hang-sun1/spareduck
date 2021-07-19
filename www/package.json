@@ -20,5 +20,7 @@
     "webpack-dev-server": "^3.11.2",
     "http-server": "^0.11.1"
   },
-  "dependencies": {}
+  "dependencies": {
+    "chessground": "^8.1.3"
+  }
 }

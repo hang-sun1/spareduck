@@ -3,6 +3,9 @@
 /* 
     Move evaluation engine.
     Powered by gokul.
+    https://www.chessprogramming.org/Kaissa#Evaluation
+    https://www.chessprogramming.org/Evaluation
+    https://www.chessprogramming.org/Piece-Square_Tables
 */
 
 int Evaluate::evaluate(Board board) {

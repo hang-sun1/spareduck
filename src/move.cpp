@@ -11,9 +11,9 @@ uint16_t Move::origin_square() {
 }
 
 uint16_t Move::destination_square() {
-    return (move_repr >> 4) & 0b1111;
+    return (move_repr >> 4) & 63;
 }
 
 MoveType Move::type() {
-    return static_cast<MoveType>(move_repr & 0b1111);
+    return static_cast<MoveType>(move_repr & 0xff);
 }

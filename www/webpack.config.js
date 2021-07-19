@@ -1,18 +1,18 @@
 // webpack configuration taken from https://gist.github.com/surma/b2705b6cca29357ebea1c9e6e15684cc
 
-const path = require("path");
+const path = require('path');
 
 module.exports = {
-  mode: "development",
-  context: path.resolve(__dirname, "."),
-  entry: "./index.js",
+  mode: 'development',
+  context: path.resolve(__dirname, '.'),
+  entry: './index.js',
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "bundle.js"
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
   },
   devServer: {
-    host: "0.0.0.0",
-    contentBase: path.join(__dirname, "dist"),
+    host: '0.0.0.0',
+    contentBase: path.join(__dirname, 'dist'),
     compress: false,
     port: 8080,
   },
@@ -21,27 +21,39 @@ module.exports = {
   // file.
   // Issue: https://github.com/kripken/emscripten/issues/6542.
   node: {
-    fs: "empty"
+    fs: 'empty',
   },
   module: {
     rules: [
-      // Emscripten JS files define a global. With `exports-loader` we can 
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
+        test: /\.(png|svg)$/i,
+        use: [
+          {
+            loader: 'file-loader',
+          },
+        ],
+      },
+      // Emscripten JS files define a global. With `exports-loader` we can
       // load these files correctly (provided the global’s name is the same
       // as the file name).
       {
         test: /spareduck\.js$/,
-        loader: "exports-loader"
+        loader: 'exports-loader',
       },
       // wasm files should not be processed but just be emitted and we want
       // to have their public URL.
       {
         test: /spareduck\.wasm$/,
-        type: "javascript/auto",
-        loader: "file-loader",
+        type: 'javascript/auto',
+        loader: 'file-loader',
         options: {
-          publicPath: "dist/"
-        }
-      }
-    ]
+          publicPath: 'dist/',
+        },
+      },
+    ],
   },
 };

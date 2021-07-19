@@ -7,6 +7,7 @@ const module = spareduck();
 console.log(
   module.then((m) => {
     console.log(m._add_two(1, 2));
+    console.log(m._get_side_to_move());
     init(m);
   }),
 );
@@ -15,7 +16,6 @@ console.log(
     Chess board interface. Build using Chessground.
     https://github.com/ornicar/chessground
 */
-
 const init = (chess) => {
   const config = {
     turnColor: toColor(chess),

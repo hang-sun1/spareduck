@@ -6,7 +6,11 @@
 // Returns a map of moves square -> square
 export function toDests(chess) {
   const dests = new Map();
-  chess.generate_moves().forEach((s) => {
+  let moves = chess._generate_moves();
+  if (!moves) {
+    moves = ['a4'];
+  }
+  moves.forEach((s) => {
     /*const ms = chess.moves({ square: s, verbose: true });
       if (ms.length)
         dests.set(
@@ -20,16 +24,16 @@ export function toDests(chess) {
 
 // Maps engine side representation to strings.
 export function toColor(chess) {
-  return chess.get_side_to_move() ? 'black' : 'white';
+  return chess._get_side_to_move() ? 'black' : 'white';
 }
 
 // Plays a move and then switches players.
 export function playOtherSide(ground, chess) {
   return (orig, dest) => {
-    //chess.make_move({ from: orig, to: dest });
+    //chess._make_move({ from: orig, to: dest });
     ground.set({
       turnColor: toColor(chess),
-      //check:chess.in_check(),
+      //check:chess._in_check(),
       movable: {
         color: toColor(chess),
         dests: toDests(chess),
@@ -41,13 +45,13 @@ export function playOtherSide(ground, chess) {
 // play against ai
 export function aiPlay(ground, chess, delay, firstMove) {
   return (orig, dest) => {
-    chess.make_move({ from: orig, to: dest });
+    chess._make_move({ from: orig, to: dest });
     setTimeout(() => {
-      const moves = chess.moves({ verbose: true });
+      const moves = chess._generate_moves();
       const move = firstMove
         ? moves[0]
         : moves[Math.floor(Math.random() * moves.length)];
-      chess.make_move(move.san);
+      chess._make_move(move.san);
       ground.move(move.from, move.to);
       ground.set({
         turnColor: toColor(chess),

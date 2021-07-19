@@ -1,6 +1,6 @@
 import { Chessground } from 'chessground';
 import { toColor, toDests, aiPlay, playOtherSide } from './util';
-require('./style.css');
+require('./chessground.styles.css');
 
 import spareduck from './spareduck.js';
 import spareduckModule from './spareduck.wasm';

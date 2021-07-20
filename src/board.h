@@ -48,7 +48,6 @@ class Board {
     Side side_to_move;
     std::vector<Move> moves;
     std::vector<Move> generate_moves();
-
    public:
     // using enum Side;
     // initizlizes a board in the starting position
@@ -57,7 +56,6 @@ class Board {
     // for the various pieces, as well as helper functions that assist in this
     static std::array<uint64_t, 64> generate_knight_lookup();
     static std::array<uint64_t, 64> generate_king_lookup();
-    static std::array<std::array<uint64_t, 64>, 2> generate_pawn_attack_lookup();
     static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();

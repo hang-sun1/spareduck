@@ -74,7 +74,6 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 int main() {
     std::cout << "hello" << std::endl;
-    game_board = Board();
 }
 }
 

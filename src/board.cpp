@@ -38,6 +38,8 @@ Board::Board() {
     this->antidiagonal_mask_lookup = Board::generate_antidiagonal_mask_map();
     this->king_lookup = Board::generate_king_lookup();
     this->knight_lookup = Board::generate_knight_lookup();
+    std::vector<Move> empty;
+    this->moves = empty;
     this->moves = this->generate_moves();
     // there is no en passant target yet, so just set it to some square off the board
     this->en_passant_target = 65;
@@ -234,7 +236,6 @@ uint64_t Board::generate_rook_moves(uint8_t square) {
     auto attacked_squares = defended_squares & (~all_per_side[to_move]);
     defense_maps[to_move] |= defended_squares;
     attack_maps[to_move] |= attacked_squares;
-    std::cout << "rook attacked squares: " << attacked_squares << std::endl;
     return attacked_squares;
 }
 
@@ -260,7 +261,6 @@ uint64_t Board::generate_bishop_moves(uint8_t square) {
     auto attacked_squares = defended_squares & (~all_per_side[to_move]);
     defense_maps[to_move] |= defended_squares;
     attack_maps[to_move] |= attacked_squares;
-    std::cout << "bishop attacked squares: " << attacked_squares << std::endl;
     return attacked_squares;
 }
 
@@ -436,7 +436,7 @@ std::vector<Move> Board::generate_moves() {
     size_t other_side = 1 - side;
     defense_maps[side] = 0;
     attack_maps[side] = 0;
-    std::vector<Move> m;
+    std::vector<Move> vec_of_moves;
     auto queen_moves = moves_for_piece(queens[side], &Board::generate_queen_moves);
     auto bishop_moves = moves_for_piece(bishops[side], &Board::generate_bishop_moves);
     auto rook_moves = moves_for_piece(rooks[side], &Board::generate_rook_moves);
@@ -445,13 +445,13 @@ std::vector<Move> Board::generate_moves() {
     auto pawn_moves = moves_for_piece(pawns[side], &Board::generate_pawn_moves);
     auto pawn_captures = moves_for_piece(pawns[side], &Board::generate_pawn_attacks);
 
-    m.insert(m.end(), queen_moves.begin(), queen_moves.end());
-    m.insert(m.end(), bishop_moves.begin(), bishop_moves.end());
-    m.insert(m.end(), rook_moves.begin(), rook_moves.end());
-    m.insert(m.end(), king_moves.begin(), king_moves.end());
-    m.insert(m.end(), knight_moves.begin(), knight_moves.end());
-    m.insert(m.end(), pawn_moves.begin(), pawn_moves.end());
-    m.insert(m.end(), pawn_captures.begin(), pawn_captures.end());
+    vec_of_moves.insert(vec_of_moves.end(), queen_moves.begin(), queen_moves.end());
+    vec_of_moves.insert(vec_of_moves.end(), bishop_moves.begin(), bishop_moves.end());
+    vec_of_moves.insert(vec_of_moves.end(), rook_moves.begin(), rook_moves.end());
+    vec_of_moves.insert(vec_of_moves.end(), king_moves.begin(), king_moves.end());
+    vec_of_moves.insert(vec_of_moves.end(), knight_moves.begin(), knight_moves.end());
+    vec_of_moves.insert(vec_of_moves.end(), pawn_moves.begin(), pawn_moves.end());
+    vec_of_moves.insert(vec_of_moves.end(), pawn_captures.begin(), pawn_captures.end());
 
     // // check if the king is in check
     // if (kings[side] & attack_maps[other_side]) {
@@ -461,7 +461,7 @@ std::vector<Move> Board::generate_moves() {
     // TODO add castles and pawn stuff (including en passant)
 
     // generate queen moves first
-    return m;
+    return vec_of_moves;
 }
 
 void Board::make_move(Move move) {

@@ -119,7 +119,7 @@ uint64_t Board::generate_pawn_moves(uint8_t square) {
         if (!(one_square & all_pieces)) {
             moves |= one_square;
             uint64_t two_square = one_piece_board >> 16;
-            if ((two_square & all_pieces) && (one_piece_board & seventh_rank)) {
+            if (!(two_square & all_pieces) && (one_piece_board & seventh_rank)) {
                 moves |= two_square;
             }
         }
@@ -223,12 +223,12 @@ uint64_t Board::generate_rook_moves(uint8_t square) {
     uint64_t h_file_mask = 0x8080808080808080;
     uint64_t c2h7_diag_mask = 0x0080402010080400;
     uint64_t a1h8_diag_mask = 0x8040201008040201;
-
-    board_occ = (board_occ << file) & a_file_mask;
+    board_occ = this->all_per_side[0] | this->all_per_side[1];
+    board_occ = (board_occ >> file) & a_file_mask;
     board_occ = ((c2h7_diag_mask * board_occ) >> 58) & 63;
     board_occ = a1h8_diag_mask * this->rank_attack_lookup[(square ^ 56) >> 3][static_cast<uint8_t>(board_occ)];
     uint64_t file_moves = (h_file_mask & board_occ) >> (file ^ 7);
-
+    
     auto to_move = static_cast<size_t>(side_to_move);
     auto defended_squares = file_moves | rank_moves;
     auto attacked_squares = defended_squares & (~all_per_side[to_move]);
@@ -253,7 +253,7 @@ uint64_t Board::generate_bishop_moves(uint8_t square) {
     antidiagonal_defend = (b_file_mask * antidiagonal_defend) >> 58;
     antidiagonal_defend = a_file_mask * this->rank_attack_lookup[file][antidiagonal_defend];
     antidiagonal_defend = antidiagonal_defend & this->antidiagonal_mask_lookup[square];
-
+    //diagonal_defend = 0;
     auto to_move = static_cast<size_t>(side_to_move);
     auto defended_squares = diagonal_defend | antidiagonal_defend;
     auto attacked_squares = defended_squares & (~all_per_side[to_move]);
@@ -285,59 +285,73 @@ uint64_t Board::generate_king_moves(uint8_t square) {
     return attacked_squares;
 }
 
-bool on_same_diagonal(uint8_t square1, uint8_t square2) {
-    return ((square2 - square1) & 7) == ((square2 >> 3) - (square1 >> 3));
-}
-
 std::array<uint64_t, 64> Board::generate_diagonal_mask_map() {
-    uint64_t a1h8_mask = 0x8040201008040201;
-    uint64_t b1h7_mask = 0x80402010080402;
-    uint64_t c1h6_mask = 0x804020100804;
-    uint64_t d1h5_mask = 0x8040201008;
-    uint64_t e1h4_mask = 0x80402010;
-    uint64_t f1h3_mask = 0x804020;
-    uint64_t g1h2_mask = 0x8040;
-    uint64_t h1_mask = 0x80;
-    uint64_t a2g8_mask = 0x4020100804020100;
-    uint64_t a3f8_mask = 0x2010080402010000;
-    uint64_t a4e8_mask = 0x1008040201000000;
-    uint64_t a5d8_mask = 0x804020100000000;
-    uint64_t a6c8_mask = 0x402010000000000;
-    uint64_t a7b8_mask = 0x201000000000000;
-    uint64_t a8_mask = 0x100000000000000;
+    uint64_t a1h8_mask = 0x8040201008040201ULL;
+    uint64_t b1h7_mask = 0x80402010080402ULL;
+    uint64_t c1h6_mask = 0x804020100804ULL;
+    uint64_t d1h5_mask = 0x8040201008ULL;
+    uint64_t e1h4_mask = 0x80402010ULL;
+    uint64_t f1h3_mask = 0x804020ULL;
+    uint64_t g1h2_mask = 0x8040ULL;
+    uint64_t h1_mask = 0x80ULL;
+    uint64_t a2g8_mask = 0x4020100804020100ULL;
+    uint64_t a3f8_mask = 0x2010080402010000ULL;
+    uint64_t a4e8_mask = 0x1008040201000000ULL;
+    uint64_t a5d8_mask = 0x804020100000000ULL;
+    uint64_t a6c8_mask = 0x402010000000000ULL;
+    uint64_t a7b8_mask = 0x201000000000000ULL;
+    uint64_t a8_mask = 0x100000000000000ULL;
 
     std::array<uint64_t, 64> lookup_table;
+    std::vector<int> a1h8_diag = { 0, 9, 18, 27, 36, 45, 54, 63 }; 
+    std::vector<int> b1h7_diag = { 1, 10, 19, 28, 37, 46, 55 };
+    std::vector<int> c1h6_diag = { 2, 11, 20, 29, 38, 47 };
+    std::vector<int> d1h5_diag = { 3, 12, 21, 30, 39 };
+    std::vector<int> e1h4_diag = { 4, 13, 22, 31 };
+    std::vector<int> f1h3_diag = { 5, 14, 23 };
+    std::vector<int> g1h2_diag = { 6, 15 };
+    std::vector<int> h1_diag = { 7 };
+    std::vector<int> a2g8_diag = { 8, 17, 26, 35, 44, 53, 62};
+    std::vector<int> a3f8_diag = { 16, 25, 34, 43, 52, 61 };
+    std::vector<int> a4e8_diag = { 24, 33, 42, 51, 60 };
+    std::vector<int> a5d8_diag = { 32, 41, 50, 59 };
+    std::vector<int> a6c8_diag = { 40, 49, 58 };
+    std::vector<int> a7b8_diag = { 48, 57 };
+    std::vector<int> a8_diag = { 56 };
 
-    for (size_t square = 0; square < 64; ++square) {
-        if (on_same_diagonal(square, 0)) {
+    for (size_t s = 0; s < 64; ++s) {
+        int square = static_cast<int>(s);
+
+
+        if (std::count(a1h8_diag.begin(), a1h8_diag.end(), square)) {
             lookup_table[square] = a1h8_mask;
-        } else if (on_same_diagonal(square, 1)) {
+        } else if (std::count(b1h7_diag.begin(), b1h7_diag.end(), square)){
             lookup_table[square] = b1h7_mask;
-        } else if (on_same_diagonal(square, 2)) {
+        } else if (std::count(c1h6_diag.begin(), c1h6_diag.end(), square)) {
             lookup_table[square] = c1h6_mask;
-        } else if (on_same_diagonal(square, 3)) {
+        } else if (std::count(d1h5_diag.begin(), d1h5_diag.end(), square)) {
             lookup_table[square] = d1h5_mask;
-        } else if (on_same_diagonal(square, 4)) {
+        } else if (std::count(e1h4_diag.begin(), e1h4_diag.end(), square)) {
             lookup_table[square] = e1h4_mask;
-        } else if (on_same_diagonal(square, 5)) {
+        } else if (std::count(f1h3_diag.begin(), f1h3_diag.end(), square)) {
             lookup_table[square] = f1h3_mask;
-        } else if (on_same_diagonal(square, 6)) {
+        } else if (std::count(g1h2_diag.begin(), g1h2_diag.end(), square)) {
             lookup_table[square] = g1h2_mask;
-        } else if (on_same_diagonal(square, 7)) {
+        } else if (std::count(h1_diag.begin(), h1_diag.end(), square)) {
             lookup_table[square] = h1_mask;
-        } else if (on_same_diagonal(square, 8)) {
+        } else if (std::count(a2g8_diag.begin(), a2g8_diag.end(), square)) {
             lookup_table[square] = a2g8_mask;
-        } else if (on_same_diagonal(square, 16)) {
+        } else if (std::count(a3f8_diag.begin(), a3f8_diag.end(), square)) {
             lookup_table[square] = a3f8_mask;
-        } else if (on_same_diagonal(square, 24)) {
+        } else if (std::count(a4e8_diag.begin(), a4e8_diag.end(), square)) {
             lookup_table[square] = a4e8_mask;
-        } else if (on_same_diagonal(square, 32)) {
+        } else if (std::count(a5d8_diag.begin(), a5d8_diag.end(), square)) {
             lookup_table[square] = a5d8_mask;
-        } else if (on_same_diagonal(square, 40)) {
+        } else if (std::count(a6c8_diag.begin(), a6c8_diag.end(), square)) {
             lookup_table[square] = a6c8_mask;
-        } else if (on_same_diagonal(square, 48)) {
+        } else if (std::count(a7b8_diag.begin(), a7b8_diag.end(), square)) {
             lookup_table[square] = a7b8_mask;
-        } else if (on_same_diagonal(square, 54)) {
+        } else if (std::count(a8_diag.begin(), a8_diag.end(), square)) {
             lookup_table[square] = a8_mask;
         }
     }
@@ -346,53 +360,68 @@ std::array<uint64_t, 64> Board::generate_diagonal_mask_map() {
 
 std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
     uint64_t h1a8_mask = 0x102040810204080;
+    std::vector<int> h1a8_diag = { 7, 14, 21, 28, 35, 42, 49, 56 };
     uint64_t g1a7_mask = 0x1020408102040;
+    std::vector<int> g1a7_diag = { 6, 13, 20, 27, 34, 41, 48 };
     uint64_t f1a6_mask = 0x10204081020;
+    std::vector<int> f1a6_diag = { 5, 12, 19, 26, 33, 40 };
     uint64_t e1a5_mask = 0x102040810;
+    std::vector<int> e1a5_diag = { 4, 11, 18, 25, 32};
     uint64_t d1a4_mask = 0x1020408;
+    std::vector<int> d1a4_diag = { 3, 10, 17, 24};
     uint64_t c1a3_mask = 0x10204;
+    std::vector<int> c1a3_diag = { 2, 9, 16 };
     uint64_t b1a2_mask = 0x0102;
+    std::vector<int> b1a2_diag = { 1, 8 };
     uint64_t a1_mask = 0x01;
+    std::vector<int> a1_diag = { 0 };
     uint64_t h2b8_mask = 0x204081020408000;
+    std::vector<int> h2b8_diag = { 15, 22, 29, 36, 43, 50, 57 };
     uint64_t h3c8_mask = 0x408102040800000;
+    std::vector<int> h3c8_diag = { 23, 30, 37, 44, 51 , 58 };
     uint64_t h4d8_mask = 0x810204080000000;
+    std::vector<int> h4d8_diag = { 31, 38, 45, 52, 59 };
     uint64_t h5e8_mask = 0x1020408000000000;
+    std::vector<int> h5e8_diag = { 39, 46, 53, 60 };
     uint64_t h6f8_mask = 0x2040800000000000;
+    std::vector<int> h6f8_diag = { 47, 54, 61 };
     uint64_t h7g8_mask = 0x4080000000000000;
+    std::vector<int> h7g8_diag = { 55, 62 };
     uint64_t h8_mask = 0x8000000000000000;
+    std::vector<int> h8_diag = { 63 };
 
     std::array<uint64_t, 64> lookup_table;
 
     for (size_t square = 0; square < 64; ++square) {
-        if (on_same_diagonal(square, 7)) {
+        if (std::count(h1a8_diag.begin(), h1a8_diag.end(), square)) {
             lookup_table[square] = h1a8_mask;
-        } else if (on_same_diagonal(square, 6)) {
+        } else if (std::count(g1a7_diag.begin(), g1a7_diag.end(), square)) {
             lookup_table[square] = g1a7_mask;
-        } else if (on_same_diagonal(square, 5)) {
+        } else if (std::count(f1a6_diag.begin(), f1a6_diag.end(), square)) {
             lookup_table[square] = f1a6_mask;
-        } else if (on_same_diagonal(square, 4)) {
+        } else if (std::count(e1a5_diag.begin(), e1a5_diag.end(), square)) {
             lookup_table[square] = e1a5_mask;
-        } else if (on_same_diagonal(square, 3)) {
+        } else if (std::count(d1a4_diag.begin(), d1a4_diag.end(), square)) {
             lookup_table[square] = d1a4_mask;
-        } else if (on_same_diagonal(square, 2)) {
+        } else if (std::count(c1a3_diag.begin(), c1a3_diag.end(), square)) {
             lookup_table[square] = c1a3_mask;
-        } else if (on_same_diagonal(square, 1)) {
+        } else if (std::count(b1a2_diag.begin(), b1a2_diag.end(), square)) {
             lookup_table[square] = b1a2_mask;
-        } else if (on_same_diagonal(square, 0)) {
+        } else if (std::count(a1_diag.begin(), a1_diag.end(), square)) {
             lookup_table[square] = a1_mask;
-        } else if (on_same_diagonal(square, 57)) {
+        } else if (std::count(h2b8_diag.begin(), h2b8_diag.end(), square)) {
             lookup_table[square] = h2b8_mask;
-        } else if (on_same_diagonal(square, 58)) {
+        } else if (std::count(h3c8_diag.begin(), h3c8_diag.end(), square)) {
             lookup_table[square] = h3c8_mask;
-        } else if (on_same_diagonal(square, 59)) {
+        } else if (std::count(h4d8_diag.begin(), h4d8_diag.end(), square)) {
             lookup_table[square] = h4d8_mask;
-        } else if (on_same_diagonal(square, 60)) {
+        } else if (std::count(h5e8_diag.begin(), h5e8_diag.end(), square)) {
             lookup_table[square] = h5e8_mask;
-        } else if (on_same_diagonal(square, 61)) {
+        } else if (std::count(h6f8_diag.begin(), h6f8_diag.end(), square)) {
             lookup_table[square] = h6f8_mask;
-        } else if (on_same_diagonal(square, 62)) {
+        } else if (std::count(h7g8_diag.begin(), h7g8_diag.end(), square)) {
             lookup_table[square] = h7g8_mask;
-        } else if (on_same_diagonal(square, 63)) {
+        } else if (std::count(h8_diag.begin(), h8_diag.end(), square)) {
             lookup_table[square] = h8_mask;
         }
     }
@@ -488,7 +517,7 @@ void Board::make_move(Move move) {
     this->side_to_move = static_cast<Side>(other_move);
     // generate the moves for the next side (which also updates attack and defenes maps for
     // the new side to move)
-    // this->moves = generate_moves();
+    this->moves = generate_moves();
 }
 
 void Board::unmake_move(Move move) {

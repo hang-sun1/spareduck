@@ -20,6 +20,8 @@ TEST_CASE("proper moves are generated", "[board]") {
     SECTION("generates correct move maps") {
         auto lookup_table = Board::generate_rank_attacks();
         REQUIRE(lookup_table[3][38] == 0b01110100);
+        auto diagonal_masks = Board::generate_diagonal_mask_map();
+        REQUIRE(diagonal_masks[61] == 2310355422147575808);
     }
     SECTION("finds 20 moves from start position") {
         REQUIRE(b.get_moves().size() == 20);
@@ -27,13 +29,10 @@ TEST_CASE("proper moves are generated", "[board]") {
     SECTION("correctly makes a move") {
         auto moves = b.get_moves();
         auto first_move = moves[0];
-        // for (auto &m: moves) {
-        //     std::cout << m.origin_square() << "-" << m.destination_square() << std::endl;
-        // }
         b.make_move(first_move);
+        moves = b.get_moves();
         REQUIRE(b.get_moves().size() == 20);
         b.make_move(b.get_moves()[0]);
-        std::cout << b.all_per_side[0] << std::endl;
         REQUIRE(b.get_moves().size() == 20);
     }
 }

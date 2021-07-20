@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "board.h"
+#include "move.h"
 
 #ifndef TESTING
 #include <emscripten.h>
@@ -31,9 +32,8 @@ extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-void make_move() {
-    // TODO: convert move from algebraic or implement make_move_algebraic in game_board
-    //game_board.make_move();
+void make_move(std::string from, std::string to) {
+    game_board.make_move(Move(from, to));
     return;
 }
 }

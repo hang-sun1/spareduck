@@ -24,6 +24,9 @@ class Move {
     // using enum MoveType;
     Move(uint16_t from, uint16_t to, MoveType type);
 
+    // Move from algebraic
+    Move(std::string from, std::string to);
+
     uint16_t origin_square();
 
     uint16_t destination_square();

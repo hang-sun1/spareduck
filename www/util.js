@@ -5,6 +5,7 @@
 
 // Returns a map of moves square -> square
 export function toDests(chess) {
+  console.log('getting dests for', toColor(chess));
   const dests = new Map();
   let moves_vect = chess._get_moves();
   console.log('moves_vect', moves_vect);
@@ -36,11 +37,11 @@ export function toColor(chess) {
 
 // Plays a move and then switches players.
 export function playOtherSide(ground, chess) {
-  return (orig, dest) => {
-    //chess._make_move({ from: orig, to: dest });
+  return (from, to) => {
+    chess._make_move(from, to);
     ground.set({
       turnColor: toColor(chess),
-      //check:chess._in_check(),
+      check: chess._in_check(),
       movable: {
         color: toColor(chess),
         dests: toDests(chess),

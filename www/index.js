@@ -9,7 +9,7 @@ const module = spareduck();
 console.log(
   module.then((m) => {
     console.log(m._add_two(1, 2));
-    console.log(toColor(m));
+    console.log("init", toColor(m));
     init(m);
   }),
 );

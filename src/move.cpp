@@ -6,6 +6,15 @@ Move::Move(uint16_t from, uint16_t to, MoveType type) {
     move_repr = (from << 10) | (to << 4) | static_cast<uint16_t>(type);
 }
 
+// New move from algebraic notation.
+Move::Move(std::string from, std::string to) {
+    uint16_t from_square = (from[0] - 'a') | 7 | (from[1] - '1') << 3;
+    uint16_t to_square = (to[0] - 'a') | 7 | (from[1] - '1') << 3;
+    MoveType type = MoveType::QUIET;
+
+    move_repr = (from_square << 10) | (to_square << 4) | static_cast<uint16_t>(type);
+}
+
 uint16_t Move::origin_square() {
     return move_repr >> 10;
 }

@@ -8,6 +8,7 @@
 #ifndef TESTING
 #include <emscripten.h>
 #include <emscripten/bind.h>
+using namespace emscripten;
 #endif
 
 Board game_board;
@@ -32,8 +33,8 @@ extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-void make_move(std::string from, std::string to) {
-    game_board.make_move(Move(from, to));
+void make_move(int from, int to) {
+    game_board.make_move(Move(from, to, MoveType::QUIET));
     return;
 }
 }
@@ -43,9 +44,9 @@ extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-std::vector<std::string> get_moves() {
+std::vector<uint16_t> get_moves() {
     std::cout << "moves:" << std::endl;
-    std::vector<std::string> moves = game_board.get_moves_algebraic();
+    std::vector<uint16_t> moves = game_board.get_moves_as_u16();
     std::cout << moves.size() << std::endl;
     for (int i = 0; i < moves.size(); ++i)
         std::cout << moves.at(i) << ' ';
@@ -76,3 +77,11 @@ int main() {
     game_board = Board();
 }
 }
+
+
+#ifndef TESTING
+EMSCRIPTEN_BINDINGS(module) {
+    function("get_moves", &get_moves);
+    register_vector<uint16_t>("vector<uint16_t>");
+}
+#endif

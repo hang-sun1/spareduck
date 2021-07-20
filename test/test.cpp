@@ -29,7 +29,9 @@ TEST_CASE("proper moves are generated", "[board]") {
     SECTION("correctly makes a move") {
         auto moves = b.get_moves();
         auto first_move = moves[0];
+        auto knight_board = b.knights[0];
         b.make_move(first_move);
+        REQUIRE(b.knights[0] != knight_board);
         moves = b.get_moves();
         REQUIRE(b.get_moves().size() == 20);
         b.make_move(b.get_moves()[0]);

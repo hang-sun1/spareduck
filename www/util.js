@@ -7,19 +7,21 @@
 export function toDests(chess) {
   console.log('getting dests for', toColor(chess));
   const dests = new Map();
-  let moves_vect = chess._get_moves();
-  console.log('moves_vect', moves_vect);
+  let moves = []
+  let moves_vect = chess.get_moves();
+  for (let i = 0; i < moves_vect.size(); i++) {
+    let move = moves_vect.get(i);
+    let from = move >> 6;
+    let to = move & 63;
+    from = indexToAlgebraic(from);
+    to = indexToAlgebraic(to);
+    moves.push(from);
+    moves.push(to);
+    // console.log(from, to);
 
-  let moves = ['a2', 'a4'];
-  if (moves_vect) {
-    moves = new Array(moves_vect.size());
-    for (let i = 0; i < moves_vect.size(); i++) moves[i] = moves_vect.get(i);
-    moves_vect.delete();
   }
-  console.log('moves', moves);
-
   for (let i = 0; i < moves.length; i += 2) {
-    console.log(moves[i]);
+    // console.log(moves[i]);
     if (dests.has(moves[i])) {
       dests.set(moves[i], dests.get(moves[i]).concat(moves[i + 1]));
     } else {
@@ -30,6 +32,21 @@ export function toDests(chess) {
   return dests;
 }
 
+function indexToAlgebraic(n) {
+  let file = n & 7;
+  let rank = n >> 3;
+  rank += 1;
+  let files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  file = files[file];
+  return file + rank;
+}
+
+function algebraicToIndex(square) {
+  let file = square.charCodeAt(0) - 97;
+  let rank = parseInt(square[1]) - 1;
+  return 8 * rank + file;
+}
+
 // Maps engine side representation to strings.
 export function toColor(chess) {
   return chess._get_side_to_move() ? 'black' : 'white';
@@ -38,6 +55,8 @@ export function toColor(chess) {
 // Plays a move and then switches players.
 export function playOtherSide(ground, chess) {
   return (from, to) => {
+    from = algebraicToIndex(from);
+    to = algebraicToIndex(to)
     chess._make_move(from, to);
     ground.set({
       turnColor: toColor(chess),

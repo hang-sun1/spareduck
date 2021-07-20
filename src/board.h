@@ -66,6 +66,7 @@ class Board {
     void unmake_move(Move move);
     int get_side_to_move();
     std::vector<Move> get_moves();
+    std::vector<uint16_t> get_moves_as_u16();
     std::vector<std::string> get_moves_algebraic();
     // getters for the current position
     std::array<uint64_t, 2> get_knights();

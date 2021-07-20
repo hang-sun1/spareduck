@@ -234,6 +234,7 @@ uint64_t Board::generate_rook_moves(uint8_t square) {
     auto attacked_squares = defended_squares & (~all_per_side[to_move]);
     defense_maps[to_move] |= defended_squares;
     attack_maps[to_move] |= attacked_squares;
+    std::cout << "rook attacked squares: " << attacked_squares << std::endl;
     return attacked_squares;
 }
 
@@ -259,6 +260,7 @@ uint64_t Board::generate_bishop_moves(uint8_t square) {
     auto attacked_squares = defended_squares & (~all_per_side[to_move]);
     defense_maps[to_move] |= defended_squares;
     attack_maps[to_move] |= attacked_squares;
+    std::cout << "bishop attacked squares: " << attacked_squares << std::endl;
     return attacked_squares;
 }
 
@@ -588,6 +590,15 @@ std::array<uint64_t, 2> Board::get_pawns() {
 
 std::vector<Move> Board::get_moves() {
     return moves;
+}
+
+std::vector<uint16_t> Board::get_moves_as_u16() {
+    std::vector<uint16_t> m;
+    for (auto &move: moves) {
+        uint16_t as_u16 = (move.origin_square() << 6) | move.destination_square();
+        m.push_back(as_u16);  
+    } 
+    return m;
 }
 
 // returns moves as an array of strings / squares where

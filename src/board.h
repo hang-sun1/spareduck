@@ -73,6 +73,8 @@ class Board {
     std::array<uint64_t, 2> get_queens();
     std::array<uint64_t, 2> get_kings();
     std::array<uint64_t, 2> get_pawns();
+    
+    bool in_check();
 
     unsigned long long perft(unsigned int depth) {
         if (depth == 0) {

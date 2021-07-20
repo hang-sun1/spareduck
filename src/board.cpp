@@ -588,6 +588,13 @@ std::array<uint64_t, 2> Board::get_pawns() {
     return pawns;
 }
 
+bool Board::in_check() {
+    size_t to_move = static_cast<size_t>(side_to_move);
+    size_t other = 1 - to_move;
+    bool in_check = (kings[to_move] & attack_maps[other]) != 0;
+    return in_check;
+}
+
 std::vector<Move> Board::get_moves() {
     return moves;
 }

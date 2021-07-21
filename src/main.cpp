@@ -83,7 +83,6 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 bool in_check() {
-    // TODO: write in check method in Board
     return game_board.in_check();
 }
 }

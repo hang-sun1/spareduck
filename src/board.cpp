@@ -277,11 +277,12 @@ uint64_t Board::generate_knight_moves(uint8_t square) {
     return attacked_squares;
 }
 
+// returns king moves, but does not exclude moves that wander into check
 uint64_t Board::generate_king_moves(uint8_t square) {
     auto defended_squares = king_lookup[square];
     size_t current_side = static_cast<size_t>(side_to_move);
     size_t other_side = 1 - current_side;
-    auto attacked_squares = defended_squares & (~defense_maps[other_side]) & (~all_per_side[current_side]);
+    auto attacked_squares = defended_squares & (~all_per_side[current_side]);
     defense_maps[current_side] |= defended_squares;
     attack_maps[current_side] |= attacked_squares;
     return attacked_squares;
@@ -470,46 +471,27 @@ void Board::make_move(Move move) {
 
     auto from = move.origin_square();
     auto to = move.destination_square();
+    
+    std::array<std::array<uint64_t, 2>*, 6> arr = { &bishops, &knights, &rooks, &queens, &kings, &pawns };
 
-    if ((bishops[current_move] & (1ULL << from))) {
-        bishops[current_move] &= ~(1ULL << from);
-        bishops[current_move] |= 1ULL << to;
-    } else if ((knights[current_move] & (1ULL << from))) {
-        knights[current_move] &= ~(1ULL << from);
-        knights[current_move] |= 1ULL << to;
-    } else if ((rooks[current_move] & (1ULL << from))) {
-        rooks[current_move] &= ~(1ULL << from);
-        rooks[current_move] |= 1ULL << to;
-    } else if ((queens[current_move] & (1ULL << from))) {
-        queens[current_move] &= ~(1ULL << from);
-        queens[current_move] |= 1ULL << to;
-    } else if ((kings[current_move] & (1ULL << from))) {
-        kings[current_move] &= ~(1ULL << from);
-        kings[current_move] |= 1ULL << to;
-    } else if ((pawns[current_move] & (1ULL << from))) {
-        pawns[current_move] &= ~(1ULL << from);
-        pawns[current_move] |= 1ULL << to;
-    }
-    if ((bishops[other_move] & (1ULL << to))) {
-        bishops[other_move] &= ~(1ULL << to);
-    } else if ((knights[other_move] & (1ULL << to))) {
-        knights[other_move] &= ~(1ULL << to);
-    } else if ((rooks[other_move] & (1ULL << to))) {
-        rooks[other_move] &= ~(1ULL << to);
-    } else if ((queens[other_move] & (1ULL << to))) {
-        queens[other_move] &= ~(1ULL << to);
-    } else if ((kings[other_move] & (1ULL << to))) {
-        kings[other_move] &= ~(1ULL << to);
-    } else if ((pawns[other_move] & (1ULL << to))) {
-        pawns[other_move] &= ~(1ULL << to);
-    }
+    for (int i = 0; i < 6; ++i) {
+        auto piece_arr_ptr = arr[i];
+        if (((*piece_arr_ptr)[current_move] & (1ULL << from))) {
+            (*piece_arr_ptr)[current_move] &= ~(1ULL << from);
+            (*piece_arr_ptr)[current_move] |= 1ULL << to;
+        }
+        if (((*piece_arr_ptr)[other_move] & (1ULL << to))) {
+            (*piece_arr_ptr)[other_move] &= ~(1ULL << to);
+        }
+    } 
 
     attack_maps[current_move] = 0;
     defense_maps[current_move] = 0;
     all_per_side[current_move] = 0;
     all_per_side[current_move] = rooks[current_move] | bishops[current_move] | knights[current_move] |
                                  queens[current_move] | kings[current_move] | pawns[current_move];
-
+    all_per_side[other_move] = rooks[other_move] | bishops[other_move] | knights[other_move] |
+                                 queens[other_move] | kings[other_move] | pawns[other_move];
     // calling generate_moves again regenerates
     // the attack and defense maps of the side that
     // just moved, though doing so is slightly inefficient

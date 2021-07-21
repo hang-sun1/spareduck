@@ -44,4 +44,6 @@ const init = (chess) => {
       },
     },
   });
+
+  
 };

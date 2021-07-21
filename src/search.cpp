@@ -45,7 +45,7 @@ int Search::quiesce(int alpha, int beta) {
     // if (board.in_check()){...}
     //if true run search w depth 2??
 
-    int stand_pat;  // = evaluate();
+    int stand_pat = 0;  // = evaluate();
     if (stand_pat > beta) {
         return stand_pat;
     }

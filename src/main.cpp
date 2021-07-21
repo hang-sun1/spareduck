@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "board.h"
+#include "evaluate.h"
 #include "move.h"
 
 #ifndef TESTING
@@ -12,6 +13,7 @@ using namespace emscripten;
 #endif
 
 Board game_board;
+//Evaluate board_eval(game_board);
 
 extern "C" {
 #ifndef TESTING
@@ -72,8 +74,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    // TODO: write engine lol
-    return -1.;
+    //return board_eval.static_evaluate_cheap();
 }
 }
 

@@ -228,7 +228,7 @@ uint64_t Board::generate_rook_moves(uint8_t square) {
     board_occ = ((c2h7_diag_mask * board_occ) >> 58) & 63;
     board_occ = a1h8_diag_mask * this->rank_attack_lookup[(square ^ 56) >> 3][static_cast<uint8_t>(board_occ)];
     uint64_t file_moves = (h_file_mask & board_occ) >> (file ^ 7);
-    
+
     auto to_move = static_cast<size_t>(side_to_move);
     auto defended_squares = file_moves | rank_moves;
     auto attacked_squares = defended_squares & (~all_per_side[to_move]);
@@ -305,29 +305,28 @@ std::array<uint64_t, 64> Board::generate_diagonal_mask_map() {
     uint64_t a8_mask = 0x100000000000000ULL;
 
     std::array<uint64_t, 64> lookup_table;
-    std::vector<int> a1h8_diag = { 0, 9, 18, 27, 36, 45, 54, 63 }; 
-    std::vector<int> b1h7_diag = { 1, 10, 19, 28, 37, 46, 55 };
-    std::vector<int> c1h6_diag = { 2, 11, 20, 29, 38, 47 };
-    std::vector<int> d1h5_diag = { 3, 12, 21, 30, 39 };
-    std::vector<int> e1h4_diag = { 4, 13, 22, 31 };
-    std::vector<int> f1h3_diag = { 5, 14, 23 };
-    std::vector<int> g1h2_diag = { 6, 15 };
-    std::vector<int> h1_diag = { 7 };
-    std::vector<int> a2g8_diag = { 8, 17, 26, 35, 44, 53, 62};
-    std::vector<int> a3f8_diag = { 16, 25, 34, 43, 52, 61 };
-    std::vector<int> a4e8_diag = { 24, 33, 42, 51, 60 };
-    std::vector<int> a5d8_diag = { 32, 41, 50, 59 };
-    std::vector<int> a6c8_diag = { 40, 49, 58 };
-    std::vector<int> a7b8_diag = { 48, 57 };
-    std::vector<int> a8_diag = { 56 };
+    std::vector<int> a1h8_diag = {0, 9, 18, 27, 36, 45, 54, 63};
+    std::vector<int> b1h7_diag = {1, 10, 19, 28, 37, 46, 55};
+    std::vector<int> c1h6_diag = {2, 11, 20, 29, 38, 47};
+    std::vector<int> d1h5_diag = {3, 12, 21, 30, 39};
+    std::vector<int> e1h4_diag = {4, 13, 22, 31};
+    std::vector<int> f1h3_diag = {5, 14, 23};
+    std::vector<int> g1h2_diag = {6, 15};
+    std::vector<int> h1_diag = {7};
+    std::vector<int> a2g8_diag = {8, 17, 26, 35, 44, 53, 62};
+    std::vector<int> a3f8_diag = {16, 25, 34, 43, 52, 61};
+    std::vector<int> a4e8_diag = {24, 33, 42, 51, 60};
+    std::vector<int> a5d8_diag = {32, 41, 50, 59};
+    std::vector<int> a6c8_diag = {40, 49, 58};
+    std::vector<int> a7b8_diag = {48, 57};
+    std::vector<int> a8_diag = {56};
 
     for (size_t s = 0; s < 64; ++s) {
         int square = static_cast<int>(s);
 
-
         if (std::count(a1h8_diag.begin(), a1h8_diag.end(), square)) {
             lookup_table[square] = a1h8_mask;
-        } else if (std::count(b1h7_diag.begin(), b1h7_diag.end(), square)){
+        } else if (std::count(b1h7_diag.begin(), b1h7_diag.end(), square)) {
             lookup_table[square] = b1h7_mask;
         } else if (std::count(c1h6_diag.begin(), c1h6_diag.end(), square)) {
             lookup_table[square] = c1h6_mask;
@@ -362,35 +361,35 @@ std::array<uint64_t, 64> Board::generate_diagonal_mask_map() {
 
 std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
     uint64_t h1a8_mask = 0x102040810204080;
-    std::vector<int> h1a8_diag = { 7, 14, 21, 28, 35, 42, 49, 56 };
+    std::vector<int> h1a8_diag = {7, 14, 21, 28, 35, 42, 49, 56};
     uint64_t g1a7_mask = 0x1020408102040;
-    std::vector<int> g1a7_diag = { 6, 13, 20, 27, 34, 41, 48 };
+    std::vector<int> g1a7_diag = {6, 13, 20, 27, 34, 41, 48};
     uint64_t f1a6_mask = 0x10204081020;
-    std::vector<int> f1a6_diag = { 5, 12, 19, 26, 33, 40 };
+    std::vector<int> f1a6_diag = {5, 12, 19, 26, 33, 40};
     uint64_t e1a5_mask = 0x102040810;
-    std::vector<int> e1a5_diag = { 4, 11, 18, 25, 32};
+    std::vector<int> e1a5_diag = {4, 11, 18, 25, 32};
     uint64_t d1a4_mask = 0x1020408;
-    std::vector<int> d1a4_diag = { 3, 10, 17, 24};
+    std::vector<int> d1a4_diag = {3, 10, 17, 24};
     uint64_t c1a3_mask = 0x10204;
-    std::vector<int> c1a3_diag = { 2, 9, 16 };
+    std::vector<int> c1a3_diag = {2, 9, 16};
     uint64_t b1a2_mask = 0x0102;
-    std::vector<int> b1a2_diag = { 1, 8 };
+    std::vector<int> b1a2_diag = {1, 8};
     uint64_t a1_mask = 0x01;
-    std::vector<int> a1_diag = { 0 };
+    std::vector<int> a1_diag = {0};
     uint64_t h2b8_mask = 0x204081020408000;
-    std::vector<int> h2b8_diag = { 15, 22, 29, 36, 43, 50, 57 };
+    std::vector<int> h2b8_diag = {15, 22, 29, 36, 43, 50, 57};
     uint64_t h3c8_mask = 0x408102040800000;
-    std::vector<int> h3c8_diag = { 23, 30, 37, 44, 51 , 58 };
+    std::vector<int> h3c8_diag = {23, 30, 37, 44, 51, 58};
     uint64_t h4d8_mask = 0x810204080000000;
-    std::vector<int> h4d8_diag = { 31, 38, 45, 52, 59 };
+    std::vector<int> h4d8_diag = {31, 38, 45, 52, 59};
     uint64_t h5e8_mask = 0x1020408000000000;
-    std::vector<int> h5e8_diag = { 39, 46, 53, 60 };
+    std::vector<int> h5e8_diag = {39, 46, 53, 60};
     uint64_t h6f8_mask = 0x2040800000000000;
-    std::vector<int> h6f8_diag = { 47, 54, 61 };
+    std::vector<int> h6f8_diag = {47, 54, 61};
     uint64_t h7g8_mask = 0x4080000000000000;
-    std::vector<int> h7g8_diag = { 55, 62 };
+    std::vector<int> h7g8_diag = {55, 62};
     uint64_t h8_mask = 0x8000000000000000;
-    std::vector<int> h8_diag = { 63 };
+    std::vector<int> h8_diag = {63};
 
     std::array<uint64_t, 64> lookup_table;
 
@@ -594,10 +593,10 @@ std::vector<Move> Board::get_moves() {
 
 std::vector<uint16_t> Board::get_moves_as_u16() {
     std::vector<uint16_t> m;
-    for (auto &move: moves) {
+    for (auto &move : moves) {
         uint16_t as_u16 = (move.origin_square() << 6) | move.destination_square();
-        m.push_back(as_u16);  
-    } 
+        m.push_back(as_u16);
+    }
     return m;
 }
 

@@ -55,6 +55,28 @@ std::vector<uint16_t> get_moves() {
 }
 }
 
+// Returns engine's best move
+extern "C" {
+#ifndef TESTING
+EMSCRIPTEN_KEEPALIVE
+#endif
+uint16_t get_engine_move() {
+    // TODO: write engine lol
+    return 0;
+}
+}
+
+// Returns engine's evaluation for the position
+extern "C" {
+#ifndef TESTING
+EMSCRIPTEN_KEEPALIVE
+#endif
+double get_engine_evaluation() {
+    // TODO: write engine lol
+    return -1.;
+}
+}
+
 // Returns true if the king is in check.
 extern "C" {
 #ifndef TESTING
@@ -75,7 +97,6 @@ int main() {
     std::cout << "hello" << std::endl;
 }
 }
-
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {

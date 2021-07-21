@@ -74,8 +74,8 @@ export function aiPlay(ground, chess, delay, firstMove) {
     chess._make_move(algebraicToIndex(from), algebraicToIndex(to));
     setTimeout(() => {
       const ai_move = chess._get_engine_move();
-      let ai_from = move >> 6;
-      let ai_to = move & 63;
+      let ai_from = ai_move >> 6;
+      let ai_to = ai_move & 63;
       chess._make_move(ai_from, ai_to);
       ai_from = indexToAlgebraic(ai_from);
       ai_to = indexToAlgebraic(ai_to);

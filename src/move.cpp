@@ -42,3 +42,13 @@ std::string Move::destination_square_algebraic() {
                               '\0'};
     return std::string(algebraic_move);
 }
+
+std::array<uint16_t, 2> Move::origin_square_cartesian() {
+    uint16_t origin = origin_square();
+    return {static_cast<uint16_t>(origin & 7), static_cast<uint16_t>(origin >> 3)};
+}
+
+std::array<uint16_t, 2> Move::destination_square_cartesian() {
+    uint16_t destination = destination_square();
+    return {static_cast<uint16_t>(destination & 7), static_cast<uint16_t>(destination >> 3)};
+}

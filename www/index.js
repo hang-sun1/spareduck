@@ -9,7 +9,7 @@ const module = spareduck();
 console.log(
   module.then((m) => {
     console.log(m._add_two(1, 2));
-    console.log("init", toColor(m));
+    console.log('init', toColor(m));
     init(m);
   }),
 );
@@ -39,7 +39,8 @@ const init = (chess) => {
   ground.set({
     movable: {
       events: {
-        after: playOtherSide(ground, chess), //after: aiPlay(ground, chess...)
+        after: playOtherSide(ground, chess),
+        //after: aiPlay(ground, chess, 1000, false),
       },
     },
   });

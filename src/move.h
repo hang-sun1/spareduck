@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 #include <string>
 
 enum class MoveType : uint16_t {
@@ -36,6 +37,10 @@ class Move {
     std::string origin_square_algebraic();
 
     std::string destination_square_algebraic();
+
+    std::array<uint16_t, 2> origin_square_cartesian();
+
+    std::array<uint16_t, 2> destination_square_cartesian();
 
    private:
     uint16_t move_repr;

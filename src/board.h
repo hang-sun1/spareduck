@@ -37,17 +37,23 @@ class Board {
     std::array<uint64_t, 64> king_lookup;
     std::array<uint64_t, 64> knight_lookup;
     uint8_t en_passant_target;
-    uint64_t generate_rook_moves(uint8_t square);
-    uint64_t generate_bishop_moves(uint8_t square);
-    uint64_t generate_queen_moves(uint8_t square);
-    uint64_t generate_knight_moves(uint8_t square);
-    uint64_t generate_king_moves(uint8_t square);
-    uint64_t generate_pawn_moves(uint8_t square);
-    uint64_t generate_pawn_attacks(uint8_t square);
-    std::vector<Move> moves_for_piece(uint64_t piece_board, uint64_t (Board::*gen_func)(uint8_t));
+    uint64_t generate_rook_moves(uint8_t square, uint64_t board_occ) const;
+    uint64_t generate_bishop_moves(uint8_t square, uint64_t board_occ) const;
+    uint64_t generate_queen_moves(uint8_t square, uint64_t board_occ) const;
+    uint64_t generate_knight_moves(uint8_t square, uint64_t board_occ) const;
+    uint64_t generate_king_moves(uint8_t square, uint64_t board_occ) const;
+    uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ) const;
+    uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ) const;
+    std::vector<uint64_t> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ,
+        uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
     Side side_to_move;
     std::vector<Move> moves;
-    std::vector<Move> generate_moves();
+    std::vector<Move> generate_moves() const;
+    void update_board_state();
+    std::vector<Move> made_moves;
+    std::vector<std::array<uint64_t, 2>*> moved_piece_boards;
+    std::vector<std::array<uint64_t, 2>*> taken_piece_boards;
+    uint64_t xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t));
    public:
     // using enum Side;
     // initizlizes a board in the starting position

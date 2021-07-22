@@ -69,16 +69,14 @@ export function playOtherSide(ground, chess) {
 }
 
 // play against ai
-export function aiPlay(ground, chess, delay, firstMove) {
+export function aiPlay(ground, chess, delay) {
   return (from, to) => {
     chess._make_move(algebraicToIndex(from), algebraicToIndex(to));
+    toColor(chess);
     setTimeout(() => {
-      const ai_move = chess._get_engine_move();
-      let ai_from = ai_move >> 6;
-      let ai_to = ai_move & 63;
-      chess._make_move(ai_from, ai_to);
-      ai_from = indexToAlgebraic(ai_from);
-      ai_to = indexToAlgebraic(ai_to);
+      const ai_move = chess.get_engine_move();
+      let ai_from = ai_move.substring(0, 2);
+      let ai_to = ai_move.substring(2);
       ground.move(ai_from, ai_to);
       ground.set({
         turnColor: toColor(chess),

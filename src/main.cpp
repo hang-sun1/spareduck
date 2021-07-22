@@ -5,6 +5,7 @@
 #include "board.h"
 #include "evaluate.h"
 #include "move.h"
+#include "search.h"
 
 #ifndef TESTING
 #include <emscripten.h>
@@ -14,6 +15,7 @@ using namespace emscripten;
 
 Board game_board;
 Evaluate board_eval = Evaluate(game_board);
+Search search_engine = Search(game_board);
 
 extern "C" {
 #ifndef TESTING
@@ -62,9 +64,12 @@ extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-uint16_t get_engine_move() {
-    // TODO: write engine lol
-    return 0;
+std::string get_engine_move() {
+    std::cout << "reeeee" << std::endl;
+    Move move = search_engine.get_engine_move();
+    std::cout << move.origin_square_algebraic() << " " << move.destination_square_algebraic() << std::endl;
+    game_board.make_move(move);
+    return move.origin_square_algebraic() + move.destination_square_algebraic();
 }
 }
 
@@ -74,7 +79,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    return board_eval.static_evaluate_cheap();
+    return board_eval.static_evaluate_cheap(game_board);
 }
 }
 
@@ -102,5 +107,6 @@ int main() {
 EMSCRIPTEN_BINDINGS(module) {
     function("get_moves", &get_moves);
     register_vector<uint16_t>("vector<uint16_t>");
+    function("get_engine_move", &get_engine_move);
 }
 #endif

@@ -8,10 +8,12 @@
 
 class Evaluate {
    public:
+    Evaluate();
     Evaluate(Board board);
-    int move_evaluate(Move move);
+    int move_evaluate(Board board, Move move) const;
     int static_evaluate();
     int static_evaluate_cheap();
+    int static_evaluate_cheap(Board board);
 
    private:
     Board board;

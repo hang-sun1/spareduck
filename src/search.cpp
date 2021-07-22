@@ -9,20 +9,49 @@
     - http://chessprogramming.wikispaces.com/Alpha-Beta
 */
 
-int Search::search(int alpha, int beta, int depth) {
-    if (depth == 0) {
-        return quiesce(alpha, beta);
+// Search constructor
+Search::Search(Board start_board) {
+    board = start_board;
+    Evaluate evaluate;
+}
+
+Move Search::get_engine_move() {
+    std::vector<Move> moves = board.get_moves();
+    int move_count = moves.size();
+
+    int best_eval = -1000;
+    Move best_move = Move(moves[0]);
+
+    for (int i = 0; i < move_count; i++) {
+        board.make_move(moves[i]);
+        int next_eval = -search(-1000, 1000, 3);
+        board.unmake_move(moves[i]);
+
+        // update bestEval
+        if (next_eval > best_eval) {
+            best_eval = next_eval;
+            best_move = moves[i];
+        }
     }
 
-    // generate moves
-    int move_count = 10;
+    return best_move;
+}
+
+int Search::search(int alpha, int beta, int depth) {
+    if (depth == 0) {
+        return evaluate.static_evaluate_cheap(board);
+        //return quiesce(alpha, beta);
+    }
+
+    std::vector<Move> moves = board.get_moves();
+    int move_count = moves.size();
 
     int best_eval = INT_MIN;
 
     for (int i = 0; i < move_count; i++) {
-        //make move
+        board.make_move(moves[i]);
         int next_eval = -search(-alpha, -beta, depth - 1);
-        //unmakemove
+        board.unmake_move(moves[i]);
 
         // update bestEval
         if (next_eval > best_eval) {
@@ -38,7 +67,7 @@ int Search::search(int alpha, int beta, int depth) {
         }
     }
 
-    return best_eval;  // are we looking for move or evaluation
+    return best_eval;
 }
 
 int Search::quiesce(int alpha, int beta) {

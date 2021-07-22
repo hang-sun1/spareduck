@@ -68,6 +68,8 @@ short pst[6][8][8] = {
 static const short piece[6] = {100, 300, 300, 500, 900, 30000};
 
 // Evaluation constructor
+Evaluate::Evaluate() {}
+
 Evaluate::Evaluate(Board start_board) {
     board = start_board;
 }
@@ -99,6 +101,21 @@ int Evaluate::static_evaluate_cheap() {
     return value * (board.get_side_to_move() ? -1 : 1);
 }
 
+// A cheap static evaluation that just uses piece counts
+int Evaluate::static_evaluate_cheap(Board board) {
+    int value = 0;
+
+    value += piece_values(board.get_pawns(), piece[0]);
+    value += piece_values(board.get_knights(), piece[1]);
+    value += piece_values(board.get_bishops(), piece[2]);
+    value += piece_values(board.get_rooks(), piece[3]);
+    value += piece_values(board.get_queens(), piece[4]);
+
+    // whats the best way to generate both side's moves?
+
+    return value * (board.get_side_to_move() ? -1 : 1);
+}
+
 // More expensive evaluation that calculates the score of the position based on the pst
 int Evaluate::static_evaluate() {
     int value = 0;
@@ -109,10 +126,17 @@ int Evaluate::static_evaluate() {
 }
 
 // Updates the evaluation based on the current move
-int Evaluate::move_evaluate(Move move) {
+int Evaluate::move_evaluate(Board board, Move move) const {
     std::array<uint16_t, 2> origin = move.origin_square_cartesian();
-    std::array<uint16_t, 2> destination = move.destination_square_cartesian();
-    return -1;
+    std::array<uint16_t, 2> dest = move.destination_square_cartesian();
+    int value = -1;
+    //int value = pst[][dest[0]][dest[1]] - pst[][origin[0]][origin[1]];
+
+    //if (capture)
+    //  value += pst[][dest[0]][dest[1]];
+
+    // TODO: castling and promotion and other heuristics
+    return value;
 }
 
 int Evaluate::piece_values(std::array<uint64_t, 2> piece_boards, int value) {

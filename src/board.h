@@ -19,6 +19,7 @@ enum class Side : size_t {
 class Board {
    private:
     std::shared_ptr<std::stack<Board>> history;
+    std::array<std::array<uint64_t, 64>, 12> hash_helper;
     std::array<uint64_t, 2> knights;
     std::array<uint64_t, 2> knight_defends;
     std::array<uint64_t, 2> bishops;
@@ -74,6 +75,7 @@ class Board {
     static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
+    static std::array<std::array<uint64_t, 64>, 12> initialize_hash();
     // move and side functions
     void make_move(Move move);
     void unmake_move(Move move);
@@ -88,6 +90,8 @@ class Board {
     std::array<uint64_t, 2> get_queens() const;
     std::array<uint64_t, 2> get_kings() const;
     std::array<uint64_t, 2> get_pawns() const;
+
+    uint64_t hash() const;
     
     bool in_check();
 

@@ -25,16 +25,13 @@ export function toDests(chess) {
   const dests = new Map();
   let moves = [];
   let moves_vect = chess.get_moves();
-  for (let i = 0; i < moves_vect.size(); i++) {
-    let move = moves_vect.get(i);
-    let from = move >> 6;
-    let to = move & 63;
-    from = indexToAlgebraic(from);
-    to = indexToAlgebraic(to);
+  for (let i = 0; i < moves_vect.size(); i+=2) {
+    let from = moves_vect.get(i);
+    let to = moves_vect.get(i+1);
     moves.push(from);
     moves.push(to);
-    // console.log(from, to);
   }
+
   for (let i = 0; i < moves.length; i += 2) {
     if (dests.has(moves[i])) {
       dests.set(moves[i], dests.get(moves[i]).concat(moves[i + 1]));
@@ -42,7 +39,6 @@ export function toDests(chess) {
       dests.set(moves[i], [moves[i + 1]]);
     }
   }
-
   return dests;
 }
 
@@ -77,6 +73,7 @@ export function aiPlay(ground, chess, delay) {
       const ai_move = chess.get_engine_move();
       let ai_from = ai_move.substring(0, 2);
       let ai_to = ai_move.substring(2);
+      console.log({ to, from, ai_to, ai_from });
       ground.move(ai_from, ai_to);
       ground.set({
         turnColor: toColor(chess),

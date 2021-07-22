@@ -48,10 +48,9 @@ extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-std::vector<uint16_t> get_moves() {
-    std::cout << "moves:" << std::endl;
-    std::vector<uint16_t> moves = game_board.get_moves_as_u16();
-    std::cout << moves.size() << std::endl;
+std::vector<std::string> get_moves() {
+    std::vector<std::string> moves = game_board.get_moves_algebraic();
+    std::cout << "moves:" << moves.size() << std::endl;
     for (int i = 0; i < moves.size(); ++i)
         std::cout << moves.at(i) << ' ';
     std::cout << "end" << std::endl;
@@ -65,7 +64,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 std::string get_engine_move() {
-    std::cout << "reeeee" << std::endl;
+    std::cout << "reeeee  " << game_board.get_side_to_move() << std::endl;
     Move move = search_engine.get_engine_move();
     std::cout << move.origin_square_algebraic() << " " << move.destination_square_algebraic() << std::endl;
     game_board.make_move(move);
@@ -105,8 +104,10 @@ int main() {
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {
+    //function("get_moves", &get_moves);
+    //register_vector<uint16_t>("vector<uint16_t>");
     function("get_moves", &get_moves);
-    register_vector<uint16_t>("vector<uint16_t>");
+    register_vector<std::string>("vector<std::string>");
     function("get_engine_move", &get_engine_move);
 }
 #endif

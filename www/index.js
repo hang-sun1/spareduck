@@ -45,5 +45,18 @@ const init = (chess) => {
     },
   });
 
-  
+  setInterval(() => {
+    const evaluation = chess._get_engine_evaluation();
+    console.log(evaluation);
+    let eval_bar = document.getElementById('eval-bar');
+    const eval_percent = evaluation / 100 + 50;
+    eval_bar.setAttribute(
+      'style',
+      `height: 16px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${Math.floor(
+        eval_percent,
+      )}%, black ${Math.floor(
+        eval_percent,
+      )}%, black 100%);border: 2px solid black;`,
+    );
+  }, 2000);
 };

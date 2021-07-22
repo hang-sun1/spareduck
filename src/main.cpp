@@ -13,7 +13,7 @@ using namespace emscripten;
 #endif
 
 Board game_board;
-//Evaluate board_eval(game_board);
+Evaluate board_eval = Evaluate(game_board);
 
 extern "C" {
 #ifndef TESTING
@@ -74,7 +74,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    //return board_eval.static_evaluate_cheap();
+    return board_eval.static_evaluate_cheap();
 }
 }
 

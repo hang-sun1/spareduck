@@ -8,6 +8,8 @@
 #include <vector>
 #include <memory>
 #include <stack>
+#include <random>
+#include <cmath>
 
 #include "move.h"
 
@@ -52,6 +54,7 @@ Board::Board() {
     this->made_moves = empty;
     this->moved_piece_boards = std::vector<std::array<uint64_t, 2>*>();
     this->taken_piece_boards = std::vector<std::array<uint64_t, 2>*>();
+    this->hash_helper = Board::initialize_hash();
     this->moves = this->generate_moves();
     // there is no en passant target yet, so just set it to some square off the board
     this->en_passant_target = 65;
@@ -426,6 +429,21 @@ std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
     return lookup_table;
 }
 
+std::array<std::array<uint64_t, 64>, 12> Board::initialize_hash() {
+    std::random_device rd;
+    std::mt19937_64 e2(rd());
+
+    std::uniform_int_distribution<uint64_t> dist(std::llround(std::pow(2,61)), std::llround(std::pow(2,62)));
+
+    std::array<std::array<uint64_t, 64>, 12> table;
+    for (int i = 0; i < 64; ++i) {
+        for (int j = 0; j < j; ++i) {
+            table[j][i] = dist(e2);
+        }
+    } 
+    return table;
+}
+
 std::vector<Move> Board::generate_moves() const {
     // figure out which side is to move
     size_t side = static_cast<size_t>(side_to_move);
@@ -680,6 +698,55 @@ std::array<uint64_t, 2> Board::get_kings() const {
 
 std::array<uint64_t, 2> Board::get_pawns() const {
     return pawns;
+}
+
+uint64_t Board::hash() const {
+    uint64_t hash = 0;
+    for (int i = 0; i < 64; ++i) {
+        auto wp = pawns[0];
+        auto bp = pawns[1];
+        auto wq = queens[0];
+        auto bq = queens[1];
+        auto wr = rooks[0];
+        auto br = rooks[1];
+        auto wb = bishops[0];
+        auto bb = bishops[1];
+        auto wk = kings[0];
+        auto bk = kings[1];
+        auto wn = knights[0];
+        auto bn = knights[1];
+        int j = 0;
+        uint64_t piece_board = 1ULL << i;
+        if ((wp & piece_board)) {
+            j = 1;
+        } else if ((bp & piece_board)) {
+            j = 2;
+        } else if ((wq & piece_board)) {
+            j = 3;
+        } else if ((bq & piece_board)) {
+            j = 4;
+        } else if ((wr & piece_board)) {
+            j = 5;
+        } else if ((br & piece_board)) {
+            j = 6;
+        } else if ((wb & piece_board)) {
+            j = 7;
+        } else if ((bb & piece_board)) {
+            j = 8;
+        } else if ((wk & piece_board)) {
+            j = 9;
+        } else if ((bk & piece_board)) {
+            j = 10;
+        } else if ((wn & piece_board)) {
+            j = 11;
+        } else if ((bn & piece_board)) {
+            j = 12;
+        }
+        if (j) {
+            hash = hash ^ hash_helper[j][i];
+        }
+    }
+    return hash;
 }
 
 bool Board::in_check() {

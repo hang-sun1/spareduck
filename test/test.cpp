@@ -30,13 +30,35 @@ TEST_CASE("proper moves are generated", "[board]") {
     }
     SECTION("correctly makes a move") {
         Board b;
+        auto starting_hash = b.hash();
+        REQUIRE(b.side_to_move == Side::WHITE);
         auto moves = b.get_moves();
         auto first_move = moves[0];
         auto knight_board = b.knights[0];
         b.make_move(first_move);
+        REQUIRE(b.side_to_move == Side::BLACK);
+        auto first_hash = b.hash();
+        REQUIRE(starting_hash != first_hash);
         moves = b.get_moves();
         REQUIRE(b.get_moves().size() == 20);
         b.make_move(b.get_moves()[0]);
+        REQUIRE(b.get_moves().size() == 19);
+        b.unmake_move(first_move);
+        REQUIRE(b.side_to_move == Side::BLACK);
         REQUIRE(b.get_moves().size() == 20);
+    }
+
+    SECTION("correctly unmakes a move") {
+        Board b;
+        auto starting_hash = b.hash();
+        b.make_move(b.get_moves()[0]);
+        REQUIRE(b.side_to_move == Side::BLACK);
+        
+        auto second_hash = b.hash();
+        REQUIRE(second_hash != starting_hash);
+        
+        b.unmake_move(b.get_moves()[0]);
+        REQUIRE(b.hash() == starting_hash);
+        REQUIRE(b.side_to_move == Side::WHITE);
     }
 }

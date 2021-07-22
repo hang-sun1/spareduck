@@ -437,8 +437,9 @@ std::array<std::array<uint64_t, 64>, 12> Board::initialize_hash() {
 
     std::array<std::array<uint64_t, 64>, 12> table;
     for (int i = 0; i < 64; ++i) {
-        for (int j = 0; j < j; ++i) {
-            table[j][i] = dist(e2);
+        for (int j = 0; j < 12; ++j) {
+            uint64_t random_num = dist(e2);
+            table[j][i] = random_num;
         }
     } 
     return table;

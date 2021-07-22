@@ -1,5 +1,7 @@
 #include "evaluate.h"
 
+#include <iostream>
+
 /* 
     Move evaluation engine.
     Powered by gokul.
@@ -71,7 +73,7 @@ Evaluate::Evaluate(Board start_board) {
 }
 
 // Adds piece values to pst
-void initialize_pst() {
+void Evaluate::initialize_pst() {
     for (int i = 0; i < 6; i++) {
         for (int j = 0; j < 8; j++) {
             for (int k = 0; k < 8; k++) {
@@ -101,13 +103,7 @@ int Evaluate::static_evaluate_cheap() {
 int Evaluate::static_evaluate() {
     int value = 0;
 
-    value += piece_values(board.get_pawns(), piece[0]);
-    value += piece_values(board.get_knights(), piece[1]);
-    value += piece_values(board.get_bishops(), piece[2]);
-    value += piece_values(board.get_rooks(), piece[3]);
-    value += piece_values(board.get_queens(), piece[4]);
-
-    // whats the best way to generate both side's moves?
+    // TODO: get all cartesian positions of pieces on the board;
 
     return value * (board.get_side_to_move() ? -1 : 1);
 }
@@ -119,6 +115,6 @@ int Evaluate::move_evaluate(Move move) {
     return -1;
 }
 
-int piece_values(std::array<uint64_t, 2> piece_boards, int value) {
+int Evaluate::piece_values(std::array<uint64_t, 2> piece_boards, int value) {
     return value * (__builtin_popcountll(piece_boards[0]) - __builtin_popcountll(piece_boards[1]));
 }

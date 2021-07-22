@@ -6,14 +6,6 @@
 #include "board.h"
 #include "move.h"
 
-/*
-const int defaultValues[6][10][10] = {
-    {
-        {...}
-    },
-}
-*/
-
 class Evaluate {
    public:
     Evaluate(Board board);

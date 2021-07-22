@@ -6,12 +6,15 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <memory>
+#include <stack>
 
 #include "move.h"
 
 using std::uint64_t;
 
 Board::Board() {
+    this->history = std::make_shared<std::stack<Board>>();
     this->all_per_side[0] = 0xffff;
     this->all_per_side[1] = 0xffff000000000000;
     this->pawns[0] = 0xff00;
@@ -531,6 +534,7 @@ std::vector<Move> Board::generate_moves() const {
 
 
 void Board::make_move(Move move) {
+    this->history->push(*this);
     size_t current_move = static_cast<size_t>(side_to_move);
     size_t other_move = 1 - current_move;
 
@@ -592,10 +596,31 @@ void Board::make_move(Move move) {
     // generate the moves for the next side (which also updates attack and defenes maps for
     // the new side to move)
     this->moves = generate_moves();
+
 }
 
 void Board::unmake_move(Move move) {
-
+    auto pop = this->history->top();
+    this->history->pop();
+    this->all_per_side = pop.all_per_side;
+    this->pawns = pop.pawns;
+    this->rooks = pop.rooks;
+    this->knights = pop.knights;
+    this->bishops = pop.bishops;
+    this->queens = pop.queens;
+    this->kings = pop.kings;
+    this->side_to_move = pop.side_to_move;
+    this->pawn_defends = pop.pawn_defends;
+    this->rook_defends = pop.rook_defends;
+    this->knight_defends = pop.knight_defends;
+    this->bishop_defends = pop.bishop_defends;
+    this->queen_defends = pop.queen_defends;
+    this->king_defends = pop.king_defends;
+    this->defense_maps = pop.defense_maps;
+    this->all_per_side = pop.all_per_side;
+    this->attack_maps = pop.attack_maps;
+    this->moves = pop.moves;
+    this->en_passant_target = pop.en_passant_target;
 }
 
 // uint64_t Board::xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t)) {

@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <stack>
 
 #include "move.h"
 
@@ -17,6 +18,7 @@ enum class Side : size_t {
 
 class Board {
    private:
+    std::shared_ptr<std::stack<Board>> history;
     std::array<uint64_t, 2> knights;
     std::array<uint64_t, 2> knight_defends;
     std::array<uint64_t, 2> bishops;
@@ -94,4 +96,5 @@ class Board {
             return 1;
         }
     }
+
 };

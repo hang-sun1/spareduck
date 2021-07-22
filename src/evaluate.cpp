@@ -120,5 +120,5 @@ int Evaluate::move_evaluate(Move move) {
 }
 
 int piece_values(std::array<uint64_t, 2> piece_boards, int value) {
-    return value * (__builtin_popcount(piece_boards[0]) - __builtin_popcount(piece_boards[1]));
+    return value * (__builtin_popcountll(piece_boards[0]) - __builtin_popcountll(piece_boards[1]));
 }

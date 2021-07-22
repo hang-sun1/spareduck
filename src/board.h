@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <utility>
 
 #include "move.h"
 
@@ -17,11 +18,17 @@ enum class Side : size_t {
 class Board {
    private:
     std::array<uint64_t, 2> knights;
+    std::array<uint64_t, 2> knight_defends;
     std::array<uint64_t, 2> bishops;
+    std::array<uint64_t, 2> bishop_defends;
     std::array<uint64_t, 2> rooks;
+    std::array<uint64_t, 2> rook_defends;
     std::array<uint64_t, 2> queens;
+    std::array<uint64_t, 2> queen_defends;
     std::array<uint64_t, 2> kings;
+    std::array<uint64_t, 2> king_defends;
     std::array<uint64_t, 2> pawns;
+    std::array<uint64_t, 2> pawn_defends;
     std::array<uint64_t, 2> all_per_side;
     // a map of the squares which each side attack (subset of defense)
     std::array<uint64_t, 2> attack_maps;
@@ -44,16 +51,16 @@ class Board {
     uint64_t generate_king_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ) const;
-    std::vector<uint64_t> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ,
+    std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ,
         uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
     Side side_to_move;
     std::vector<Move> moves;
     std::vector<Move> generate_moves() const;
-    void update_board_state();
+    void update_board_state(Move move);
     std::vector<Move> made_moves;
     std::vector<std::array<uint64_t, 2>*> moved_piece_boards;
     std::vector<std::array<uint64_t, 2>*> taken_piece_boards;
-    uint64_t xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t));
+    uint64_t xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t)) const;
    public:
     // using enum Side;
     // initizlizes a board in the starting position
@@ -73,12 +80,12 @@ class Board {
     std::vector<uint16_t> get_moves_as_u16();
     std::vector<std::string> get_moves_algebraic();
     // getters for the current position
-    std::array<uint64_t, 2> get_knights();
-    std::array<uint64_t, 2> get_bishops();
-    std::array<uint64_t, 2> get_rooks();
-    std::array<uint64_t, 2> get_queens();
-    std::array<uint64_t, 2> get_kings();
-    std::array<uint64_t, 2> get_pawns();
+    std::array<uint64_t, 2> get_knights() const;
+    std::array<uint64_t, 2> get_bishops() const;
+    std::array<uint64_t, 2> get_rooks() const;
+    std::array<uint64_t, 2> get_queens() const;
+    std::array<uint64_t, 2> get_kings() const;
+    std::array<uint64_t, 2> get_pawns() const;
     
     bool in_check();
 

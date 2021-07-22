@@ -1,5 +1,6 @@
-#include <climits>
 #include "search.h"
+
+#include <climits>
 
 /*
     A simple implementation of fail-soft negamax alpha-beta search.
@@ -41,10 +42,10 @@ int Search::search(int alpha, int beta, int depth) {
 }
 
 int Search::quiesce(int alpha, int beta) {
-    //check if king in check
+    // if (board.in_check()){...}
     //if true run search w depth 2??
 
-    int stand_pat;  // = evaluate();
+    int stand_pat = 0;  // = evaluate();
     if (stand_pat > beta) {
         return stand_pat;
     }

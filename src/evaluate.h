@@ -1,7 +1,10 @@
-#ifndef EVAL_H
-#define EVAL_H
+#pragma once
+
+#include <array>
+#include <cstdint>
 
 #include "board.h"
+#include "move.h"
 
 /*
 const int defaultValues[6][10][10] = {
@@ -12,11 +15,14 @@ const int defaultValues[6][10][10] = {
 */
 
 class Evaluate {
-   private:
-    int piece_values(std::array<uint64_t, 2> piece_boards, int value);
-
    public:
-    int evaluate(Board board);
-};
+    Evaluate(Board board);
+    int move_evaluate(Move move);
+    int static_evaluate();
+    int static_evaluate_cheap();
 
-#endif
+   private:
+    Board board;
+    void initialize_pst();
+    int piece_values(std::array<uint64_t, 2> piece_boards, int value);
+};

@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "board.h"
+#include "evaluate.h"
 #include "move.h"
 
 #ifndef TESTING
@@ -12,6 +13,7 @@ using namespace emscripten;
 #endif
 
 Board game_board;
+//Evaluate board_eval(game_board);
 
 extern "C" {
 #ifndef TESTING
@@ -55,13 +57,33 @@ std::vector<uint16_t> get_moves() {
 }
 }
 
+// Returns engine's best move
+extern "C" {
+#ifndef TESTING
+EMSCRIPTEN_KEEPALIVE
+#endif
+uint16_t get_engine_move() {
+    // TODO: write engine lol
+    return 0;
+}
+}
+
+// Returns engine's evaluation for the position
+extern "C" {
+#ifndef TESTING
+EMSCRIPTEN_KEEPALIVE
+#endif
+double get_engine_evaluation() {
+    //return board_eval.static_evaluate_cheap();
+}
+}
+
 // Returns true if the king is in check.
 extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
 bool in_check() {
-    // TODO: write in check method in Board
     return game_board.in_check();
 }
 }
@@ -75,7 +97,6 @@ int main() {
     std::cout << "hello" << std::endl;
 }
 }
-
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {

@@ -3,35 +3,7 @@
     https://github.com/ornicar/chessground-examples/blob/master/src/util.ts
 */
 
-// Returns a map of moves square -> square
-export function toDests(chess) {
-  console.log('getting dests for', toColor(chess));
-  const dests = new Map();
-  let moves = []
-  let moves_vect = chess.get_moves();
-  for (let i = 0; i < moves_vect.size(); i++) {
-    let move = moves_vect.get(i);
-    let from = move >> 6;
-    let to = move & 63;
-    from = indexToAlgebraic(from);
-    to = indexToAlgebraic(to);
-    moves.push(from);
-    moves.push(to);
-    // console.log(from, to);
-
-  }
-  for (let i = 0; i < moves.length; i += 2) {
-    // console.log(moves[i]);
-    if (dests.has(moves[i])) {
-      dests.set(moves[i], dests.get(moves[i]).concat(moves[i + 1]));
-    } else {
-      dests.set(moves[i], [moves[i + 1]]);
-    }
-  }
-
-  return dests;
-}
-
+// Move conversion functions
 function indexToAlgebraic(n) {
   let file = n & 7;
   let rank = n >> 3;
@@ -47,6 +19,33 @@ function algebraicToIndex(square) {
   return 8 * rank + file;
 }
 
+// Returns a map of moves square -> squares
+export function toDests(chess) {
+  console.log('getting dests for', toColor(chess));
+  const dests = new Map();
+  let moves = [];
+  let moves_vect = chess.get_moves();
+  for (let i = 0; i < moves_vect.size(); i++) {
+    let move = moves_vect.get(i);
+    let from = move >> 6;
+    let to = move & 63;
+    from = indexToAlgebraic(from);
+    to = indexToAlgebraic(to);
+    moves.push(from);
+    moves.push(to);
+    // console.log(from, to);
+  }
+  for (let i = 0; i < moves.length; i += 2) {
+    if (dests.has(moves[i])) {
+      dests.set(moves[i], dests.get(moves[i]).concat(moves[i + 1]));
+    } else {
+      dests.set(moves[i], [moves[i + 1]]);
+    }
+  }
+
+  return dests;
+}
+
 // Maps engine side representation to strings.
 export function toColor(chess) {
   return chess._get_side_to_move() ? 'black' : 'white';
@@ -56,7 +55,7 @@ export function toColor(chess) {
 export function playOtherSide(ground, chess) {
   return (from, to) => {
     from = algebraicToIndex(from);
-    to = algebraicToIndex(to)
+    to = algebraicToIndex(to);
     chess._make_move(from, to);
     ground.set({
       turnColor: toColor(chess),
@@ -71,15 +70,16 @@ export function playOtherSide(ground, chess) {
 
 // play against ai
 export function aiPlay(ground, chess, delay, firstMove) {
-  return (orig, dest) => {
-    chess._make_move({ from: orig, to: dest });
+  return (from, to) => {
+    chess._make_move(algebraicToIndex(from), algebraicToIndex(to));
     setTimeout(() => {
-      const moves = chess._generate_moves();
-      const move = firstMove
-        ? moves[0]
-        : moves[Math.floor(Math.random() * moves.length)];
-      chess._make_move(move.san);
-      ground.move(move.from, move.to);
+      const ai_move = chess._get_engine_move();
+      let ai_from = ai_move >> 6;
+      let ai_to = ai_move & 63;
+      chess._make_move(ai_from, ai_to);
+      ai_from = indexToAlgebraic(ai_from);
+      ai_to = indexToAlgebraic(ai_to);
+      ground.move(ai_from, ai_to);
       ground.set({
         turnColor: toColor(chess),
         movable: {

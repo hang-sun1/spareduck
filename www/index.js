@@ -40,14 +40,15 @@ const init = (chess) => {
     movable: {
       events: {
         //after: playOtherSide(ground, chess),
-        after: aiPlay(ground, chess, 1000),
+        after: aiPlay(ground, chess, 500),
       },
     },
   });
 
   setInterval(() => {
-    const evaluation = chess._get_engine_evaluation();
+    const evaluation = chess._get_engine_evaluation(); // To work with negamax this eval function swaps sign based on who's moving, this causes a bug for the frontend
     let eval_bar = document.getElementById('eval-bar');
+    console.log("eval: ", evaluation);
     eval_bar.innderHTML = evaluation;
     const eval_percent = evaluation / 50 + 50;
     eval_bar.setAttribute(

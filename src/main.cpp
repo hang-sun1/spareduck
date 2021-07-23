@@ -64,9 +64,8 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 std::string get_engine_move() {
-    std::cout << "reeeee  " << game_board.get_side_to_move() << std::endl;
-    Move move = search_engine.get_engine_move();
-    std::cout << move.origin_square_algebraic() << " " << move.destination_square_algebraic() << std::endl;
+    Search test = Search(game_board);
+    Move move = test.get_engine_move();
     game_board.make_move(move);
     return move.origin_square_algebraic() + move.destination_square_algebraic();
 }
@@ -104,8 +103,6 @@ int main() {
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {
-    //function("get_moves", &get_moves);
-    //register_vector<uint16_t>("vector<uint16_t>");
     function("get_moves", &get_moves);
     register_vector<std::string>("vector<std::string>");
     function("get_engine_move", &get_engine_move);

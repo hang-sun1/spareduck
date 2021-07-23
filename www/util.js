@@ -68,7 +68,7 @@ export function playOtherSide(ground, chess) {
 export function aiPlay(ground, chess, delay) {
   return (from, to) => {
     chess._make_move(algebraicToIndex(from), algebraicToIndex(to));
-    toColor(chess);
+    console.log("ai making move for", toColor(chess));
     setTimeout(() => {
       const ai_move = chess.get_engine_move();
       let ai_from = ai_move.substring(0, 2);

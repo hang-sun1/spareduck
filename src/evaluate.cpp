@@ -95,6 +95,7 @@ int Evaluate::static_evaluate_cheap() {
     value += piece_values(board.get_bishops(), piece[2]);
     value += piece_values(board.get_rooks(), piece[3]);
     value += piece_values(board.get_queens(), piece[4]);
+    value += piece_values(board.get_kings(), piece[4]);
 
     // whats the best way to generate both side's moves?
 
@@ -110,6 +111,7 @@ int Evaluate::static_evaluate_cheap(Board board) {
     value += piece_values(board.get_bishops(), piece[2]);
     value += piece_values(board.get_rooks(), piece[3]);
     value += piece_values(board.get_queens(), piece[4]);
+    value += piece_values(board.get_kings(), piece[4]);
 
     // whats the best way to generate both side's moves?
 

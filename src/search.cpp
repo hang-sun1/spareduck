@@ -1,6 +1,6 @@
 #include "search.h"
 
-#include <climits>
+#include <iostream>
 
 /*
     A simple implementation of fail-soft negamax alpha-beta search.
@@ -10,7 +10,7 @@
 */
 
 // Search constructor
-Search::Search(Board start_board) {
+Search::Search(Board& start_board) {
     board = start_board;
     Evaluate evaluate;
 }
@@ -18,8 +18,8 @@ Search::Search(Board start_board) {
 Move Search::get_engine_move() {
     std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
-
-    int best_eval = -1000;
+    std::cout << "get_engine_move " << board.get_side_to_move() << std::endl;
+    int best_eval = -10000;
     Move best_move = Move(moves[0]);
 
     for (int i = 0; i < move_count; i++) {
@@ -56,17 +56,16 @@ int Search::search(int alpha, int beta, int depth) {
         // update bestEval
         if (next_eval > best_eval) {
             best_eval = next_eval;
+            // tighten window
+            if (best_eval > alpha) {
+                alpha = best_eval;
+            }
         }
         // return position if better than current max
         if (best_eval >= beta) {
             break;
         }
-        // tighten window
-        if (best_eval > alpha) {
-            alpha = best_eval;
-        }
     }
-
     return best_eval;
 }
 
@@ -74,21 +73,27 @@ int Search::quiesce(int alpha, int beta) {
     // if (board.in_check()){...}
     //if true run search w depth 2??
 
-    int stand_pat = 0;  // = evaluate();
+    int stand_pat = evaluate.static_evaluate_cheap(board);
     if (stand_pat > beta) {
         return stand_pat;
     }
-    if (alpha < stand_pat) {
+    if (stand_pat > alpha) {
         alpha = stand_pat;
     }
 
-    //generate captures
-    int move_count = 10;
+    //generate all moves
+    std::vector<Move> moves = board.get_moves();
+    int move_count = moves.size();
 
     for (int i = 0; i < move_count; i++) {
-        //makemove
+        /* Skip if move isn't capture
+        if (!move.piece_taken()) {
+           pass;
+        }*/
+
+        board.make_move(moves[i]);
         int next_eval = -quiesce(-beta, -alpha);
-        //unmakemove
+        board.unmake_move(moves[i]);
 
         if (next_eval >= beta) {
             return next_eval;

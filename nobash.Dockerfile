@@ -13,7 +13,7 @@ COPY build.sh ./
 COPY src ./src
 RUN rm -rf build/ && mkdir build
 WORKDIR  /usr/src/spareduck/build
-RUN cmake -D CMAKE_C_COMPILER=emcc -D CMAKE_CXX_COMPILER=em++ .. && make
+RUN cmake -D CMAKE_C_COMPILER=emcc -D CMAKE_CXX_COMPILER=em++ .. && make -j8
 WORKDIR /usr/src/spareduck
 COPY test ./test
 COPY test.sh ./

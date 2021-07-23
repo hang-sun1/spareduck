@@ -1,11 +1,11 @@
 #include "table_entry.h"
 
-TableEntry::TableEntry(uint64_t hash_, Move move_, NodeType type_, uint8_t depth_) {
-    hash = hash_;
-    move = move_;
-    type = type_;
-    depth = depth_;
-};
+TableEntry::TableEntry(uint64_t hash, Move move, NodeType type, uint8_t depth) {
+    this->hash = hash;
+    this->move = move;
+    this->type = type;
+    this->depth = depth;
+}
 
 uint64_t TableEntry::get_hash() const {
     return hash;

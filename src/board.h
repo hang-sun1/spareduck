@@ -67,6 +67,7 @@ class Board {
     bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board,
         uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
    public:
+    uint64_t nodes_evaluated = 0;
     // using enum Side;
     // initizlizes a board in the starting position
     Board();

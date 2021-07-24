@@ -471,7 +471,6 @@ std::vector<Move> Board::generate_moves() const {
     
     uint64_t blocking_squares = 0xffffffffffffffffUL;
     if (in_check()) {
-        std::cout << "HIIII" << std::endl;
         int check_counter = 0;
         if ((queen_defends[other_side] & kings[side])) {
             check_counter += 1;
@@ -482,7 +481,6 @@ std::vector<Move> Board::generate_moves() const {
             piece_giving_check = 2;
         }
         if ((bishop_defends[other_side] & kings[side])) {
-            std::cout << "HIIII" << std::endl;
             check_counter += 1;
             piece_giving_check = 0;
         }
@@ -533,7 +531,12 @@ std::vector<Move> Board::generate_moves() const {
                     continue;
                 }
             }
-            if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
+            if (dest == en_passant_target) {
+                Move en_passant = Move(from, dest, MoveType::EN_PASSANT);
+                vec_of_moves.push_back(en_passant);
+            }
+            // has the pawn reached the back rank?
+            else if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
                 Move promote_to_bishop = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP);
                 Move promote_to_knight = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_KNIGHT);
                 Move promote_to_queen = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_QUEEN);
@@ -622,7 +625,6 @@ std::vector<Move> Board::generate_moves() const {
     
     for (auto &m: king_maps) {
         m.first &= ~all_per_side[side];
-        std::cout << defense_maps[other_side] << std::endl;
         m.first &= ~defense_maps[other_side];
         auto map = m.first;
         auto from = m.second;
@@ -655,25 +657,38 @@ void Board::make_move(Move move) {
     this->history->push(*this);
     size_t current_move = static_cast<size_t>(side_to_move);
     size_t other_move = 1 - current_move;
+    if (move.type() == MoveType::DOUBLE_PAWN_PUSH) {
+        // the current side to move is black
+        if (current_move) {
+            en_passant_target = move.origin_square() - 8;
+        } else {
+            en_passant_target = move.origin_square() + 8;
+        }
+    } else if (move.type() == MoveType::EN_PASSANT) {
+        pawns[other_move] &= ~(1 << en_passant_target);
+        en_passant_target = 65; 
+    } else {
+        en_passant_target = 65;
+    }
 
     auto from = move.origin_square();
     auto to = move.destination_square();
 
     std::array<std::array<uint64_t, 2>*, 6> arr = { &bishops, &knights, &rooks, &queens, &kings, &pawns };
-    std::vector<int> moved;
-    std::vector<int> captured; 
-    bool capture = false;
+    // std::vector<int> moved;
+    // std::vector<int> captured; 
+    // bool capture = false;
     for (int i = 0; i < 6; ++i) {
         auto piece_arr_ptr = arr[i];
         if (((*piece_arr_ptr)[current_move] & (1ULL << from))) {
             (*piece_arr_ptr)[current_move] &= ~(1ULL << from);
             (*piece_arr_ptr)[current_move] |= 1ULL << to;
-            moved.push_back(i);
+            // moved.push_back(i);
         }
         if (((*piece_arr_ptr)[other_move] & (1ULL << to))) {
             (*piece_arr_ptr)[other_move] &= ~(1ULL << to);
-            captured.push_back(i);
-            capture = true;
+            // captured.push_back(i);
+            // capture = true;
         }
     } 
     
@@ -694,7 +709,7 @@ void Board::make_move(Move move) {
         &Board::generate_pawn_attacks };
 
 
-    for (auto &i: captured) {
+    for (size_t i = 0; i < 6; ++i) {
         auto maps = this->defense_maps_for_piece((*arr[i])[other_move], all_per_side[current_move] | all_per_side[other_move],
             gen_funcs[i]);
         (*defense_maps[i])[other_move] = 0;
@@ -703,7 +718,7 @@ void Board::make_move(Move move) {
         }
     }
 
-    for (auto &i: moved) {
+    for (size_t i = 0; i < 6; ++i) {
         auto maps = this->defense_maps_for_piece((*arr[i])[current_move], all_per_side[current_move] | all_per_side[other_move],
             gen_funcs[i]);
         (*defense_maps[i])[other_move] = 0;

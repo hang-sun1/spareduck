@@ -64,6 +64,8 @@ class Board {
     std::vector<std::array<uint64_t, 2>*> moved_piece_boards;
     std::vector<std::array<uint64_t, 2>*> taken_piece_boards;
     uint64_t xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t)) const;
+    bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board,
+        uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
    public:
     // using enum Side;
     // initizlizes a board in the starting position
@@ -93,7 +95,7 @@ class Board {
 
     uint64_t hash() const;
     
-    bool in_check();
+    bool in_check() const;
 
     unsigned long long perft(unsigned int depth) {
         if (depth == 0) {

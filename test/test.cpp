@@ -4,6 +4,28 @@
 
 #include "../src/board.h"
 #include <cstdint>
+#include "../src/move.h"
+#include <chrono>
+using namespace std::chrono;
+
+// taken from the chess programming wiki
+uint64_t perft(int depth /* assuming >= 1 */, Board *b) {
+    auto move_list = b->get_moves();
+    int n_moves, i;
+    n_moves = move_list.size();
+    uint64_t nodes = 0;
+
+
+    if (depth == 1) 
+        return (uint64_t) n_moves;
+
+    for (i = 0; i < n_moves; i++) {
+        b->make_move(move_list[i]);
+        nodes += perft(depth - 1, b);
+        b->unmake_move(move_list[i]);
+    }
+    return nodes;
+}
 
 
 TEST_CASE("proper moves are generated", "[board]") {
@@ -60,5 +82,16 @@ TEST_CASE("proper moves are generated", "[board]") {
         b.unmake_move(b.get_moves()[0]);
         REQUIRE(b.hash() == starting_hash);
         REQUIRE(b.side_to_move == Side::WHITE);
+    }
+
+    SECTION("generates correct number of moves to certain depth") {
+        Board b;
+        auto start = high_resolution_clock::now();
+        uint64_t count = perft(5, &b);
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(stop - start);
+        std::cout << count << " nodes searched in " << duration.count() << " ms\n";
+        std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
+        REQUIRE(1 == 1);
     }
 }

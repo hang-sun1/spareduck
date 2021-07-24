@@ -50,3 +50,7 @@ std::array<uint16_t, 2> Move::destination_square_cartesian() {
     uint16_t destination = destination_square();
     return {static_cast<uint16_t>(destination & 7), static_cast<uint16_t>(destination >> 3)};
 }
+
+bool Move::is_capture() {
+    return static_cast<uint16_t>(move_repr) == 2 || static_cast<uint16_t>(move_repr) > 8;
+}

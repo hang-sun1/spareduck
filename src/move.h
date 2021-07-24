@@ -43,6 +43,8 @@ class Move {
 
     std::array<uint16_t, 2> destination_square_cartesian();
 
+    bool is_capture();
+
    private:
     uint16_t move_repr;
 };

@@ -18,6 +18,7 @@ enum class MoveType : uint16_t {
     CAPTURE_AND_PROMOTE_TO_QUEEN = 10,
     CAPTURE_AND_PROMOTE_TO_ROOK = 11,
     CAPTURE_AND_PROMOTE_TO_BISHOP = 12,
+    EN_PASSANT = 13,
 };
 
 class Move {

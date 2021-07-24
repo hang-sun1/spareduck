@@ -51,8 +51,8 @@ Move Search::get_engine_move() {
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
     if (depth == 0) {
-        return evaluate.static_evaluate_cheap(board);
-        //return quiesce(alpha, beta);
+        //return evaluate.static_evaluate_cheap(board);
+        return quiesce(alpha, beta, p_var);
     }
 
     std::vector<Move> moves = board.get_moves();
@@ -91,8 +91,9 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
 int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     p_var.clear();
 
-    // if (board.in_check()){...}
-    //if true run search w depth 2??
+    if (board.in_check()) {
+        return evaluate.static_evaluate_cheap(board);
+    }
 
     int stand_pat = evaluate.static_evaluate_cheap(board);
     if (stand_pat > beta) {
@@ -109,10 +110,10 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp;
 
-        /* Skip if move isn't capture
-        if (!move.piece_taken()) {
-           continue;
-        }*/
+        // skip if move isn't capture
+        if (!moves[i].is_capture()) {
+            continue;
+        }
 
         board.make_move(moves[i]);
         int next_eval = -quiesce(-beta, -alpha, temp);

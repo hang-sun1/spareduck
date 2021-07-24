@@ -11,19 +11,21 @@ void Table::put(const Board position, const TableEntry entry) {
     table[hash_index] = entry;
 }
 
-TableEntry Table::get(const Board position) {
+std::optional<TableEntry> Table::get(const Board position) {
     const uint64_t hash = position.hash();
     uint32_t hash_index = hash & (TABLE_LENGTH - 1);
-    if (table[hash_index].get_hash() == hash) {
+    uint32_t hash_upper = (hash - hash_index) >> 8;
+    if (table[hash_index].get_upper_hash() == hash_upper) {
         return table[hash_index];
     }
-    return table[0];  // bad fix
+    return {};
 }
 
-TableEntry Table::get(uint64_t hash) {
+std::optional<TableEntry> Table::get(uint64_t hash) {
     uint32_t hash_index = hash & (TABLE_LENGTH - 1);
-    if (table[hash_index].get_hash() == hash) {
+    uint32_t hash_upper = (hash - hash_index) >> 8;
+    if (table[hash_index].get_upper_hash() == hash_upper) {
         return table[hash_index];
     }
-    return table[0];  // bad fix
+    return {};
 }

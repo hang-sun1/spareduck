@@ -10,15 +10,15 @@ typedef enum NodeType {
 
 class TableEntry {
    public:
-    TableEntry(uint64_t hash_, Move move_, NodeType type_, uint8_t depth_);
+    TableEntry(uint32_t hash, Move move, NodeType type, uint8_t depth);
 
-    uint64_t get_hash() const;
+    uint32_t get_upper_hash() const;
     Move get_move() const;
     NodeType get_type() const;
     int8_t get_depth() const;
 
    private:
-    uint64_t hash;
+    uint32_t hash;
     Move move;
     NodeType type;
     int8_t depth;

@@ -91,13 +91,19 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
 int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     p_var.clear();
 
+    // TODO: handle loud positions
     if (board.in_check()) {
         return evaluate.static_evaluate_cheap(board);
     }
 
     int stand_pat = evaluate.static_evaluate_cheap(board);
-    if (stand_pat > beta) {
+    if (stand_pat >= beta) {
         return stand_pat;
+    }
+    // Delta pruning - TODO: handle promotion, in check
+    const int DELTA = 900; // queen / max material swing value
+    if (stand_pat + DELTA < alpha) {
+        return alpha;
     }
     if (stand_pat > alpha) {
         alpha = stand_pat;
@@ -107,6 +113,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
 
+    // TODO: Most Valuable Victim - Least Valuable Aggressor
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp;
 
@@ -126,7 +133,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
             alpha = next_eval;
         }
 
-        temp.insert(temp.begin(), moves[i]);
+        temp.push_back(moves[i]);
         p_var = temp;
     }
 

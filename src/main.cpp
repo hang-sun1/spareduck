@@ -15,7 +15,7 @@ using namespace emscripten;
 
 Board game_board;
 Evaluate board_eval = Evaluate(game_board);
-Search search_engine = Search(game_board);
+Search search_engine = Search(&game_board);
 
 extern "C" {
 #ifndef TESTING
@@ -64,8 +64,8 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 std::string get_engine_move() {
-    Search test = Search(game_board);
-    Move move = test.get_engine_move();
+    //Search test = Search(game_board);
+    Move move = search_engine.get_engine_move();
     game_board.make_move(move);
     return move.origin_square_algebraic() + move.destination_square_algebraic();
 }

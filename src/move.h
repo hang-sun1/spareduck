@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 #include <string>
 
 enum class MoveType : uint16_t {
@@ -29,6 +29,10 @@ class Move {
 
     // Move from algebraic
     Move(std::string from, std::string to);
+
+    bool compare_to(const Move other) const;
+
+    uint16_t get_move_repr() const;
 
     uint16_t origin_square();
 

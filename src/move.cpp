@@ -13,6 +13,16 @@ Move::Move(std::string from, std::string to) {
     move_repr = (from_square << 10) | (to_square << 4) | static_cast<uint16_t>(type);
 }
 
+Move::Move() {}
+
+uint16_t Move::get_move_repr() const {
+    return this->move_repr;
+}
+
+bool Move::compare_to(const Move other) const {
+    return move_repr == other.get_move_repr();
+}
+
 uint16_t Move::origin_square() {
     return move_repr >> 10;
 }

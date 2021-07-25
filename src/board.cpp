@@ -249,7 +249,7 @@ uint64_t Board::generate_rook_moves(uint8_t square, uint64_t board_occ) const {
     // auto attacked_squares = defended_squares & (~all_per_side[to_move]);
     // defense_maps[to_move] |= defended_squares;
     // attack_maps[to_move] |= attacked_squares;
-    return defended_squares & ~(1 << square);
+    return defended_squares & ~(1ULL << square);
 }
 
 uint64_t Board::generate_bishop_moves(uint8_t square, uint64_t board_occ) const {
@@ -271,7 +271,7 @@ uint64_t Board::generate_bishop_moves(uint8_t square, uint64_t board_occ) const 
     //diagonal_defend = 0;
     auto to_move = static_cast<size_t>(side_to_move);
     auto defended_squares = diagonal_defend | antidiagonal_defend;
-    return defended_squares & ~(1 << square);
+    return defended_squares & ~(1ULL << square);
 }
 
 uint64_t Board::generate_queen_moves(uint8_t square, uint64_t board_occ) const {

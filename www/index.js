@@ -48,16 +48,24 @@ const init = (chess) => {
   setInterval(() => {
     const evaluation = chess._get_engine_evaluation(); // To work with negamax this eval function swaps sign based on who's moving, this causes a bug for the frontend
     let eval_bar = document.getElementById('eval-bar');
-    console.log("eval: ", evaluation);
-    eval_bar.innderHTML = evaluation;
-    const eval_percent = evaluation / 50 + 50;
+    console.log('eval: ', evaluation);
+    const eval_percent = Math.floor(evaluation / 50 + 50);
+    eval_bar.innerHTML = evaluation;
     eval_bar.setAttribute(
       'style',
-      `height: 16px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${Math.floor(
-        eval_percent,
-      )}%, black ${Math.floor(
-        eval_percent,
-      )}%, black 100%);border: 2px solid black;`,
+      `height: 16px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${eval_percent}%, black ${eval_percent}%, black 100%);border: 2px solid black;`,
     );
+
+    let pv_elem = document.getElementById('p-var');
+    let pv = chess.get_principal_variation();
+    let pv_list = new Array(pv.size());
+    for (let i = 0; i < pv.size(); i++) {
+      pv_list[i] =
+        pv.get(i).origin_square_algebraic() +
+        ' ' +
+        pv.get(i).destination_square_algebraic();
+    }
+    console.log(pv_list);
+    pv_elem.innerHTML = pv_list.join(',');
   }, 2000);
 };

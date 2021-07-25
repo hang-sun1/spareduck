@@ -45,7 +45,7 @@ Move Search::get_engine_move() {
 
     std::cout << "PRINCIPAL-VARIATION" << std::endl;
     for (int i = 0; i < principal_variation.size(); i++)
-        std::cout << i << "th move " << principal_variation.at(i).origin_square_algebraic() << std::endl;
+        std::cout << i << "th move " << principal_variation.at(i).origin_square_algebraic() << " " << principal_variation.at(i).destination_square_algebraic() << std::endl;
 
     return best_move;
 }
@@ -203,6 +203,6 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     return alpha;
 }
 
-std::vector<Move> Search::get_pv() {
+std::vector<Move> Search::get_principal_variation() {
     return principal_variation;
 }

@@ -40,6 +40,8 @@ class Move {
 
     MoveType type();
 
+    bool is_capture();
+
     std::string origin_square_algebraic();
 
     std::string destination_square_algebraic();
@@ -47,8 +49,6 @@ class Move {
     std::array<uint16_t, 2> origin_square_cartesian();
 
     std::array<uint16_t, 2> destination_square_cartesian();
-
-    bool is_capture();
 
    private:
     uint16_t move_repr;

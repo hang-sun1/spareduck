@@ -1,5 +1,10 @@
 #include "table_entry.h"
 
+/* 
+    Entry in the transposition table:
+    https://www.chessprogramming.org/Transposition_Table
+*/
+
 TableEntry::TableEntry(uint32_t hash, Move move, int16_t eval, NodeType type, uint8_t depth) {
     this->hash = hash;
     this->move = move;

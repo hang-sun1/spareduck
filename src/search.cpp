@@ -10,17 +10,18 @@
 */
 
 // Search constructor
-Search::Search(Board& start_board) {
+Search::Search(Board* start_board) {
     board = start_board;
     Evaluate evaluate;
+    Table t_table;
     std::vector<Move> principal_variation;
 }
 
 Move Search::get_engine_move() {
-    std::vector<Move> moves = board.get_moves();
+    std::vector<Move> moves = board->get_moves();
     int move_count = moves.size();
 
-    std::cout << "get_engine_move " << board.get_side_to_move() << std::endl;
+    std::cout << "get_engine_move " << board->get_side_to_move() << std::endl;
 
     int best_eval = -1000;
     Move best_move = Move(moves[0]);
@@ -28,9 +29,9 @@ Move Search::get_engine_move() {
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp;
 
-        board.make_move(moves[i]);
+        board->make_move(moves[i]);
         int next_eval = -search(-1000, 1000, 3, temp);
-        board.unmake_move(moves[i]);
+        board->unmake_move(moves[i]);
 
         // update bestEval
         if (next_eval > best_eval) {
@@ -51,23 +52,73 @@ Move Search::get_engine_move() {
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
     if (depth == 0) {
-        //return evaluate.static_evaluate_cheap(board);
-        return quiesce(alpha, beta, p_var);
+        int curr_eval = evaluate.static_evaluate_cheap(*board);
+        //int curr_eval = quiesce(alpha, beta, p_var);
+
+        NodeType type;
+        if (curr_eval <= alpha) {
+            type = NodeType::UPPER;
+        } else if (curr_eval >= beta) {
+            type = NodeType::LOWER;
+        } else {
+            type = NodeType::EXACT;
+        }
+        t_table.put(*board, p_var.front(), curr_eval, type, static_cast<uint8_t>(depth));
+
+        return curr_eval;
     }
 
-    std::vector<Move> moves = board.get_moves();
+    std::vector<Move> moves = board->get_moves();
     int move_count = moves.size();
 
-    // move ordering: hash table and captures first
-
     int best_eval = INT_MIN;
+
+    // Check transposition table for current position.
+    std::optional<TableEntry> t_position = t_table.get(*board);
+
+    if (t_position.has_value()) {
+        if (t_position->get_depth() >= depth) {
+            switch (t_position->get_type()) {
+                case NodeType::UPPER:
+                    if (t_position->get_eval() <= beta)
+                        beta = t_position->get_eval();
+                    break;
+                case NodeType::LOWER:
+                    if (t_position->get_eval() >= alpha)
+                        alpha = t_position->get_eval();
+                    break;
+                default:
+                    return t_position->get_eval();
+            }
+
+            // return if alpha > beta?
+        }
+
+        for (int i = 0; i < move_count; i++) {
+            if(1){//if (moves[i].compare_to(t_position->get_move())) {  // TODO: check if move valid?
+                moves[i] = moves[0];
+                moves[0] = t_position->get_move();
+            }
+        }
+    }
+
+    // move ordering: hash table and captures first
+    int j = 1;  // move swap counter
+    for (int i = 1; i < move_count; i++) {
+        if (moves[i].is_capture()) {
+            Move temp = moves[j];
+            moves[j] = moves[i];
+            moves[i] = temp;
+            j++;
+        }
+    }
 
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp;
 
-        board.make_move(moves[i]);
+        board->make_move(moves[i]);
         int next_eval = -search(-beta, -alpha, depth - 1, p_var);
-        board.unmake_move(moves[i]);
+        board->unmake_move(moves[i]);
 
         // update bestEval
         if (next_eval > best_eval) {
@@ -85,6 +136,18 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
             break;
         }
     }
+
+    // Add new best move to hash table
+    NodeType type;
+    if (best_eval <= alpha) {
+        type = NodeType::UPPER;
+    } else if (best_eval >= beta) {
+        type = NodeType::LOWER;
+    } else {
+        type = NodeType::EXACT;
+    }
+    t_table.put(*board, p_var.front(), best_eval, type, static_cast<uint8_t>(depth));
+
     return best_eval;
 }
 
@@ -92,16 +155,16 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     p_var.clear();
 
     // TODO: handle loud positions
-    if (board.in_check()) {
-        return evaluate.static_evaluate_cheap(board);
+    if (board->in_check()) {
+        return evaluate.static_evaluate_cheap(*board);
     }
 
-    int stand_pat = evaluate.static_evaluate_cheap(board);
+    int stand_pat = evaluate.static_evaluate_cheap(*board);
     if (stand_pat >= beta) {
         return stand_pat;
     }
     // Delta pruning - TODO: handle promotion, in check
-    const int DELTA = 900; // queen / max material swing value
+    const int DELTA = 900;  // queen / max material swing value
     if (stand_pat + DELTA < alpha) {
         return alpha;
     }
@@ -110,7 +173,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     }
 
     //generate all moves
-    std::vector<Move> moves = board.get_moves();
+    std::vector<Move> moves = board->get_moves();
     int move_count = moves.size();
 
     // TODO: Most Valuable Victim - Least Valuable Aggressor
@@ -122,9 +185,9 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
             continue;
         }
 
-        board.make_move(moves[i]);
+        board->make_move(moves[i]);
         int next_eval = -quiesce(-beta, -alpha, temp);
-        board.unmake_move(moves[i]);
+        board->unmake_move(moves[i]);
 
         if (next_eval >= beta) {
             return next_eval;

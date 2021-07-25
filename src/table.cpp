@@ -2,6 +2,11 @@
 
 #define TABLE_LENGTH (2 << 24)
 
+/*
+    Position / transposition table;
+    https://www.chessprogramming.org/Transposition_Table
+*/
+
 Table::Table() {
     table.reserve(TABLE_LENGTH);
 }

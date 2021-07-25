@@ -15,7 +15,7 @@ class Search {
    public:
     Search(Board* board);
     Move get_engine_move();
-    std::vector<Move> get_pv();
+    std::vector<Move> get_principal_variation();
 
    private:
     Board* board;

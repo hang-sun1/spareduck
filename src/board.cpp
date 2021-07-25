@@ -38,6 +38,8 @@ Board::Board() {
     this->bishop_defends = { 0x5a00, 0x5a000000000000};
     this->queen_defends = { 0x1c14, 0x141c000000000000 };
     this->king_defends = { 0x3828, 0x2838000000000000 };
+    this->short_castle_rights = { true, true };
+    this->long_castle_rights = { true, true };
     this->defense_maps[1] = pawn_defends[1] | rook_defends[1] | knight_defends[1] | bishop_defends[1] | queen_defends[1] | king_defends[1];
     this->defense_maps[0] = pawn_defends[0] | rook_defends[0] | knight_defends[0] | bishop_defends[0] | queen_defends[0] | king_defends[0];
     this->all_per_side[0] = pawns[0] | rooks[0] | knights[0] | bishops[0] | queens[0] | kings[0];
@@ -641,11 +643,23 @@ std::vector<Move> Board::generate_moves() const {
         }
     }
 
-
-    // check if the king is in check
-    if (kings[side] & attack_maps[other_side]) {
-
+    if (short_castle_rights[side]) {
+        uint64_t relevant_squares = side ? 0x7000000000000000ULL : 0x70ULL;
+        uint64_t to_be_vacated = side ? 0x6000000000000000ULL : 0x60ULL;
+        auto total_occ = all_per_side[side] | all_per_side[other_side];
+        if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
+            vec_of_moves.push_back(Move(0, 0, MoveType::SHORT_CASTLES));
+        }
     }
+    if (long_castle_rights[side]) {
+        uint64_t relevant_squares = side ? 0x1c00000000000000ULL : 0x1cULL;
+        uint64_t to_be_vacated = side ? 0xe00000000000000ULL : 0xeULL;
+        auto total_occ = all_per_side[side] | all_per_side[other_side];
+        if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
+            vec_of_moves.push_back(Move(0, 0, MoveType::LONG_CASTLES));
+        }
+    }
+
 
     // TODO add castles and pawn stuff (including en passant)
 
@@ -671,8 +685,58 @@ void Board::make_move(Move move) {
         en_passant_target = 65;
     }
 
+    if (move.type() == MoveType::SHORT_CASTLES) {
+        if (side_to_move == Side::WHITE) {
+            kings[current_move] = 0x40;
+            rooks[current_move] &= ~0x80;
+            rooks[current_move] |= 0x20;
+        } else {
+            kings[current_move] = 0x4000000000000000;
+            rooks[current_move] &= ~0x8000000000000000;
+            rooks[current_move] |= 0x2000000000000000;
+        }
+        short_castle_rights[current_move] = false;
+    }
+
+    if (move.type() == MoveType::LONG_CASTLES) {
+        if (side_to_move == Side::WHITE) {
+            kings[current_move] = 0x4;
+            rooks[current_move] &= ~0x1;
+            rooks[current_move] |= 0x8;
+        } else {
+            kings[current_move] = 0x400000000000000;
+            rooks[current_move] &= ~0x100000000000000;
+            rooks[current_move] |= 0x800000000000000;
+        }
+        long_castle_rights[current_move] = false;
+    }
+
     auto from = move.origin_square();
     auto to = move.destination_square();
+    
+    if (short_castle_rights[current_move]) {
+        if (side_to_move == Side::WHITE) {
+            if (from == 4 || from == 7) {
+                short_castle_rights[current_move] = false;
+            }
+        } else {
+            if (from == 63 || from == 60) {
+                short_castle_rights[current_move] = false;
+            }
+        }
+    }
+    
+    if (long_castle_rights[current_move]) {
+        if (side_to_move == Side::WHITE) {
+            if (from == 4 || from == 0) {
+                long_castle_rights[current_move] = false;
+            }
+        } else {
+            if (from == 60 || from == 56) {
+                long_castle_rights[current_move] = false;
+            }
+        }
+    }
 
     std::array<std::array<uint64_t, 2>*, 6> arr = { &bishops, &knights, &rooks, &queens, &kings, &pawns };
     // std::vector<int> moved;
@@ -700,6 +764,7 @@ void Board::make_move(Move move) {
                                  queens[current_move] | kings[current_move] | pawns[current_move];
     all_per_side[other_move] = rooks[other_move] | bishops[other_move] | knights[other_move] |
                                  queens[other_move] | kings[other_move] | pawns[other_move];
+    
 
     
     std::array<std::array<uint64_t, 2>*, 6> defense_maps = { &bishop_defends, &knight_defends, 
@@ -759,8 +824,9 @@ void Board::unmake_move(Move move) {
     this->queen_defends = pop.queen_defends;
     this->king_defends = pop.king_defends;
     this->defense_maps = pop.defense_maps;
-    this->all_per_side = pop.all_per_side;
     this->attack_maps = pop.attack_maps;
+    this->long_castle_rights = pop.long_castle_rights;
+    this->short_castle_rights = pop.short_castle_rights;
     this->moves = pop.moves;
     this->en_passant_target = pop.en_passant_target;
 }

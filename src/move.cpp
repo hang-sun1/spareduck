@@ -32,7 +32,7 @@ uint16_t Move::destination_square() {
 }
 
 MoveType Move::type() {
-    return static_cast<MoveType>(move_repr & 0xff);
+    return static_cast<MoveType>(move_repr & 0xf);
 }
 
 std::string Move::origin_square_algebraic() {

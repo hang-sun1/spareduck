@@ -87,7 +87,7 @@ TEST_CASE("proper moves are generated", "[board]") {
     SECTION("generates correct number of moves to certain depth") {
         Board b;
         auto start = high_resolution_clock::now();
-        uint64_t count = perft(5, &b);
+        uint64_t count = perft(6, &b);
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start);
         std::cout << count << " nodes searched in " << duration.count() << " ms\n";

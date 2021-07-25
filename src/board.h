@@ -47,6 +47,8 @@ class Board {
     std::array<uint64_t, 64> king_lookup;
     std::array<uint64_t, 64> knight_lookup;
     uint8_t en_passant_target;
+    std::array<bool, 2> short_castle_rights;
+    std::array<bool, 2> long_castle_rights;
     uint64_t generate_rook_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_bishop_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_queen_moves(uint8_t square, uint64_t board_occ) const;

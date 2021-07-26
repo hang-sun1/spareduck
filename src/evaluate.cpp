@@ -10,8 +10,8 @@
     https://www.chessprogramming.org/Piece-Square_Tables
 */
 
-// Piece-square table: used to give additional value to pieces based on their position
-// should be in the range [-100, 100]
+// Piece-square table: used to give additional value to pieces based on their position.
+// Should be in the range [-100, 100]
 short pst[6][8][8] = {
     {{0, 0, 0, 0, 0, 0, 0, 0},
      {50, 50, 50, 50, 50, 50, 50, 50},
@@ -63,14 +63,14 @@ short pst[6][8][8] = {
      {0, 0, 0, 0, 0, 0, 0, 0}}  // king
 };
 
-// Values of each piece pawn, knight, bishop, rook, queen, king
-// should remain near 100 * piece value with max of ~32,000
+// Values of each piece pawn, knight, bishop, rook, queen, king.
+// Should remain near 100 * piece value with max of ~32,000
 static const short piece[6] = {100, 300, 300, 500, 900, 30000};
 
 // Evaluation constructor
 Evaluate::Evaluate() {}
 
-Evaluate::Evaluate(Board start_board) {
+Evaluate::Evaluate(Board* start_board) {
     board = start_board;
 }
 
@@ -86,23 +86,21 @@ void Evaluate::initialize_pst() {
     return;
 }
 
-// A cheap static evaluation that just uses piece counts
-int Evaluate::static_evaluate_cheap() {
+// A cheap evaluation that just uses piece counts
+int Evaluate::evaluate_cheap() {
     int value = 0;
 
-    value += piece_values(board.get_pawns(), piece[0]);
-    value += piece_values(board.get_knights(), piece[1]);
-    value += piece_values(board.get_bishops(), piece[2]);
-    value += piece_values(board.get_rooks(), piece[3]);
-    value += piece_values(board.get_queens(), piece[4]);
-    value += piece_values(board.get_kings(), piece[5]);
+    value += piece_values(board->get_pawns(), piece[0]);
+    value += piece_values(board->get_knights(), piece[1]);
+    value += piece_values(board->get_bishops(), piece[2]);
+    value += piece_values(board->get_rooks(), piece[3]);
+    value += piece_values(board->get_queens(), piece[4]);
+    value += piece_values(board->get_kings(), piece[5]);
 
     // whats the best way to generate both side's moves?
 
-    return value * (board.get_side_to_move() ? -1 : 1);
+    return value * (board->get_side_to_move() ? -1 : 1);
 }
-
-// A cheap static evaluation that just uses piece counts
 int Evaluate::static_evaluate_cheap(Board board) {
     int value = 0;
 
@@ -119,7 +117,14 @@ int Evaluate::static_evaluate_cheap(Board board) {
 }
 
 // More expensive evaluation that calculates the score of the position based on the pst
-int Evaluate::static_evaluate() {
+int Evaluate::evaluate() {
+    int value = 0;
+
+    // TODO: get all cartesian positions of pieces on the board;
+
+    return value * (board->get_side_to_move() ? -1 : 1);
+}
+int Evaluate::static_evaluate(Board board) {
     int value = 0;
 
     // TODO: get all cartesian positions of pieces on the board;

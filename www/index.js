@@ -39,8 +39,8 @@ const init = (chess) => {
   ground.set({
     movable: {
       events: {
-        after: playOtherSide(ground, chess),
-        // after: aiPlay(ground, chess, 500),
+        //after: playOtherSide(ground, chess),
+        after: aiPlay(ground, chess, 500),
       },
     },
   });
@@ -65,7 +65,7 @@ const init = (chess) => {
         ' ' +
         pv.get(i).destination_square_algebraic();
     }
-    console.log(pv_list);
+    console.log("js-pv: ", pv_list);
     pv_elem.innerHTML = pv_list.join(',');
   }, 2000);
 };

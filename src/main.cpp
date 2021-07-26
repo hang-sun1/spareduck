@@ -14,7 +14,7 @@ using namespace emscripten;
 #endif
 
 Board game_board;
-Evaluate board_eval = Evaluate(game_board);
+Evaluate board_eval = Evaluate(&game_board);
 Search search_engine = Search(&game_board);
 
 extern "C" {

@@ -12,7 +12,7 @@
 // Search constructor
 Search::Search(Board* start_board) {
     board = start_board;
-    Evaluate evaluate;
+    Evaluate evaluate = Evaluate(start_board);
     Table t_table;
     std::vector<Move> principal_variation;
 }
@@ -52,7 +52,7 @@ Move Search::get_engine_move() {
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
     if (depth == 0) {
-        int curr_eval = evaluate.static_evaluate_cheap(*board);
+        int curr_eval = evaluate.evaluate_cheap();
         //int curr_eval = quiesce(alpha, beta, p_var);
 
         NodeType type;
@@ -156,10 +156,10 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
 
     // TODO: handle loud positions
     if (board->in_check()) {
-        return evaluate.static_evaluate_cheap(*board);
+        return evaluate.evaluate_cheap();
     }
 
-    int stand_pat = evaluate.static_evaluate_cheap(*board);
+    int stand_pat = evaluate.evaluate_cheap();
     if (stand_pat >= beta) {
         return stand_pat;
     }

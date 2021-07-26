@@ -17,8 +17,11 @@ uint64_t perft(int depth /* assuming >= 1 */, Board *b) {
     uint64_t nodes = 0;
 
 
-    if (depth == 0) 
-        return 1ULL;
+    if (depth == 1) 
+        return (uint64_t) n_moves;
+    // if (depth == 0) {
+    //     return 1ULL;
+    // }
 
     for (i = 0; i < n_moves; i++) {
         auto m = move_list[i];
@@ -106,7 +109,6 @@ TEST_CASE("proper moves are generated", "[board]") {
             auto stop = high_resolution_clock::now();
             auto duration = duration_cast<milliseconds>(stop - start);
             std::cout << count << " nodes searched in " << duration.count() << " ms\n";
-            // std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
             // std::cout << captures << " captures" << std::endl;
 
         }
@@ -116,6 +118,7 @@ TEST_CASE("proper moves are generated", "[board]") {
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start);
         std::cout << count << " nodes searched in " << duration.count() << " ms\n";
+            std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
 
 
         REQUIRE(1 == 1);

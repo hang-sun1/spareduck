@@ -1,6 +1,6 @@
 rm build/ -rf
 mkdir build
 cd build
-cmake ../test
+cmake ../test 
 make -j8
 ./spareduck_test

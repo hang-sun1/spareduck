@@ -8,17 +8,14 @@
 #include <stack>
 
 #include "move.h"
+#include "history.h"
+#include "side.h"
 
 using std::uint64_t;
 
-enum class Side : size_t {
-    WHITE = 0,
-    BLACK = 1,
-};
-
 class Board {
    private:
-    std::shared_ptr<std::stack<Board>> history;
+    std::shared_ptr<std::stack<History>> history;
     std::array<std::array<uint64_t, 64>, 12> hash_helper;
     std::array<uint64_t, 2> knights;
     std::array<uint64_t, 2> knight_defends;
@@ -57,8 +54,7 @@ class Board {
     uint64_t generate_king_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ) const;
-    std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ,
-        uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
+    std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type) const;
     Side side_to_move;
     std::vector<Move> moves;
     std::vector<Move> generate_moves() const;
@@ -66,10 +62,10 @@ class Board {
     std::vector<Move> made_moves;
     std::vector<std::array<uint64_t, 2>*> moved_piece_boards;
     std::vector<std::array<uint64_t, 2>*> taken_piece_boards;
-    uint64_t xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
+    uint64_t rook_xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square) const;
+    uint64_t bishop_xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square) const;
 
-    bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board,
-        uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
+    bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board, char move_type) const;
    public:
     uint64_t nodes_evaluated = 0;
     // using enum Side;

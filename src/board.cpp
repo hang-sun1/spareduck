@@ -675,11 +675,11 @@ std::vector<Move> Board::generate_moves() const {
                     dest_plus_one = __builtin_ffsll(map);
                     continue;
                 }
+            }
             if (((1ULL << from) & pinned) && !((1ULL << dest) & available_moves[from])) {
                 map &= ~(1ULL << dest);
                 dest_plus_one = __builtin_ffsll(map);
                 continue;
-            }
             }
             if (((1ULL << dest) & 0xff00000000000000) && ((1ULL << dest) & 0xff)) {
                 Move promote_to_bishop = Move(from, dest, MoveType::PROMOTE_TO_BISHOP);
@@ -752,7 +752,7 @@ std::vector<Move> Board::generate_moves() const {
             auto dest = static_cast<uint8_t>(dest_plus_one) -1;
             if (piece_giving_check >= 0) {
                 if (king_still_under_attack(dest, (1ULL << dest), arr[piece_giving_check], gen_funcs[piece_giving_check])) {
-                    std::cout << "why am i here" << std::endl;
+                    // std::cout << "why am i here" << std::endl;
                     map &= ~(1ULL << dest);
                     dest_plus_one = __builtin_ffsll(map);
                     continue;

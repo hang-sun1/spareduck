@@ -91,13 +91,33 @@ TEST_CASE("proper moves are generated", "[board]") {
 
     SECTION("generates correct number of moves to certain depth") {
         Board b;
+        Board c = b;
+        auto the_move = b.get_moves()[4];
+        b.make_move(the_move);
+        the_move = b.get_moves()[0];
+        b.make_move(the_move);
+        the_move = b.get_moves()[9];
+        for (auto &m: b.get_moves()) {
+            Board a = b;
+            std::cout << m.origin_square_algebraic() << m.destination_square_algebraic() << std::endl;
+            a.moves = std::vector<Move> {m};
+            auto start = high_resolution_clock::now();
+            uint64_t count = perft(2, &a);
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<milliseconds>(stop - start);
+            std::cout << count << " nodes searched in " << duration.count() << " ms\n";
+            // std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
+            // std::cout << captures << " captures" << std::endl;
+
+        }
+        
         auto start = high_resolution_clock::now();
-        uint64_t count = perft(4, &b);
+        uint64_t count = perft(5, &c);
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start);
         std::cout << count << " nodes searched in " << duration.count() << " ms\n";
-        std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
-        std::cout << captures << " captures" << std::endl;
+
+
         REQUIRE(1 == 1);
     }
 }

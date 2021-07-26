@@ -1,6 +1,9 @@
 #include "table.h"
 
-#define TABLE_LENGTH (2 << 24)
+#include <iostream>
+
+#define TABLE_BITS 24
+#define TABLE_LENGTH (1 << TABLE_BITS)
 
 /*
     Position / transposition table;
@@ -19,14 +22,14 @@ void Table::put(const Board position, const TableEntry entry) {
 void Table::put(Board position, Move move, int16_t eval, NodeType type, uint8_t depth) {
     uint64_t hash = position.hash();
     uint32_t hash_index = hash & (TABLE_LENGTH - 1);
-    uint32_t hash_upper = (hash - hash_index) >> 8;
+    uint32_t hash_upper = hash >> TABLE_BITS;
     table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
 }
 
 std::optional<TableEntry> Table::get(const Board position) {
     const uint64_t hash = position.hash();
     uint32_t hash_index = hash & (TABLE_LENGTH - 1);
-    uint32_t hash_upper = (hash - hash_index) >> 8;
+    uint32_t hash_upper = hash >> TABLE_BITS;
     if (table[hash_index].get_upper_hash() == hash_upper) {
         return table[hash_index];
     }
@@ -35,7 +38,7 @@ std::optional<TableEntry> Table::get(const Board position) {
 
 std::optional<TableEntry> Table::get(uint64_t hash) {
     uint32_t hash_index = hash & (TABLE_LENGTH - 1);
-    uint32_t hash_upper = (hash - hash_index) >> 8;
+    uint32_t hash_upper = hash >> TABLE_BITS;
     if (table[hash_index].get_upper_hash() == hash_upper) {
         return table[hash_index];
     }
@@ -49,6 +52,7 @@ std::vector<Move> Table::get_variation(Board position) {
     std::optional<TableEntry> node = this->get(position);
     while (node) {
         count++;
+        std::cout << node->get_move() << std::endl;
         variation.push_back(node->get_move());
         position.make_move(node->get_move());
         node = this->get(position);

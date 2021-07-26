@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <ostream>
 #include <string>
 
 enum class MoveType : uint16_t {
@@ -30,25 +31,27 @@ class Move {
     // Move from algebraic
     Move(std::string from, std::string to);
 
-    bool compare_to(const Move other) const;
+    friend std::ostream& operator<<(std::ostream&, const Move&);
+
+    friend bool operator==(const Move& lhs, const Move& rhs);
 
     uint16_t get_move_repr() const;
 
-    uint16_t origin_square();
+    uint16_t origin_square() const;
 
-    uint16_t destination_square();
+    uint16_t destination_square() const;
 
-    MoveType type();
+    MoveType type() const;
 
-    bool is_capture();
+    bool is_capture() const;
 
-    std::string origin_square_algebraic();
+    std::string origin_square_algebraic() const;
 
-    std::string destination_square_algebraic();
+    std::string destination_square_algebraic() const;
 
-    std::array<uint16_t, 2> origin_square_cartesian();
+    std::array<uint16_t, 2> origin_square_cartesian() const;
 
-    std::array<uint16_t, 2> destination_square_cartesian();
+    std::array<uint16_t, 2> destination_square_cartesian() const;
 
    private:
     uint16_t move_repr;

@@ -96,9 +96,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
 
         // move ordering: transposition table first
         for (int i = 0; i < move_count; i++) {
-            if (moves[i].compare_to(t_position->get_move())) {  // TODO: check if move valid?
+            if (moves[i] == t_position->get_move()) {  // TODO: check if move valid?
                 moves[i] = moves[0];
                 moves[0] = t_position->get_move();
+                break;
             }
         }
     }
@@ -205,6 +206,6 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
 }
 
 std::vector<Move> Search::get_principal_variation() {
-    //return principal_variation;
-    return t_table.get_variation(*board);
+    return principal_variation;
+    //return t_table.get_variation(*board);
 }

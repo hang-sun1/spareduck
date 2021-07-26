@@ -8,6 +8,7 @@
 #include <chrono>
 using namespace std::chrono;
 
+int captures = 0;
 // taken from the chess programming wiki
 uint64_t perft(int depth /* assuming >= 1 */, Board *b) {
     auto move_list = b->get_moves();
@@ -22,7 +23,7 @@ uint64_t perft(int depth /* assuming >= 1 */, Board *b) {
     for (i = 0; i < n_moves; i++) {
         auto m = move_list[i];
         if (static_cast<uint16_t>(m.type()) == static_cast<uint16_t>(MoveType::CAPTURE)) {
-            // std::cout <<  m.origin_square_algebraic() << m.destination_square_algebraic() << std::endl;
+            captures += 1;
         }
         b->make_move(move_list[i]);
         nodes += perft(depth - 1, b);
@@ -96,6 +97,7 @@ TEST_CASE("proper moves are generated", "[board]") {
         auto duration = duration_cast<milliseconds>(stop - start);
         std::cout << count << " nodes searched in " << duration.count() << " ms\n";
         std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
+        std::cout << captures << " captures" << std::endl;
         REQUIRE(1 == 1);
     }
 }

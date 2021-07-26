@@ -122,7 +122,7 @@ uint64_t Board::generate_pawn_moves(uint8_t square, uint64_t board_occ) const {
     size_t not_to_move = 1 - to_move;
     uint64_t one_piece_board = 1ULL << square;
     uint64_t moves = 0;
-    uint64_t all_pieces = all_per_side[not_to_move] | all_per_side[to_move];
+    uint64_t all_pieces = board_occ;
     uint64_t second_rank = 0xff00;
     uint64_t seventh_rank = 0xff000000000000;
 
@@ -156,7 +156,7 @@ uint64_t Board::generate_pawn_attacks(uint8_t square, uint64_t board_occ) const 
     uint64_t one_piece_board = 1ULL << square;
     uint64_t moves = 0;
     uint8_t file = square & 7;
-    uint64_t all_pieces = all_per_side[not_to_move] | all_per_side[to_move];
+    uint64_t all_pieces = board_occ;
     if (side_to_move == Side::WHITE) {
         uint64_t potential_moves = (one_piece_board << 7) | (one_piece_board << 9);
         if (file == 0) {
@@ -750,6 +750,14 @@ std::vector<Move> Board::generate_moves() const {
         int dest_plus_one = __builtin_ffsll(map);
         while(dest_plus_one) {
             auto dest = static_cast<uint8_t>(dest_plus_one) -1;
+            if (piece_giving_check >= 0) {
+                if (king_still_under_attack(dest, (1ULL << dest), arr[piece_giving_check], gen_funcs[piece_giving_check])) {
+                    std::cout << "why am i here" << std::endl;
+                    map &= ~(1ULL << dest);
+                    dest_plus_one = __builtin_ffsll(map);
+                    continue;
+                }
+            }
             MoveType type = MoveType::QUIET;
             if (((1ULL << dest) & all_per_side[other_side])) {
                 type = MoveType::CAPTURE;

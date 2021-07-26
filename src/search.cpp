@@ -30,7 +30,7 @@ Move Search::get_engine_move() {
         std::vector<Move> temp;
 
         board->make_move(moves[i]);
-        int next_eval = -search(-1000, 1000, 3, temp);
+        int next_eval = -search(-1000, 1000, 4, temp);
         board->unmake_move(moves[i]);
 
         // update bestEval
@@ -55,7 +55,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
         int curr_eval = evaluate.evaluate_cheap();
         //int curr_eval = quiesce(alpha, beta, p_var);
 
-        NodeType type;
+        NodeType type;  // Should this always be EXACT??
         if (curr_eval <= alpha) {
             type = NodeType::UPPER;
         } else if (curr_eval >= beta) {
@@ -80,11 +80,11 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {
                 case NodeType::UPPER:
-                    if (t_position->get_eval() <= beta)
+                    if (t_position->get_eval() < beta)
                         beta = t_position->get_eval();
                     break;
                 case NodeType::LOWER:
-                    if (t_position->get_eval() >= alpha)
+                    if (t_position->get_eval() > alpha)
                         alpha = t_position->get_eval();
                     break;
                 default:
@@ -94,15 +94,16 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
             // return if alpha > beta?
         }
 
+        // move ordering: transposition table first
         for (int i = 0; i < move_count; i++) {
-            if(1){//if (moves[i].compare_to(t_position->get_move())) {  // TODO: check if move valid?
+            if (moves[i].compare_to(t_position->get_move())) {  // TODO: check if move valid?
                 moves[i] = moves[0];
                 moves[0] = t_position->get_move();
             }
         }
     }
 
-    // move ordering: hash table and captures first
+    // move ordering:  captures first
     int j = 1;  // move swap counter
     for (int i = 1; i < move_count; i++) {
         if (moves[i].is_capture()) {
@@ -204,5 +205,6 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
 }
 
 std::vector<Move> Search::get_principal_variation() {
-    return principal_variation;
+    //return principal_variation;
+    return t_table.get_variation(*board);
 }

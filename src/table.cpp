@@ -41,3 +41,22 @@ std::optional<TableEntry> Table::get(uint64_t hash) {
     }
     return {};
 }
+
+std::vector<Move> Table::get_variation(Board position) {
+    std::vector<Move> variation;
+    uint8_t count = 0;
+
+    std::optional<TableEntry> node = this->get(position);
+    while (node) {
+        count++;
+        variation.push_back(node->get_move());
+        position.make_move(node->get_move());
+        node = this->get(position);
+    }
+
+    while (count--) {
+        position.unmake_move(Move());
+    }
+
+    return variation;
+}

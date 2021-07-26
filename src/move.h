@@ -52,4 +52,5 @@ class Move {
 
    private:
     uint16_t move_repr;
+    MoveType t;
 };

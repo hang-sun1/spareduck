@@ -2,6 +2,7 @@
 
 Move::Move(uint16_t from, uint16_t to, MoveType type) {
     move_repr = (from << 10) | (to << 4) | static_cast<uint16_t>(type);
+    this->t = type;
 }
 
 // New move from algebraic notation.
@@ -32,7 +33,8 @@ uint16_t Move::destination_square() {
 }
 
 MoveType Move::type() {
-    return static_cast<MoveType>(move_repr & 0xf);
+    return t;
+    // return static_cast<MoveType>(move_repr & 0xf);
 }
 
 bool Move::is_capture() {

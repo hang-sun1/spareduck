@@ -46,6 +46,7 @@ class Board {
     std::array<uint64_t, 64> antidiagonal_mask_lookup;
     std::array<uint64_t, 64> king_lookup;
     std::array<uint64_t, 64> knight_lookup;
+    std::array<std::array<uint64_t, 64>, 64> in_between;
     uint8_t en_passant_target;
     std::array<bool, 2> short_castle_rights;
     std::array<bool, 2> long_castle_rights;
@@ -65,7 +66,8 @@ class Board {
     std::vector<Move> made_moves;
     std::vector<std::array<uint64_t, 2>*> moved_piece_boards;
     std::vector<std::array<uint64_t, 2>*> taken_piece_boards;
-    uint64_t xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t)) const;
+    uint64_t xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square, uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
+
     bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board,
         uint64_t (Board::*gen_func)(uint8_t, uint64_t) const) const;
    public:
@@ -81,6 +83,8 @@ class Board {
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
     static std::array<std::array<uint64_t, 64>, 12> initialize_hash();
+    static std::array<std::array<uint64_t, 64>, 64> generate_in_between();
+
     // move and side functions
     void make_move(Move move);
     void unmake_move(Move move);

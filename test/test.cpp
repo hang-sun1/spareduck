@@ -16,10 +16,14 @@ uint64_t perft(int depth /* assuming >= 1 */, Board *b) {
     uint64_t nodes = 0;
 
 
-    if (depth == 1) 
-        return (uint64_t) n_moves;
+    if (depth == 0) 
+        return 1ULL;
 
     for (i = 0; i < n_moves; i++) {
+        auto m = move_list[i];
+        if (static_cast<uint16_t>(m.type()) == static_cast<uint16_t>(MoveType::CAPTURE)) {
+            // std::cout <<  m.origin_square_algebraic() << m.destination_square_algebraic() << std::endl;
+        }
         b->make_move(move_list[i]);
         nodes += perft(depth - 1, b);
         b->unmake_move(move_list[i]);
@@ -87,7 +91,7 @@ TEST_CASE("proper moves are generated", "[board]") {
     SECTION("generates correct number of moves to certain depth") {
         Board b;
         auto start = high_resolution_clock::now();
-        uint64_t count = perft(6, &b);
+        uint64_t count = perft(4, &b);
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start);
         std::cout << count << " nodes searched in " << duration.count() << " ms\n";

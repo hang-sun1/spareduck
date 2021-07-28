@@ -50,7 +50,7 @@ const init = (chess) => {
     let eval_bar = document.getElementById('eval-bar');
     //console.log('eval: ', evaluation);
     const eval_percent = Math.floor(evaluation / 50 + 50);
-    eval_bar.innerHTML = evaluation;
+    eval_bar.innerHTML = `<div style='margin-left:2px;'>${evaluation}</div>`;
     eval_bar.setAttribute(
       'style',
       `height: 16px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${eval_percent}%, black ${eval_percent}%, black 100%);border: 2px solid black;`,
@@ -65,7 +65,7 @@ const init = (chess) => {
         ' ' +
         pv.get(i).destination_square_algebraic();
     }
-    console.log("js-pv: ", pv_list);
-    pv_elem.innerHTML = pv_list.join(',');
+    console.log('js-pv: ', pv_list);
+    pv_elem.innerHTML = 'Principal Variation: ' + pv_list.join(', ');
   }, 2000);
 };

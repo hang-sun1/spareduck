@@ -16,32 +16,36 @@ Move::Move(std::string from, std::string to) {
 
 Move::Move() {}
 
+std::ostream& operator<<(std::ostream& strm, const Move& move) {
+    return strm << " (" << move.origin_square_algebraic() << ", " << move.destination_square_algebraic() << ") ";
+}
+
+bool operator==(const Move& lhs, const Move& rhs) {
+    return lhs.get_move_repr() == rhs.get_move_repr();
+}
+
 uint16_t Move::get_move_repr() const {
     return this->move_repr;
 }
 
-bool Move::compare_to(const Move other) const {
-    return move_repr == other.get_move_repr();
-}
-
-uint16_t Move::origin_square() {
+uint16_t Move::origin_square() const {
     return move_repr >> 10;
 }
 
-uint16_t Move::destination_square() {
+uint16_t Move::destination_square() const {
     return (move_repr >> 4) & 63;
 }
 
-MoveType Move::type() {
+MoveType Move::type() const {
     return t;
     // return static_cast<MoveType>(move_repr & 0xf);
 }
 
-bool Move::is_capture() {
+bool Move::is_capture() const {
     return static_cast<uint16_t>(move_repr) == 2 || static_cast<uint16_t>(move_repr) > 8;
 }
 
-std::string Move::origin_square_algebraic() {
+std::string Move::origin_square_algebraic() const{
     uint16_t origin = origin_square();
     char algebraic_move[3] = {(char)((origin & 7) + 'a'),
                               (char)((origin >> 3) + '1'),
@@ -49,7 +53,7 @@ std::string Move::origin_square_algebraic() {
     return std::string(algebraic_move);
 }
 
-std::string Move::destination_square_algebraic() {
+std::string Move::destination_square_algebraic() const {
     uint16_t destination = destination_square();
     char algebraic_move[3] = {(char)((destination & 7) + 'a'),
                               (char)((destination >> 3) + '1'),
@@ -57,12 +61,12 @@ std::string Move::destination_square_algebraic() {
     return std::string(algebraic_move);
 }
 
-std::array<uint16_t, 2> Move::origin_square_cartesian() {
+std::array<uint16_t, 2> Move::origin_square_cartesian() const {
     uint16_t origin = origin_square();
     return {static_cast<uint16_t>(origin & 7), static_cast<uint16_t>(origin >> 3)};
 }
 
-std::array<uint16_t, 2> Move::destination_square_cartesian() {
+std::array<uint16_t, 2> Move::destination_square_cartesian()const {
     uint16_t destination = destination_square();
     return {static_cast<uint16_t>(destination & 7), static_cast<uint16_t>(destination >> 3)};
 }

@@ -118,14 +118,14 @@ int Evaluate::static_evaluate_cheap(Board board) {
 int Evaluate::evaluate() {
     int value = 0;
 
-    // TODO: get all cartesian positions of pieces on the board;
+    // TODO: get all cartesian positions of pieces on the board
 
     return value * (board.get_side_to_move() ? -1 : 1);
 }
 int Evaluate::static_evaluate(Board board) {
     int value = 0;
 
-    // TODO: get all cartesian positions of pieces on the board;
+    // TODO: get all cartesian positions of pieces on the board
 
     return value * (board.get_side_to_move() ? -1 : 1);
 }

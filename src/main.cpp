@@ -13,7 +13,7 @@
 using namespace emscripten;
 #endif
 
-Board game_board("1r3r1k/1p1Q2p1/p4q1p/2p1p1b1/2P1B3/P1BPP3/4R1PP/1R4K1 b - - 6 26");
+Board game_board("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
 Evaluate board_eval = Evaluate(game_board);
 Search search_engine = Search(game_board);
 
@@ -97,6 +97,16 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 bool in_check() {
+    return game_board.in_check();
+}
+}
+
+// Runs a test on the FEN position
+extern "C" {
+#ifndef TESTING
+EMSCRIPTEN_KEEPALIVE
+#endif
+bool test_position(std::string fen) {
     return game_board.in_check();
 }
 }

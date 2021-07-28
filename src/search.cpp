@@ -20,18 +20,18 @@ Move Search::get_engine_move() {
     std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
 
-    std::cout << "get_engine_move " << board.get_side_to_move() << std::endl;
+    std::cout << "get_engine_move " << (board.get_side_to_move() ? "black" : "white") << std::endl;
 
     int best_eval = -10000;
     Move best_move = Move(moves[0]);
 
     for (int i = 0; i < move_count; i++) {
-        std::vector<Move> temp;
+        std::vector<Move> temp_pv;
 
         board.make_move(moves[i]);
-        int next_eval = -search(-1000, 1000, 4, temp);
+        int next_eval = -search(-1000, 1000, 4, temp_pv);
         board.unmake_move(moves[i]);
-
+        std::cout << "next_eval " << next_eval << std::endl;
         // update bestEval
         if (next_eval > best_eval) {
             best_eval = next_eval;
@@ -40,8 +40,8 @@ Move Search::get_engine_move() {
             // copy temporary variation onto principal variation with new best move
             principal_variation.clear();
             principal_variation.push_back(best_move);
-            for (int j = 0; j < temp.size(); j++) {
-                principal_variation.push_back(temp[j]);
+            for (int j = 0; j < temp_pv.size(); j++) {
+                principal_variation.push_back(temp_pv[j]);
             }
         }
     }
@@ -55,10 +55,10 @@ Move Search::get_engine_move() {
     return best_move;
 }
 
-int Search::search(int alpha, int beta, int depth, std::vector<Move> &p_var) {
+int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     if (depth == 0) {
         int curr_eval = evaluate.evaluate_cheap();
-        //int curr_eval = quiesce(alpha, beta, p_var);
+        //int curr_eval = quiesce(alpha, beta, pv);
 
         NodeType type;  // Should this always be EXACT??
         if (curr_eval <= alpha) {
@@ -68,15 +68,26 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &p_var) {
         } else {
             type = NodeType::EXACT;
         }
-        if (p_var.size())
-            t_table.put(board, p_var.front(), curr_eval, type, static_cast<uint8_t>(depth));
-        p_var.clear();
+        if (pv.size())
+            t_table.put(board, pv.front(), curr_eval, type, static_cast<uint8_t>(depth));
+        pv.clear();  // REMOVE WHEN USING QUIESCE;
         return curr_eval;
     }
 
+    /* futility pruning
+    if (depth == 1) {
+        if (!(pv.front().is_capture() || board.in_check())) {
+            int curr_eval = evaluate.evaluate_cheap();
+            const int MINOR_VAL = 300;
+            if (curr_eval + MINOR_VAL < alpha) {
+                return curr_eval;
+            }
+        }
+    }*/
+
     std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
-    std::vector<Move> temp;
+    std::vector<Move> temp_pv;
     int best_eval = INT_MIN;
 
     // Check transposition table for current position.
@@ -123,7 +134,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &p_var) {
 
     for (int i = 0; i < move_count; i++) {
         board.make_move(moves[i]);
-        int next_eval = -search(-beta, -alpha, depth - 1, temp);
+        int next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
         board.unmake_move(moves[i]);
 
         // update bestEval
@@ -135,10 +146,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &p_var) {
             }
 
             // Add new move to front of p_var and copy temp onto p_var
-            p_var.clear();
-            p_var.push_back(moves[i]);
-            for (int j = 0; j < temp.size(); j++) {
-                p_var.push_back(temp[j]);
+            pv.clear();
+            pv.push_back(moves[i]);
+            for (int j = 0; j < temp_pv.size(); j++) {
+                pv.push_back(temp_pv[j]);
             }
         }
         // return position if better than current max
@@ -156,24 +167,26 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &p_var) {
     } else {
         type = NodeType::EXACT;
     }
-    t_table.put(board, p_var.front(), best_eval, type, static_cast<uint8_t>(depth));
+    t_table.put(board, pv.front(), best_eval, type, static_cast<uint8_t>(depth));
 
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> &p_var) {
-    p_var.clear();
+int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
+    pv.clear();
 
     // TODO: handle loud positions
     if (board.in_check()) {
         return evaluate.evaluate_cheap();
+        //std::vector<Move> temp_pv;
+        //return -search(alpha, beta, 1, temp_pv);
     }
 
     int stand_pat = evaluate.evaluate_cheap();
     if (stand_pat >= beta) {
-        return stand_pat;
+        return beta;
     }
-    // Delta pruning - TODO: handle promotion, in check
+    // Delta pruning - TODO: handle promotion
     const int DELTA = 900;  // queen / max material swing value
     if (stand_pat + DELTA < alpha) {
         return alpha;
@@ -184,33 +197,67 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &p_var) {
 
     //generate all moves
     std::vector<Move> moves = board.get_moves();
+    //std::vector<Move> captures = sort_captures(moves);
     int move_count = moves.size();
+    std::vector<Move> temp_pv;
 
-    // TODO: Most Valuable Victim - Least Valuable Aggressor
     for (int i = 0; i < move_count; i++) {
-        std::vector<Move> temp;
-
         // skip if move isn't capture
         if (!moves[i].is_capture()) {
             continue;
         }
 
         board.make_move(moves[i]);
-        int next_eval = -quiesce(-beta, -alpha, temp);
+        int next_eval = -quiesce(-beta, -alpha, temp_pv);
         board.unmake_move(moves[i]);
 
         if (next_eval >= beta) {
-            return next_eval;
+            return beta;
         }
         if (next_eval > alpha) {
             alpha = next_eval;
         }
 
-        temp.push_back(moves[i]);
-        p_var = temp;
+        // Add new move to front of p_var and copy temp onto p_var
+        pv.clear();
+        pv.push_back(moves[i]);
+        for (int j = 0; j < temp_pv.size(); j++) {
+            pv.push_back(temp_pv[j]);
+        }
     }
 
     return alpha;
+}
+
+// bucket sorting captures using Most Valuable Victim - Least Valuable Aggressor
+std::vector<Move> Search::sort_captures(std::vector<Move> moves) {
+    // 400-800
+    std::vector<Move> high;
+    // 200-300
+    std::vector<Move> mid;
+    // 0 - 100
+    std::vector<Move> low;
+    // -100 - -300
+    std::vector<Move> lower;
+    // < -300
+    std::vector<Move> lowest;
+
+    for (int i = 0; i < moves.size(); i++) {
+        if (moves[i].is_capture()) {
+            // TODO: switch statement for pieces
+            high.push_back(moves[i]);
+        }
+    }
+
+    std::vector<Move> captures;
+    captures.reserve(high.size() + mid.size() + low.size() + lower.size() + lowest.size());
+    captures.insert(captures.end(), high.begin(), high.end());
+    captures.insert(captures.end(), mid.begin(), mid.end());
+    captures.insert(captures.end(), low.begin(), low.end());
+    captures.insert(captures.end(), lower.begin(), lower.end());
+    captures.insert(captures.end(), lowest.begin(), lowest.end());
+
+    return captures;
 }
 
 std::vector<Move> Search::get_principal_variation() {

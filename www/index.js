@@ -26,7 +26,7 @@ const init = (chess) => {
       free: false,
       dests: toDests(chess),
     },
-    fen: "1r3r1k/1p1Q2p1/p4q1p/2p1p1b1/2P1B3/P1BPP3/4R1PP/1R4K1 w - - 6 26",
+    fen: "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0",
     draggable: {
       showGhost: true,
     },

@@ -13,7 +13,7 @@
 using namespace emscripten;
 #endif
 
-Board game_board;
+Board game_board("1r3r1k/1p1Q2p1/p4q1p/2p1p1b1/2P1B3/P1BPP3/4R1PP/1R4K1 b - - 6 26");
 Evaluate board_eval = Evaluate(&game_board);
 Search search_engine = Search(&game_board);
 

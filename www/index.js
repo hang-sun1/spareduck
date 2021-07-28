@@ -26,6 +26,7 @@ const init = (chess) => {
       free: false,
       dests: toDests(chess),
     },
+    fen: "1r3r1k/1p1Q2p1/p4q1p/2p1p1b1/2P1B3/P1BPP3/4R1PP/1R4K1 w - - 6 26",
     draggable: {
       showGhost: true,
     },
@@ -39,8 +40,8 @@ const init = (chess) => {
   ground.set({
     movable: {
       events: {
-        after: playOtherSide(ground, chess),
-        // after: aiPlay(ground, chess, 500),
+        // after: playOtherSide(ground, chess),
+        after: aiPlay(ground, chess, 500),
       },
     },
   });

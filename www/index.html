@@ -11,11 +11,29 @@
         height: 480px;
       }
       #eval-bar {
-        height: 16px;
+        height: 18px;
         width: 476px;
         margin: 12px 0;
         background: linear-gradient(to right, white 50%, black 50%, black 100%);
         border: 2px solid black;
+      }
+      button {
+        display: inline-block;
+        height: fit-content;
+        padding: 0.3rem 0.25rem 0.25rem 0.25rem;
+        margin: 0.35rem 0;
+        box-sizing: border-box;
+        text-decoration: none;
+        font-family: 'Roboto', sans-serif;
+        color: #000;
+        border: 2px solid;
+        background-color: #fff;
+        text-align: center;
+      }
+      button:active {
+        border: 2px solid black;
+        color: #fff;
+        background-color: #000;
       }
     </style>
   </head>
@@ -24,5 +42,12 @@
     <script src="./bundle.js"></script>
     <div id="eval-bar"></div>
     <div id="p-var"><p>Principal Variation:</p></div>
+    <hr />
+    <div id="buttons">
+      <button id="test-button">Run Tests</button>
+      <button id="reset-button">Reset</button>
+    </div>
+    <div id="extra-data"></div>
+    <br /><br /><br /><br />
   </body>
 </html>

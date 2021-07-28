@@ -10,8 +10,8 @@ console.log(
   module.then((m) => {
     console.log(m._add_two(1, 2));
     console.log('init', toColor(m));
-    get_puzzle();
     init(m);
+    init_buttons(m);
   }),
 );
 
@@ -19,7 +19,7 @@ console.log(
     Chess board interface. Build using Chessground.
     https://github.com/ornicar/chessground
 */
-const init = (chess) => {
+const init = (chess, fen) => {
   const config = {
     turnColor: toColor(chess),
     movable: {
@@ -27,11 +27,11 @@ const init = (chess) => {
       free: false,
       dests: toDests(chess),
     },
-    fen: 'r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0',
     draggable: {
       showGhost: true,
     },
   };
+  if (fen) config.fen = fen;
 
   const ground = Chessground(
     document.getElementById('chessground-board'),
@@ -67,12 +67,39 @@ const init = (chess) => {
         ' ' +
         pv.get(i).destination_square_algebraic();
     }
-    console.log('js-pv: ', pv_list);
     pv_elem.innerHTML = 'Principal Variation: ' + pv_list.join(', ');
   }, 2000);
 };
 
-const get_puzzle = () => {
-  // Load random puzzle from csv
+const init_buttons = (chess) => {
+  document.getElementById('test-button').addEventListener('click', function () {
+    run_tests(chess);
+  });
+};
+
+const run_tests = (chess) => {
+  let fails_vect = chess.test_positions();
+  let fails = new Array(fails_vect.size());
+  for (let i = 0; i < fails_vect.size(); i++) {
+    fails[i] = fails_vect.get(i);
+  }
+  let extra_data = document.getElementById('extra-data');
+  let fail_positions = '<div>Failed positions:</div>';
+  fails.forEach(
+    (fail, ind) =>
+      (fail_positions += `<div style="display:flex;flex-direction:row;text-align: center;">
+      <p>${fail}</p>
+      <button id="position-${ind}">Start from FEN</button>
+     </div>`),
+  );
+  extra_data.innerHTML = fail_positions;
+  fails.forEach((fen, ind) =>
+    document
+      .getElementById(`position-${ind}`)
+      .addEventListener('click', function () {
+        init(chess, fen);
+      }),
+  );
+
   return;
 };

@@ -13,7 +13,7 @@
 using namespace emscripten;
 #endif
 
-Board game_board("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
+Board game_board;
 Evaluate board_eval = Evaluate(game_board);
 Search search_engine = Search(game_board);
 
@@ -101,13 +101,26 @@ bool in_check() {
 }
 }
 
-// Runs a test on the FEN position
+// Runs a test on the DB of FEN positions, returns the failed positions as FEN
 extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-bool test_position(std::string fen) {
-    return game_board.in_check();
+std::vector<std::string> test_positions() {
+    std::vector<std::string> test;
+    test.push_back("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
+    return test;
+}
+}
+
+// Starts a game from a position / puzzle
+extern "C" {
+#ifndef TESTING
+EMSCRIPTEN_KEEPALIVE
+#endif
+bool start_from_position(std::string fen) {
+    game_board = Board(fen);
+    return true;
 }
 }
 
@@ -122,11 +135,15 @@ int main() {
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {
+    // Function bindings
     function("get_moves", &get_moves);
     register_vector<std::string>("vector<std::string>");
     function("get_engine_move", &get_engine_move);
     function("get_principal_variation", &get_principal_variation);
     register_vector<Move>("vector<Move>");
+    function("test_positions", &test_positions);
+
+    // MoveType and Move bindings
     enum_<MoveType>("MoveType")
         .value("QUIET", MoveType::QUIET)
         .value("DOUBLE_PAWN_PUSH", MoveType::DOUBLE_PAWN_PUSH)

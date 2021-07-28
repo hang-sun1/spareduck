@@ -107,7 +107,6 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 int main() {
-    std::cout << "hello" << std::endl;
 }
 }
 

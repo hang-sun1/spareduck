@@ -10,6 +10,7 @@ console.log(
   module.then((m) => {
     console.log(m._add_two(1, 2));
     console.log('init', toColor(m));
+    get_puzzle();
     init(m);
   }),
 );
@@ -26,7 +27,7 @@ const init = (chess) => {
       free: false,
       dests: toDests(chess),
     },
-    fen: "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0",
+    fen: 'r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0',
     draggable: {
       showGhost: true,
     },
@@ -41,7 +42,7 @@ const init = (chess) => {
     movable: {
       events: {
         // after: playOtherSide(ground, chess),
-        after: aiPlay(ground, chess, 500),
+        after: aiPlay(ground, chess),
       },
     },
   });
@@ -69,4 +70,9 @@ const init = (chess) => {
     console.log('js-pv: ', pv_list);
     pv_elem.innerHTML = 'Principal Variation: ' + pv_list.join(', ');
   }, 2000);
+};
+
+const get_puzzle = () => {
+  // Load random puzzle from csv
+  return;
 };

@@ -45,6 +45,8 @@ std::optional<TableEntry> Table::get(uint64_t hash) {
     return {};
 }
 
+// Gets the principal variation of a position
+// Currently out of use due to frequency of infinite looping
 std::vector<Move> Table::get_variation(Board position) {
     std::vector<Move> variation;
     uint8_t count = 0;
@@ -63,4 +65,10 @@ std::vector<Move> Table::get_variation(Board position) {
     }
 
     return variation;
+}
+
+// does this work??
+void Table::clear() {
+    table.clear(); 
+    table.reserve(TABLE_LENGTH);
 }

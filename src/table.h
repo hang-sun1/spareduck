@@ -15,6 +15,7 @@ class Table {
     std::optional<TableEntry> get(const Board position);
     std::optional<TableEntry> get(const uint64_t hash);
     std::vector<Move> get_variation(Board position);
+    void clear();
 
    private:
     std::vector<TableEntry> table;

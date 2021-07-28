@@ -10,47 +10,52 @@
 */
 
 // Search constructor
-Search::Search(Board* start_board) {
-    board = start_board;
-    Evaluate evaluate = Evaluate(start_board);
+Search::Search(Board &start_board) : board(start_board), evaluate(Evaluate(start_board)) {
     Table t_table;
     std::vector<Move> principal_variation;
+    principal_variation.reserve(10);
 }
 
 Move Search::get_engine_move() {
-    std::vector<Move> moves = board->get_moves();
+    std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
 
-    std::cout << "get_engine_move " << board->get_side_to_move() << std::endl;
+    std::cout << "get_engine_move " << board.get_side_to_move() << std::endl;
 
-    int best_eval = -1000;
+    int best_eval = -10000;
     Move best_move = Move(moves[0]);
 
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp;
 
-        board->make_move(moves[i]);
+        board.make_move(moves[i]);
         int next_eval = -search(-1000, 1000, 4, temp);
-        board->unmake_move(moves[i]);
+        board.unmake_move(moves[i]);
 
         // update bestEval
         if (next_eval > best_eval) {
             best_eval = next_eval;
             best_move = moves[i];
 
-            temp.push_back(best_move);
-            principal_variation = temp;
+            // copy temporary variation onto principal variation with new best move
+            principal_variation.clear();
+            principal_variation.push_back(best_move);
+            for (int j = 0; j < temp.size(); j++) {
+                principal_variation.push_back(temp[j]);
+            }
         }
     }
 
+    t_table.clear();
+
     std::cout << "PRINCIPAL-VARIATION" << std::endl;
     for (int i = 0; i < principal_variation.size(); i++)
-        std::cout << i << "th move " << principal_variation.at(i).origin_square_algebraic() << " " << principal_variation.at(i).destination_square_algebraic() << std::endl;
+        std::cout << i << "th move " << principal_variation.at(i) << std::endl;
 
     return best_move;
 }
 
-int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
+int Search::search(int alpha, int beta, int depth, std::vector<Move> &p_var) {
     if (depth == 0) {
         int curr_eval = evaluate.evaluate_cheap();
         //int curr_eval = quiesce(alpha, beta, p_var);
@@ -63,18 +68,19 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
         } else {
             type = NodeType::EXACT;
         }
-        t_table.put(*board, p_var.front(), curr_eval, type, static_cast<uint8_t>(depth));
-
+        if (p_var.size())
+            t_table.put(board, p_var.front(), curr_eval, type, static_cast<uint8_t>(depth));
+        p_var.clear();
         return curr_eval;
     }
 
-    std::vector<Move> moves = board->get_moves();
+    std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
-
+    std::vector<Move> temp;
     int best_eval = INT_MIN;
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position = t_table.get(*board);
+    std::optional<TableEntry> t_position;  // = t_table.get(*board);
 
     if (t_position.has_value()) {
         if (t_position->get_depth() >= depth) {
@@ -108,19 +114,17 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
     int j = 1;  // move swap counter
     for (int i = 1; i < move_count; i++) {
         if (moves[i].is_capture()) {
-            Move temp = moves[j];
+            Move temp_move = moves[j];
             moves[j] = moves[i];
-            moves[i] = temp;
+            moves[i] = temp_move;
             j++;
         }
     }
 
     for (int i = 0; i < move_count; i++) {
-        std::vector<Move> temp;
-
-        board->make_move(moves[i]);
-        int next_eval = -search(-beta, -alpha, depth - 1, p_var);
-        board->unmake_move(moves[i]);
+        board.make_move(moves[i]);
+        int next_eval = -search(-beta, -alpha, depth - 1, temp);
+        board.unmake_move(moves[i]);
 
         // update bestEval
         if (next_eval > best_eval) {
@@ -130,8 +134,12 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
                 alpha = best_eval;
             }
 
-            temp.push_back(moves[i]);
-            p_var = temp;
+            // Add new move to front of p_var and copy temp onto p_var
+            p_var.clear();
+            p_var.push_back(moves[i]);
+            for (int j = 0; j < temp.size(); j++) {
+                p_var.push_back(temp[j]);
+            }
         }
         // return position if better than current max
         if (best_eval >= beta) {
@@ -148,16 +156,16 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> p_var) {
     } else {
         type = NodeType::EXACT;
     }
-    t_table.put(*board, p_var.front(), best_eval, type, static_cast<uint8_t>(depth));
+    t_table.put(board, p_var.front(), best_eval, type, static_cast<uint8_t>(depth));
 
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
+int Search::quiesce(int alpha, int beta, std::vector<Move> &p_var) {
     p_var.clear();
 
     // TODO: handle loud positions
-    if (board->in_check()) {
+    if (board.in_check()) {
         return evaluate.evaluate_cheap();
     }
 
@@ -175,7 +183,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
     }
 
     //generate all moves
-    std::vector<Move> moves = board->get_moves();
+    std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
 
     // TODO: Most Valuable Victim - Least Valuable Aggressor
@@ -187,9 +195,9 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> p_var) {
             continue;
         }
 
-        board->make_move(moves[i]);
+        board.make_move(moves[i]);
         int next_eval = -quiesce(-beta, -alpha, temp);
-        board->unmake_move(moves[i]);
+        board.unmake_move(moves[i]);
 
         if (next_eval >= beta) {
             return next_eval;

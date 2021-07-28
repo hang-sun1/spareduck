@@ -14,8 +14,8 @@ using namespace emscripten;
 #endif
 
 Board game_board("1r3r1k/1p1Q2p1/p4q1p/2p1p1b1/2P1B3/P1BPP3/4R1PP/1R4K1 b - - 6 26");
-Evaluate board_eval = Evaluate(&game_board);
-Search search_engine = Search(&game_board);
+Evaluate board_eval = Evaluate(game_board);
+Search search_engine = Search(game_board);
 
 extern "C" {
 #ifndef TESTING
@@ -77,7 +77,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    return board_eval.static_evaluate_cheap(game_board);
+    return board_eval.evaluate_cheap() * (game_board.get_side_to_move() ? -1 : 1);
 }
 }
 

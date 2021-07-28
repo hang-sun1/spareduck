@@ -68,10 +68,8 @@ short pst[6][8][8] = {
 static const short piece[6] = {100, 300, 300, 500, 900, 30000};
 
 // Evaluation constructor
-Evaluate::Evaluate() {}
-
-Evaluate::Evaluate(Board* start_board) {
-    board = start_board;
+Evaluate::Evaluate(Board& start_board) : board(start_board) {
+    this->board = start_board;
 }
 
 // Adds piece values to pst
@@ -90,16 +88,16 @@ void Evaluate::initialize_pst() {
 int Evaluate::evaluate_cheap() {
     int value = 0;
 
-    value += piece_values(board->get_pawns(), piece[0]);
-    value += piece_values(board->get_knights(), piece[1]);
-    value += piece_values(board->get_bishops(), piece[2]);
-    value += piece_values(board->get_rooks(), piece[3]);
-    value += piece_values(board->get_queens(), piece[4]);
-    value += piece_values(board->get_kings(), piece[5]);
+    value += piece_values(board.get_pawns(), piece[0]);
+    value += piece_values(board.get_knights(), piece[1]);
+    value += piece_values(board.get_bishops(), piece[2]);
+    value += piece_values(board.get_rooks(), piece[3]);
+    value += piece_values(board.get_queens(), piece[4]);
+    value += piece_values(board.get_kings(), piece[5]);
 
     // whats the best way to generate both side's moves?
 
-    return value * (board->get_side_to_move() ? -1 : 1);
+    return value * (board.get_side_to_move() ? -1 : 1);
 }
 int Evaluate::static_evaluate_cheap(Board board) {
     int value = 0;
@@ -120,14 +118,14 @@ int Evaluate::static_evaluate_cheap(Board board) {
 int Evaluate::evaluate() {
     int value = 0;
 
-    // TODO: get all cartesian positions of pieces on the board;
+    // TODO: get all cartesian positions of pieces on the board
 
-    return value * (board->get_side_to_move() ? -1 : 1);
+    return value * (board.get_side_to_move() ? -1 : 1);
 }
 int Evaluate::static_evaluate(Board board) {
     int value = 0;
 
-    // TODO: get all cartesian positions of pieces on the board;
+    // TODO: get all cartesian positions of pieces on the board
 
     return value * (board.get_side_to_move() ? -1 : 1);
 }

@@ -31,6 +31,7 @@ class Move {
     // Move from algebraic
     Move(std::string from, std::string to);
 
+    // to string
     friend std::ostream& operator<<(std::ostream&, const Move&);
 
     friend bool operator==(const Move& lhs, const Move& rhs);

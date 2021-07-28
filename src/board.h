@@ -3,12 +3,13 @@
 #include <array>
 #include <cstdint>
 #include <memory>
-#include <vector>
-#include <utility>
 #include <stack>
 #include <string>
-#include "move.h"
+#include <utility>
+#include <vector>
+
 #include "history.h"
+#include "move.h"
 #include "side.h"
 
 using std::uint64_t;
@@ -67,6 +68,7 @@ class Board {
 
     bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board, char move_type) const;
     void parse_fen(std::string fen);
+
    public:
     uint64_t nodes_evaluated = 0;
     // using enum Side;
@@ -99,13 +101,5 @@ class Board {
     std::array<uint64_t, 2> get_pawns() const;
 
     uint64_t hash() const;
-    
     bool in_check() const;
-
-    unsigned long long perft(unsigned int depth) {
-        if (depth == 0) {
-            return 1;
-        }
-    }
-
 };

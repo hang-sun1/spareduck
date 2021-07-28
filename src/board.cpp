@@ -627,27 +627,22 @@ std::vector<Move> Board::generate_moves() const {
     if (in_check()) {
         int check_counter = 0;
         if ((queen_defends[other_side] & kings[side])) {
-            std::cout << "fake q check detected" << std::endl;
             check_counter += 1;
             piece_giving_check = 3;
         }
         if ((rook_defends[other_side] & kings[side])) {
-            std::cout << "fake r check detected" << std::endl;
             check_counter += 1;
             piece_giving_check = 2;
         }
         if ((bishop_defends[other_side] & kings[side])) {
-            std::cout << "fake b check detected" << std::endl;
             check_counter += 1;
             piece_giving_check = 0;
         }
         if ((knight_defends[other_side] & kings[side])) {
-            std::cout << "fake n check detected" << std::endl;
             check_counter += 1;
             piece_giving_check = 1;
         }
         if ((pawn_defends[other_side] & kings[side])) {
-            std::cout << "fake p check detected" << std::endl;
             check_counter += 1;
             piece_giving_check = 5;
         }
@@ -1300,11 +1295,21 @@ uint64_t Board::hash() const {
     return hash;
 }
 
+// TODO create a field in the class for this
+// to reduce the number of calculations
 bool Board::in_check() const {
     size_t to_move = static_cast<size_t>(side_to_move);
     size_t other = 1 - to_move;
     bool in_check = (kings[to_move] & defense_maps[other]) != 0;
     return in_check;
+}
+
+bool Board::is_checkmate() const {
+    return in_check() && moves.size() == 0;
+}
+
+bool Board::is_stalemate() const {
+    return in_check() && moves.size() != 0;
 }
 
 std::vector<Move> Board::get_moves() {

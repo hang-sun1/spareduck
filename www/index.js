@@ -40,8 +40,8 @@ const init = (chess) => {
   ground.set({
     movable: {
       events: {
-        after: playOtherSide(ground, chess),
-        // after: aiPlay(ground, chess, 500),
+        // after: playOtherSide(ground, chess),
+        after: aiPlay(ground, chess, 500),
       },
     },
   });

@@ -102,4 +102,6 @@ class Board {
 
     uint64_t hash() const;
     bool in_check() const;
+    bool is_checkmate() const;
+    bool is_stalemate() const;
 };

@@ -6,7 +6,7 @@
 #include <vector>
 #include <utility>
 #include <stack>
-
+#include <string>
 #include "move.h"
 #include "history.h"
 #include "side.h"
@@ -15,7 +15,7 @@ using std::uint64_t;
 
 class Board {
    private:
-    std::shared_ptr<std::stack<History>> history;
+    std::stack<History> history;
     std::array<std::array<uint64_t, 64>, 12> hash_helper;
     std::array<uint64_t, 2> knights;
     std::array<uint64_t, 2> knight_defends;
@@ -66,11 +66,13 @@ class Board {
     uint64_t bishop_xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square) const;
 
     bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board, char move_type) const;
+    void parse_fen(std::string fen);
    public:
     uint64_t nodes_evaluated = 0;
     // using enum Side;
     // initizlizes a board in the starting position
     Board();
+    Board(std::string fen);
     // The below methods generate lookup tables that allow efficient determination of available moves
     // for the various pieces, as well as helper functions that assist in this
     static std::array<uint64_t, 64> generate_knight_lookup();

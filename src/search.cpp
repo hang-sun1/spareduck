@@ -20,7 +20,6 @@ Move Search::get_engine_move() {
     int move_count = moves.size();
 
     std::cout << "get_engine_move " << board.get_side_to_move() << std::endl;
-    std::cout << "current eval " << evaluate.evaluate_cheap() << std::endl;
 
     int best_eval = -10000;
     Move best_move = Move(moves[0]);
@@ -31,12 +30,12 @@ Move Search::get_engine_move() {
         board.make_move(moves[i]);
         int next_eval = -search(-1000, 1000, 4, temp);  // +?
         board.unmake_move(moves[i]);
-        
-        std::cout << "next_eval " << next_eval << " i " << i <<std::endl;
+
+        std::cout << "next_eval " << next_eval << " i " << i << std::endl;
 
         // update bestEval
         if (next_eval > best_eval) {
-            std::cout << "updating best_move " << next_eval << " i " << i <<std::endl;
+            std::cout << "updating best_move " << next_eval << " i " << i << std::endl;
             best_eval = next_eval;
             best_move = moves[i];
 
@@ -84,7 +83,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &p_var) {
     int best_eval = INT_MIN;
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position;// = t_table.get(*board);
+    std::optional<TableEntry> t_position;  // = t_table.get(*board);
 
     if (t_position.has_value()) {
         if (t_position->get_depth() >= depth) {

@@ -114,13 +114,20 @@ TEST_CASE("proper moves are generated", "[board]") {
         }
         
         auto start = high_resolution_clock::now();
-        uint64_t count = perft(5, &c);
+        uint64_t count = perft(4, &c);
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start);
         std::cout << count << " nodes searched in " << duration.count() << " ms\n";
             std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
 
 
-        REQUIRE(1 == 1);
+        REQUIRE(count == 197281);
+    }
+
+    SECTION("fen parser works correctly") {
+        Board a;
+        Board b = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        REQUIRE(a.all_per_side == b.all_per_side);
+        REQUIRE(a.get_moves().size() == b.get_moves().size());
     }
 }

@@ -31,7 +31,12 @@ const init = (chess, fen) => {
       showGhost: true,
     },
   };
-  if (fen) config.fen = fen;
+  
+  if (fen) {
+    config.fen = fen;
+    chess.start_from_position(fen);
+    config.movable.color = fen.includes('w') ? 'white' : 'black';
+  }
 
   const ground = Chessground(
     document.getElementById('chessground-board'),

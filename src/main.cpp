@@ -142,6 +142,7 @@ EMSCRIPTEN_BINDINGS(module) {
     function("get_principal_variation", &get_principal_variation);
     register_vector<Move>("vector<Move>");
     function("test_positions", &test_positions);
+    function("start_from_position", &start_from_position);
 
     // MoveType and Move bindings
     enum_<MoveType>("MoveType")

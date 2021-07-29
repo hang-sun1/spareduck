@@ -38,7 +38,15 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 void make_move(int from, int to) {
-    game_board.make_move(Move(from, to, MoveType::QUIET));
+    auto moves = game_board.get_moves();
+    auto mov = Move(from, to, MoveType::QUIET);
+    for (auto &m: moves) {
+        if (m.origin_square() == from && m.destination_square() == to) {
+            mov = m;
+            break;
+        }
+    }
+    game_board.make_move(mov);
     return;
 }
 }

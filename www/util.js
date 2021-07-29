@@ -28,6 +28,10 @@ export function toDests(chess) {
   for (let i = 0; i < moves_vect.size(); i += 2) {
     let from = moves_vect.get(i);
     let to = moves_vect.get(i + 1);
+    /*if (to === "O-O" || to === "O-O-O") {
+      dests.set(to, undefined);
+      continue;
+    }*/
     moves.push(from);
     moves.push(to);
   }

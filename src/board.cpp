@@ -815,22 +815,31 @@ std::vector<Move> Board::generate_moves() const {
         }
     }
 
-    // if (short_castle_rights[side]) {
-    //     uint64_t relevant_squares = side ? 0x7000000000000000ULL : 0x70ULL;
-    //     uint64_t to_be_vacated = side ? 0x6000000000000000ULL : 0x60ULL;
-    //     auto total_occ = all_per_side[side] | all_per_side[other_side];
-    //     if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
-    //         vec_of_moves.push_back(Move(0, 0, MoveType::SHORT_CASTLES));
-    //     }
-    // }
-    // if (long_castle_rights[side]) {
-    //     uint64_t relevant_squares = side ? 0x1c00000000000000ULL : 0x1cULL;
-    //     uint64_t to_be_vacated = side ? 0xe00000000000000ULL : 0xeULL;
-    //     auto total_occ = all_per_side[side] | all_per_side[other_side];
-    //     if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
-    //         vec_of_moves.push_back(Move(0, 0, MoveType::LONG_CASTLES));
-    //     }
-    // }
+    if (short_castle_rights[side]) {
+        uint64_t relevant_squares = side ? 0x7000000000000000ULL : 0x70ULL;
+        uint64_t to_be_vacated = side ? 0x6000000000000000ULL : 0x60ULL;
+        auto total_occ = all_per_side[side] | all_per_side[other_side];
+        if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
+            if (!side) {
+                vec_of_moves.push_back(Move(4, 6, MoveType::SHORT_CASTLES));
+            } else {
+                vec_of_moves.push_back(Move(60, 62, MoveType::SHORT_CASTLES));
+            }
+        }
+    }
+    if (long_castle_rights[side]) {
+        uint64_t relevant_squares = side ? 0x1c00000000000000ULL : 0x1cULL;
+        uint64_t to_be_vacated = side ? 0xe00000000000000ULL : 0xeULL;
+        auto total_occ = all_per_side[side] | all_per_side[other_side];
+        if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
+            // vec_of_moves.push_back(Move(0, 0, MoveType::LONG_CASTLES));
+            if (!side) {
+                vec_of_moves.push_back(Move(4, 2, MoveType::LONG_CASTLES));
+            } else {
+                vec_of_moves.push_back(Move(60, 58, MoveType::LONG_CASTLES));
+            }
+        }
+    }
 
     // TODO add castles and pawn stuff (including en passant)
 
@@ -861,6 +870,8 @@ void Board::make_move(Move move) {
     this->history.push(history);
     size_t current_move = static_cast<size_t>(side_to_move);
     size_t other_move = 1 - current_move;
+
+    uint64_t move_bitboard = 0;
     if (move.type() == MoveType::DOUBLE_PAWN_PUSH) {
         std::cout << "HELLO";
         // the current side to move is black
@@ -875,80 +886,83 @@ void Board::make_move(Move move) {
     } else {
         en_passant_target = 65;
     }
+    
+    int moved = -1;
+    int captured = -1;
+    std::array<std::array<uint64_t, 2> *, 6> arr = {&bishops, &knights, &rooks, &queens, &kings, &pawns};
 
     if (move.type() == MoveType::SHORT_CASTLES) {
         if (side_to_move == Side::WHITE) {
             kings[current_move] = 0x40;
             rooks[current_move] &= ~0x80;
             rooks[current_move] |= 0x20;
+            move_bitboard = 0xf0;
         } else {
             kings[current_move] = 0x4000000000000000;
             rooks[current_move] &= ~0x8000000000000000;
             rooks[current_move] |= 0x2000000000000000;
+            move_bitboard = 0xf000000000000000;
         }
         short_castle_rights[current_move] = false;
-    }
-
-    if (move.type() == MoveType::LONG_CASTLES) {
+    } else if (move.type() == MoveType::LONG_CASTLES) {
         if (side_to_move == Side::WHITE) {
             kings[current_move] = 0x4;
             rooks[current_move] &= ~0x1;
             rooks[current_move] |= 0x8;
+            move_bitboard = 0x1f;
         } else {
             kings[current_move] = 0x400000000000000;
             rooks[current_move] &= ~0x100000000000000;
             rooks[current_move] |= 0x800000000000000;
+            move_bitboard = 0x1f00000000000000;
         }
         long_castle_rights[current_move] = false;
-    }
+    } else {
+        auto from = move.origin_square();
+        auto to = move.destination_square();
+        move_bitboard = (1ULL << from) | (1ULL << to);
 
-    auto from = move.origin_square();
-    auto to = move.destination_square();
-    auto move_bitboard = (1ULL << from) | (1ULL << to);
-
-    if (short_castle_rights[current_move]) {
-        if (side_to_move == Side::WHITE) {
-            if (from == 4 || from == 7) {
-                short_castle_rights[current_move] = false;
-            }
-        } else {
-            if (from == 63 || from == 60) {
-                short_castle_rights[current_move] = false;
-            }
-        }
-    }
-
-    if (long_castle_rights[current_move]) {
-        if (side_to_move == Side::WHITE) {
-            if (from == 4 || from == 0) {
-                long_castle_rights[current_move] = false;
-            }
-        } else {
-            if (from == 60 || from == 56) {
-                long_castle_rights[current_move] = false;
+        if (short_castle_rights[current_move]) {
+            if (side_to_move == Side::WHITE) {
+                if (from == 4 || from == 7) {
+                    short_castle_rights[current_move] = false;
+                }
+            } else {
+                if (from == 63 || from == 60) {
+                    short_castle_rights[current_move] = false;
+                }
             }
         }
-    }
 
-    std::array<std::array<uint64_t, 2> *, 6> arr = {&bishops, &knights, &rooks, &queens, &kings, &pawns};
-    int moved = -1;
-    int captured = -1;
-    // std::vector<int> moved;
-    // std::vector<int> captured;
-    // bool capture = false;
-    for (int i = 0; i < 6; ++i) {
-        auto piece_arr_ptr = arr[i];
-        if (((*piece_arr_ptr)[current_move] & (1ULL << from))) {
-            (*piece_arr_ptr)[current_move] &= ~(1ULL << from);
-            (*piece_arr_ptr)[current_move] |= 1ULL << to;
-            moved = i;
-            // moved.push_back(i);
+        if (long_castle_rights[current_move]) {
+            if (side_to_move == Side::WHITE) {
+                if (from == 4 || from == 0) {
+                    long_castle_rights[current_move] = false;
+                }
+            } else {
+                if (from == 60 || from == 56) {
+                    long_castle_rights[current_move] = false;
+                }
+            }
         }
-        if (((*piece_arr_ptr)[other_move] & (1ULL << to))) {
-            (*piece_arr_ptr)[other_move] &= ~(1ULL << to);
-            captured = i;
-            // captured.push_back(i);
-            // capture = true;
+
+        // std::vector<int> moved;
+        // std::vector<int> captured;
+        // bool capture = false;
+        for (int i = 0; i < 6; ++i) {
+            auto piece_arr_ptr = arr[i];
+            if (((*piece_arr_ptr)[current_move] & (1ULL << from))) {
+                (*piece_arr_ptr)[current_move] &= ~(1ULL << from);
+                (*piece_arr_ptr)[current_move] |= 1ULL << to;
+                moved = i;
+                // moved.push_back(i);
+            }
+            if (((*piece_arr_ptr)[other_move] & (1ULL << to))) {
+                (*piece_arr_ptr)[other_move] &= ~(1ULL << to);
+                captured = i;
+                // captured.push_back(i);
+                // capture = true;
+            }
         }
     }
 

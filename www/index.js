@@ -46,8 +46,8 @@ const init = (chess, fen) => {
   ground.set({
     movable: {
       events: {
-        // after: playOtherSide(ground, chess),
-        after: aiPlay(ground, chess),
+        after: playOtherSide(ground, chess),
+        // after: aiPlay(ground, chess),
       },
     },
   });

@@ -52,10 +52,6 @@ void make_move(int from, int to) {
 }
 
 // Returns all of the possible moves in the position.
-extern "C" {
-#ifndef TESTING
-EMSCRIPTEN_KEEPALIVE
-#endif
 std::vector<std::string> get_moves() {
     std::vector<std::string> moves = game_board.get_moves_algebraic();
     std::cout << "moves:" << moves.size() << std::endl;
@@ -64,19 +60,13 @@ std::vector<std::string> get_moves() {
     std::cout << "end" << std::endl;
     return moves;
 }
-}
 
 // Returns engine's best move
-extern "C" {
-#ifndef TESTING
-EMSCRIPTEN_KEEPALIVE
-#endif
 std::string get_engine_move() {
     //Search test = Search(game_board);
     Move move = search_engine.get_engine_move();
     game_board.make_move(move);
     return move.origin_square_algebraic() + move.destination_square_algebraic();
-}
 }
 
 // Returns engine's evaluation for the position
@@ -90,13 +80,8 @@ double get_engine_evaluation() {
 }
 
 // Returns engine's best / principal variation for the current position.
-extern "C" {
-#ifndef TESTING
-EMSCRIPTEN_KEEPALIVE
-#endif
 std::vector<Move> get_principal_variation() {
     return search_engine.get_principal_variation();
-}
 }
 
 // Returns true if the king is in check.
@@ -110,15 +95,10 @@ bool in_check() {
 }
 
 // Runs a test on the DB of FEN positions, returns the failed positions as FEN
-extern "C" {
-#ifndef TESTING
-EMSCRIPTEN_KEEPALIVE
-#endif
 std::vector<std::string> test_positions() {
     std::vector<std::string> test;
     test.push_back("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
     return test;
-}
 }
 
 // Starts a game from a position / puzzle

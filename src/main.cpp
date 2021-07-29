@@ -13,7 +13,7 @@
 using namespace emscripten;
 #endif
 
-Board game_board;
+Board game_board = Board();
 Evaluate board_eval = Evaluate(game_board);
 Search search_engine = Search(game_board);
 
@@ -120,6 +120,8 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 bool start_from_position(std::string fen) {
     game_board = Board(fen);
+    //board_eval = Evaluate(game_board);
+    //search_engine = Search(game_board);
     return true;
 }
 }

@@ -64,7 +64,6 @@ const init = (chess, fen) => {
     for (let i = 0; i < pv.size(); i++) {
       pv_list[i] =
         pv.get(i).origin_square_algebraic() +
-        ' ' +
         pv.get(i).destination_square_algebraic();
     }
     pv_elem.innerHTML = 'Principal Variation: ' + pv_list.join(', ');

@@ -73,18 +73,20 @@ export function aiPlay(ground, chess) {
   return (from, to) => {
     chess._make_move(algebraicToIndex(from), algebraicToIndex(to));
     console.log('ai making move for', toColor(chess));
-    const ai_move = chess.get_engine_move();
-    let ai_from = ai_move.substring(0, 2);
-    let ai_to = ai_move.substring(2);
-    console.log({ to, from, ai_to, ai_from });
-    ground.move(ai_from, ai_to);
-    ground.set({
-      turnColor: toColor(chess),
-      movable: {
-        color: toColor(chess),
-        dests: toDests(chess),
-      },
-    });
+    setTimeout(() => {
+      const ai_move = chess.get_engine_move();
+      let ai_from = ai_move.substring(0, 2);
+      let ai_to = ai_move.substring(2);
+      console.log({ to, from, ai_to, ai_from });
+      ground.move(ai_from, ai_to);
+      ground.set({
+        turnColor: toColor(chess),
+        movable: {
+          color: toColor(chess),
+          dests: toDests(chess),
+        },
+      });
+    }, 250);
     ground.playPremove();
   };
 }

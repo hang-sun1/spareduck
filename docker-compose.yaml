@@ -1,0 +1,15 @@
+version: '3.9'
+services:
+  engine:
+    build:
+      context: .
+      dockerfile: nobash.Dockerfile
+    ports:
+      - '8080:8080'
+    volumes:
+      - .:/src/spareduck
+      - nodemodules:/src/spareduck/www/node_modules
+    image: spareduck:latest
+
+volumes:
+  nodemodules: {}

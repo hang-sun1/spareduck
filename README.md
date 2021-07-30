@@ -6,6 +6,18 @@ A chess engine using webassembly
 
 To build the project in an isolated environment, use the Docker config.
 
+#### `docker compose`
+
+First time make sure you build the volumes:
+
+> docker-compose up --build -d
+
+Then you should be able to simply run
+
+> docker-compose up --build -d
+
+#### `docker run`:
+
 First build the Docker image. The project is compiled during this step.
 
 > docker build --file Dockerfile --tag spareduck:latest .

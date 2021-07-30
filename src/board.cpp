@@ -1264,6 +1264,42 @@ std::array<std::vector<uint8_t>, 2> Board::get_pins() const {
     return pinned_pieces; 
 }
 
+std::vector<uint8_t> Board::get_piece_pos(char piece_type) const {
+    std::vector<uint8_t> pos;
+    size_t side = static_cast<size_t>(side_to_move); 
+    auto piece_board = pawns[side];
+    switch(piece_type) {
+        case 'p':
+            piece_board = pawns[side];
+            break;
+        case 'r':
+            piece_board = rooks[side];
+            break;
+        case 'b':
+            piece_board = bishops[side];
+            break;
+        case 'q':
+            piece_board = queens[side];
+            break;
+        case 'k':
+            piece_board = kings[side];
+            break;
+        case 'n':
+            piece_board = knights[side];
+            break;
+    }
+
+    int set_bit = __builtin_ffsll(piece_board);
+    while (set_bit) {
+        pos.push_back(set_bit-1);
+        piece_board &= ~(1ULL << (set_bit -1));
+        set_bit = __builtin_ffsll(piece_board);
+    }
+    return pos;
+}
+
+
+
 uint64_t Board::hash() const {
     uint64_t hash = 0;
     for (int i = 0; i < 64; ++i) {

@@ -95,27 +95,14 @@ int Evaluate::evaluate_cheap() {
     value += piece_values(board.get_queens(), piece[4]);
     value += piece_values(board.get_kings(), piece[5]);
 
+    auto pins = board.get_pins();
+    value += 30 * (pins[0].size() - pins[1].size());
+
     if (board.is_checkmate()) {
         value = -2e9;
     } else if (board.is_stalemate()) {
         value = 0;
     }
-    // whats the best way to generate both side's moves?
-
-    return value * (board.get_side_to_move() ? -1 : 1);
-}
-int Evaluate::static_evaluate_cheap(Board board) {
-    int value = 0;
-
-    value += piece_values(board.get_pawns(), piece[0]);
-    value += piece_values(board.get_knights(), piece[1]);
-    value += piece_values(board.get_bishops(), piece[2]);
-    value += piece_values(board.get_rooks(), piece[3]);
-    value += piece_values(board.get_queens(), piece[4]);
-    value += piece_values(board.get_kings(), piece[5]);
-
-    // whats the best way to generate both side's moves?
-
     return value * (board.get_side_to_move() ? -1 : 1);
 }
 

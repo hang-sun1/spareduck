@@ -566,7 +566,7 @@ std::array<std::array<uint64_t, 64>, 64> Board::generate_in_between() {
     return lookup_table;
 }
 
-std::vector<Move> Board::generate_moves() const {
+std::vector<Move> Board::generate_moves() {
     // figure out which side is to move
     size_t side = static_cast<size_t>(side_to_move);
     size_t other_side = 1 - side;
@@ -574,7 +574,7 @@ std::vector<Move> Board::generate_moves() const {
 
     uint64_t pinned = 0;
     int king_loc = __builtin_ffsll(kings[side]) - 1;
-    std::vector<uint8_t> pinned_squares;
+    pinned_pieces[side].clear();
     std::array<uint64_t, 64> available_moves;
 
     uint64_t pinner = rook_xray_attacks(all_per_side[side] | all_per_side[other_side], all_per_side[side], king_loc) & (rooks[other_side] | queens[other_side]);
@@ -584,7 +584,7 @@ std::vector<Move> Board::generate_moves() const {
         auto pins = in_between[king_loc][next_square] & all_per_side[side];
         if (pins) {
             uint8_t pinned_square = (uint8_t)__builtin_ffsll(pins) - 1;
-            pinned_squares.push_back(pinned_square);
+            pinned_pieces[side].push_back(pinned_square);
             uint64_t avail_moves = in_between[king_loc][next_square] | (1ULL << next_square);
             available_moves[pinned_square] = avail_moves;
         }
@@ -600,7 +600,7 @@ std::vector<Move> Board::generate_moves() const {
         auto pins = in_between[king_loc][next_square] & all_per_side[side];
         if (pins) {
             uint8_t pinned_square = (uint8_t)__builtin_ffsll(pins) - 1;
-            pinned_squares.push_back(pinned_square);
+            pinned_pieces[side].push_back(pinned_square);
             uint64_t avail_moves = in_between[king_loc][next_square] | (1ULL << next_square);
             available_moves[pinned_square] = avail_moves;
         }
@@ -1258,6 +1258,10 @@ std::array<uint64_t, 2> Board::get_kings() const {
 
 std::array<uint64_t, 2> Board::get_pawns() const {
     return pawns;
+}
+
+std::array<std::vector<uint8_t>, 2> Board::get_pins() const {
+    return pinned_pieces; 
 }
 
 uint64_t Board::hash() const {

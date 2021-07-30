@@ -57,8 +57,9 @@ class Board {
     uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ) const;
     std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type) const;
     Side side_to_move;
+    std::array<std::vector<uint8_t>, 2> pinned_pieces;
     std::vector<Move> moves;
-    std::vector<Move> generate_moves() const;
+    std::vector<Move> generate_moves();
     void update_board_state(Move move);
     std::vector<Move> made_moves;
     std::vector<std::array<uint64_t, 2>*> moved_piece_boards;
@@ -99,6 +100,7 @@ class Board {
     std::array<uint64_t, 2> get_queens() const;
     std::array<uint64_t, 2> get_kings() const;
     std::array<uint64_t, 2> get_pawns() const;
+    std::array<std::vector<uint8_t>, 2> get_pins() const;
 
     uint64_t hash() const;
     bool in_check() const;

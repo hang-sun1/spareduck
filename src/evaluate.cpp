@@ -95,6 +95,7 @@ int Evaluate::evaluate_cheap() {
     value += piece_values(board.get_queens(), piece[4]);
     value += piece_values(board.get_kings(), piece[5]);
 
+    // FIXME make sure pins aren't out of date (maybe check in make_move if the piece moving is a pinned piece taking the pinner?)
     auto pins = board.get_pins();
     value += 30 * (pins[0].size() - pins[1].size());
 

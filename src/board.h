@@ -102,6 +102,8 @@ class Board {
     std::array<uint64_t, 2> get_pawns() const;
     std::array<std::vector<uint8_t>, 2> get_pins() const;
 
+    std::vector<uint8_t> get_piece_pos(char piece_type) const;
+
     uint64_t hash() const;
     bool in_check() const;
     bool is_checkmate() const;

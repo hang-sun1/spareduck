@@ -100,7 +100,7 @@ bool start_from_position(std::string fen) {
 }
 }
 
-// Runs a test on the DB of FEN positions, returns the failed positions as FEN
+// Runs a test on the DB of FEN positions, returns the failed positions engine PV.
 std::vector<std::string> test_position(std::string fen, std::string move) {
     start_from_position(fen);
     Move start_move = Move(move.substr(0, 2), move.substr(2, 4));

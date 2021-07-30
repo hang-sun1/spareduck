@@ -7,9 +7,11 @@ services:
     ports:
       - '8080:8080'
     volumes:
-      - .:/src/spareduck
-      - nodemodules:/src/spareduck/www/node_modules
+      - frontend:/usr/src/spareduck/www
+      - ./src:/usr/src/spareduck/src
+      - nodemodules:/usr/src/spareduck/www/node_modules
     image: spareduck:latest
 
 volumes:
+  frontend: {}
   nodemodules: {}

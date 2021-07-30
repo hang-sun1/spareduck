@@ -16,7 +16,7 @@ with open("./lichess_db_puzzle.csv", newline='') as db:
         for row in reader: 
             row[7] = row[7].split(" ")
             row[2] = row[2].split(" ")
-            if count > -1:
+            if count > 0:
                 if type == "popular" and int(row[6]) > 1000 or type in row[7]:
                     new_db.write("{{fen:'{}',moves:{},rating:'{}',themes:{}}},\n".format(row[1], row[2], row[3], row[7]))
                     count -= 1

@@ -1,6 +1,6 @@
 build
 node_modules
-db/lichess_db_puzzle.csv
+*/*/lichess_db_puzzle.csv
 www/dist/bundle.js
 www/dist/*.wasm
 spareduck.js

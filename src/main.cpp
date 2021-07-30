@@ -17,13 +17,6 @@ Board game_board = Board();
 Evaluate board_eval = Evaluate(game_board);
 Search search_engine = Search(game_board);
 
-extern "C" {
-#ifndef TESTING
-EMSCRIPTEN_KEEPALIVE
-#endif
-int add_two(int a, int b) { return a + b; }
-}
-
 // Returns side to move.
 extern "C" {
 #ifndef TESTING
@@ -40,7 +33,7 @@ EMSCRIPTEN_KEEPALIVE
 void make_move(int from, int to) {
     auto moves = game_board.get_moves();
     auto mov = Move(from, to, MoveType::QUIET);
-    for (auto &m: moves) {
+    for (auto &m : moves) {
         if (m.origin_square() == from && m.destination_square() == to) {
             mov = m;
             break;
@@ -95,10 +88,16 @@ bool in_check() {
 }
 
 // Runs a test on the DB of FEN positions, returns the failed positions as FEN
-std::vector<std::string> test_positions() {
-    std::vector<std::string> test;
-    test.push_back("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
-    return test;
+std::vector<std::string> test_position(std::string fen) {
+    search_engine.get_engine_move();
+    std::vector<Move> pv = search_engine.get_principal_variation();
+    std::vector<std::string> pv_algebraic;
+
+    for (int i = 0; i < pv.size(); i++) {
+        pv_algebraic.push_back(pv[i].origin_square_algebraic() + pv[i].destination_square_algebraic());
+    }
+
+    return pv_algebraic;
 }
 
 // Starts a game from a position / puzzle
@@ -131,7 +130,7 @@ EMSCRIPTEN_BINDINGS(module) {
     function("get_engine_move", &get_engine_move);
     function("get_principal_variation", &get_principal_variation);
     register_vector<Move>("vector<Move>");
-    function("test_positions", &test_positions);
+    function("test_position", &test_position);
     function("start_from_position", &start_from_position);
 
     // MoveType and Move bindings

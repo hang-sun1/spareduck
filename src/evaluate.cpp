@@ -96,7 +96,7 @@ int Evaluate::evaluate_cheap() {
     value += piece_values(board.get_kings(), piece[5]);
 
     if (board.is_checkmate()) {
-        value = -2e9;
+        value = 2e9 * (board.get_side_to_move() ? -1 : 1);
     } else if (board.is_stalemate()) {
         value = 0;
     }

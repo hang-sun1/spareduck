@@ -6,10 +6,12 @@ import spareduck from './spareduck.js';
 import spareduckModule from './spareduck.wasm';
 const module = spareduck();
 
+const data = require('./db/db');
+
 console.log(
   module.then((m) => {
-    console.log(m._add_two(1, 2));
-    console.log('init', toColor(m));
+    console.log('hello', toColor(m));
+    console.log(data);
     init(m);
     init_buttons(m);
   }),
@@ -31,11 +33,12 @@ const init = (chess, fen) => {
       showGhost: true,
     },
   };
-  
+
   if (fen) {
     config.fen = fen;
     chess.start_from_position(fen);
     config.movable.color = fen.includes('w') ? 'white' : 'black';
+    config.turnColor = config.movable.color;
   }
 
   const ground = Chessground(
@@ -82,11 +85,20 @@ const init_buttons = (chess) => {
 };
 
 const run_tests = (chess) => {
-  let fails_vect = chess.test_positions();
-  let fails = new Array(fails_vect.size());
-  for (let i = 0; i < fails_vect.size(); i++) {
-    fails[i] = fails_vect.get(i);
-  }
+  let fails = [];
+  data.records.forEach((record) => {
+    let moves = chess.test_position(record.fen);
+    let i = Math.min(moves.size(), record.moves.length);
+    while (i--) {
+      if (moves.get(i) !== record.moves[i]) {
+        fails.push(record.fen);
+        break;
+      }
+    }
+  });
+
+  console.log(fails.length / 100);
+
   let extra_data = document.getElementById('extra-data');
   let fail_positions = '<div>Failed positions:</div>';
   fails.forEach(

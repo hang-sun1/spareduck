@@ -12,6 +12,8 @@ A stripped down version of [lichess's puzzle database](https://database.lichess.
 
 To avoid problems with csv the output is a js file.
 
+Example:
+
 ```js
 {
     // Metadata

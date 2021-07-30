@@ -1,6 +1,6 @@
 import csv
 
-count = 100
+count = 20
 type = "popular"
 
 with open("./lichess_db_puzzle.csv", newline='') as db:

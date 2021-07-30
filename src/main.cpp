@@ -87,19 +87,6 @@ bool in_check() {
 }
 }
 
-// Runs a test on the DB of FEN positions, returns the failed positions as FEN
-std::vector<std::string> test_position(std::string fen) {
-    search_engine.get_engine_move();
-    std::vector<Move> pv = search_engine.get_principal_variation();
-    std::vector<std::string> pv_algebraic;
-
-    for (int i = 0; i < pv.size(); i++) {
-        pv_algebraic.push_back(pv[i].origin_square_algebraic() + pv[i].destination_square_algebraic());
-    }
-
-    return pv_algebraic;
-}
-
 // Starts a game from a position / puzzle
 extern "C" {
 #ifndef TESTING
@@ -111,6 +98,22 @@ bool start_from_position(std::string fen) {
     //search_engine = Search(game_board);
     return true;
 }
+}
+
+// Runs a test on the DB of FEN positions, returns the failed positions as FEN
+std::vector<std::string> test_position(std::string fen, std::string move) {
+    start_from_position(fen);
+    Move start_move = Move(move.substr(0, 2), move.substr(2, 4));
+    game_board.make_move(start_move);
+    search_engine.get_engine_move();
+    std::vector<Move> pv = search_engine.get_principal_variation();
+    std::vector<std::string> pv_algebraic;
+
+    for (int i = 0; i < pv.size(); i++) {
+        pv_algebraic.push_back(pv[i].origin_square_algebraic() + pv[i].destination_square_algebraic());
+    }
+
+    return pv_algebraic;
 }
 
 // Main function initializes a new board.

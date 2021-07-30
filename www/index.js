@@ -86,8 +86,9 @@ const init_buttons = (chess) => {
 
 const run_tests = (chess) => {
   let fails = [];
-  data.records.forEach((record) => {
-    let moves = chess.test_position(record.fen);
+  data.records.forEach((record, hang_is_a_troll) => {
+    console.log(hang_is_a_troll);
+    let moves = chess.test_position(record.fen, record.moves.shift());
     let i = Math.min(moves.size(), record.moves.length);
     while (i--) {
       if (moves.get(i) !== record.moves[i]) {

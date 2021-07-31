@@ -7,15 +7,15 @@ USER root
 WORKDIR /usr/src/
 RUN mkdir spareduck
 WORKDIR /usr/src/spareduck
+COPY www ./www
+RUN cd www && npm install
 COPY CMakeLists.txt ./
 COPY build.sh ./
 COPY src ./src
 RUN bash build.sh
 COPY test ./test
 COPY test.sh ./
-COPY www ./www
 RUN cp build/spareduck.js ./www/ && mkdir -p ./www/dist && cp build/spareduck.wasm ./www/dist && cp build/spareduck.wasm ./www && cp ./www/index.html ./www/dist/
 WORKDIR /usr/src/spareduck/www
-RUN npm install
 EXPOSE 8080
 CMD ["npm", "run", "start"]

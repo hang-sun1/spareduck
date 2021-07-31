@@ -72,7 +72,7 @@ double get_engine_evaluation() {
 }
 }
 
-// Returns engine's best / principal variation for the current position.
+// Returns engine's best / principal variation for the current game_board position.
 std::vector<Move> get_principal_variation() {
     return search_engine.get_principal_variation();
 }
@@ -116,7 +116,7 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
     return pv_algebraic;
 }
 
-// Main function initializes a new board.
+// Main function.
 extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE

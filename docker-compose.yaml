@@ -7,6 +7,10 @@ services:
     ports:
       - '8080:8080'
     volumes:
+      - ./src:/usr/src/spareduck/src/
+      - ./www/index.js:/usr/src/spareduck/www/index.js
+      - ./www/util.js:/usr/src/spareduck/www/util.js
+      - ./www/index.html:/usr/src/spareduck/www/index.html
       - node_modules:/usr/src/spareduck/www/node_modules
     working_dir: /usr/src/spareduck/www
     image: spareduck:latest

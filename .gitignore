@@ -1,8 +1,7 @@
 build
 node_modules
 */*/lichess_db_puzzle.csv
-www/dist/bundle.js
-www/dist/*.wasm
+www/dist
 spareduck.js
 spareduck.wasm
 .vscode

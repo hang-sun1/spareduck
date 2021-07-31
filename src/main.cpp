@@ -114,13 +114,13 @@ bool start_from_position(std::string fen) {
 }
 
 // Main function initializes a new board.
-extern "C" {
 #ifndef TESTING
+extern "C" {
 EMSCRIPTEN_KEEPALIVE
-#endif
 int main() {
 }
 }
+#endif
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {

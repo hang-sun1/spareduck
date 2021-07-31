@@ -18,6 +18,9 @@ module.exports = {
     hot: true,
     port: 8080,
     host: '0.0.0.0',
+    /*proxy: {
+      '*': 'http://localhost:8080',
+    },*/
     contentBase: path.join(__dirname, 'dist'),
     compress: false,
     watchOptions: {

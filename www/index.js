@@ -63,7 +63,7 @@ const init = (chess, fen) => {
     eval_bar.innerHTML = `<div style='margin-left:2px;'>${evaluation}</div>`;
     eval_bar.setAttribute(
       'style',
-      `height: 16px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${eval_percent}%, black ${eval_percent}%, black 100%);border: 2px solid black;`,
+      `height: 18px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${eval_percent}%, black ${eval_percent}%, black 100%);border: 2px solid black;`,
     );
 
     let pv_elem = document.getElementById('p-var');

@@ -2,7 +2,8 @@
 
 #include <cstdint>
 #include <array>
-#include <wasm_simd128.h>
+#include <immintrin.h>
+// #include <wasm_simd128.h>
 
 using std::int16_t;
 using std::size_t;
@@ -36,17 +37,34 @@ private:
     int16_t activation_func(int16_t n);
 
     template<size_t IN, size_t OUT>
-    void compute_activation(std::array<int8_t, IN>& input, std::array<std::array<int8_t, OUT>, IN>& weights, std::array<int8_t, OUT>& biases,
+    static void compute_activation(std::array<int8_t, IN>& input, std::array<std::array<int8_t, IN>, OUT>& weights, std::array<int8_t, OUT>& biases,
         std::array<int8_t, OUT>& output) {
+            std::array<int32_t, OUT>& temp_out;
             for (size_t i = 0; i < OUT; ++i) {
                 int8_t a = 0;
+                __m128i acc = _mm_setzero_si128();
                 auto weight_vec = weights[i];
-                for (size_t j = 0; j < OUT; j += 16) {
-                    v128_t in = wasm_v128_load(&input);
-                    v128_t w = wasm_v128_load(&weight_vec);
-                    v128_t dot = wasm_i8x16_mul(in, w);
+                for (size_t j = 0; j < IN; j += 32) {
+                    __m128i i1 = _mm_load_si128((__m128i *) &in[j]);
+                    __m128i w1 = _mm_load_si128((__m128i *) &weight_vec[j]);
+                    __m128i p1 = _mm_maddubs_epi16(i1, p1); 
+                    acc = _mm_madd_epi16(acc, p1);
+                    
+                    __m128i i2 = _mm_load_si128((__m128i *) &in[j+16]);
+                    __m128i w2 = _mm_load_si128((__m128i *) &weight_vec[j+16]);
+                    __m128i p2 = _mm_maddubs_epi16(i2, p2); 
+
+                    acc = _mm_madd_epi16(acc, p2);
                 }
-                output[i] = activation_func(a);
+                __m128i hi64  = _mm_shuffle_epi32(acc, _MM_SHUFFLE(1, 0, 3, 2));
+                __m128i sum64 = _mm_add_epi32(hi64, x);
+                __m128i hi32  = _mm_shufflelo_epi16(sum64, _MM_SHUFFLE(1, 0, 3, 2));    // Swap the low two elements
+                __m128i sum32 = _mm_add_epi32(sum64, hi32);
+                int dot = _mm_cvtsi128_si32(sum32);       
+                temp_out[i] = dot;
+            }
+            for (auto &n: temp_out) {
+                std::cout << n << std::endl;
             }
         } 
 public:

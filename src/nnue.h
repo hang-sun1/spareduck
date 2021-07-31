@@ -63,9 +63,22 @@ private:
                 int dot = _mm_cvtsi128_si32(sum32);       
                 temp_out[i] = dot;
             }
-            for (auto &n: temp_out) {
-                std::cout << n << std::endl;
+
+            for (size_t i = 0; i < OUT; i += 16) {
+                __m128i a1 = _mm_load_si128(temp_out[i]);
+                __m128i a2 = _mm_load_si128(temp_out[i+4]);
+                __m128i a3 = _mm_load_si128(temp_out[i+8]);
+                __m128i a4 = _mm_load_si128(temp_out[i+12]);
+                __m128i b1 = _mm_packs_epi32(a1, a2);
+                __m128i b2 = _mm_packs_epi32(a3, a4);
+
+                __m128i c = _mm_packs_epi16(b1, b2);
+                __m128i relu = _mm_max_epi8(c, _mm_setzero_si128);
+                _mm_store_si128(&output[i]);
             }
+            //for (auto &n: temp_out) {
+            //    std::cout << n << std::endl;
+            //}
         } 
 public:
 };

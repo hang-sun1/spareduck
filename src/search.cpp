@@ -56,9 +56,9 @@ Move Search::get_engine_move() {
 }
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
-    if (depth == 0) {
-        int curr_eval = evaluate.evaluate_cheap();
-        //int curr_eval = quiesce(alpha, beta, pv);
+    if (depth <= 0) {
+        //int curr_eval = evaluate.evaluate_cheap();
+        int curr_eval = quiesce(alpha, beta, pv, 0);
 
         NodeType type;  // Should this always be EXACT??
         if (curr_eval <= alpha) {
@@ -70,17 +70,18 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         }
         if (pv.size())
             t_table.put(board, pv.front(), curr_eval, type, static_cast<uint8_t>(depth));
-        pv.clear();  // REMOVE WHEN USING QUIESCE;
+        //pv.clear();  // REMOVE WHEN USING QUIESCE;
         return curr_eval;
     }
 
     /* futility pruning
+    bool is_futile = false;
     if (depth == 1) {
         if (!(pv.front().is_capture() || board.in_check())) {
             int curr_eval = evaluate.evaluate_cheap();
             const int MINOR_VAL = 300;
             if (curr_eval + MINOR_VAL < alpha) {
-                return curr_eval;
+                is_futile = true;
             }
         }
     }*/
@@ -172,8 +173,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
+int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, int depth) {
     pv.clear();
+    //std::cout << "qsearch depth: " << depth << std::endl;
+    //std::cout << "alpha and beta: " << alpha << " " << beta << std::endl;
 
     // TODO: handle loud positions
     if (board.in_check()) {
@@ -203,26 +206,24 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
 
     for (int i = 0; i < move_count; i++) {
         // skip if move isn't capture
-        if (!moves[i].is_capture()) {
-            continue;
-        }
+        if (moves[i].is_capture()) {
+            //std::cout << "capture: " << moves[i] << std::endl;
+            board.make_move(moves[i]);
+            int next_eval = -quiesce(-beta, -alpha, temp_pv, depth + 1);
+            board.unmake_move(moves[i]);
 
-        board.make_move(moves[i]);
-        int next_eval = -quiesce(-beta, -alpha, temp_pv);
-        board.unmake_move(moves[i]);
-
-        if (next_eval >= beta) {
-            return beta;
-        }
-        if (next_eval > alpha) {
-            alpha = next_eval;
-        }
-
-        // Add new move to front of p_var and copy temp onto p_var
-        pv.clear();
-        pv.push_back(moves[i]);
-        for (int j = 0; j < temp_pv.size(); j++) {
-            pv.push_back(temp_pv[j]);
+            if (next_eval >= beta) {
+                // Add new move to front of p_var and copy temp onto p_var
+                pv.clear();
+                pv.push_back(moves[i]);
+                for (int j = 0; j < temp_pv.size(); j++) {
+                    pv.push_back(temp_pv[j]);
+                }
+                return beta;
+            }
+            if (next_eval > alpha) {
+                alpha = next_eval;
+            }
         }
     }
 

@@ -6,15 +6,17 @@ A chess engine using webassembly
 
 To build the project in an isolated environment, use the Docker config.
 
-#### `docker compose`
+#### `docker compose`:
 
-First time make sure you build the volumes:
+By using docker compose we can avoid having to recompiling after changing the main JS files.
 
-> docker-compose up --build -d
-
-Then you should be able to simply run
+For the first time and **whenever you change the c files** you have to run:
 
 > docker-compose up --build -d
+
+Otherwise you should be able to run:
+
+> docker-compose up -d
 
 #### `docker run`:
 

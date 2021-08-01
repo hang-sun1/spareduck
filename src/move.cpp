@@ -42,7 +42,7 @@ MoveType Move::type() const {
 }
 
 bool Move::is_capture() const {
-    return static_cast<uint16_t>(move_repr) == 2 || static_cast<uint16_t>(move_repr) > 8;
+    return static_cast<uint16_t>(t) == 2 || static_cast<uint16_t>(t) > 8;
 }
 
 std::string Move::origin_square_algebraic() const{

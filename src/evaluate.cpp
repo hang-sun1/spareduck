@@ -12,7 +12,63 @@
 
 // Piece-square table: used to give additional value to pieces based on their position.
 // Should be in the range [-100, 100]
-short pst[6][8][8] = {
+short pstWhite = {
+    {{0, 0, 0, 0, 0, 0, 0, 0},
+     {50, 50, 50, 50, 50, 50, 50, 50},
+     {20, 20, 25, 35, 35, 25, 20, 20},
+     {5, 10, 15, 30, 30, 15, 10, 5},
+     {0, 5, 15, 30, 30, 15, 5, 0},
+     {5, 0, -5, 5, 5, -5, 0, 5},
+     {5, 10, 10, -25, -25, 10, 10, 5},
+     {0, 0, 0, 0, 0, 0, 0, 0}},  // pawn
+    
+    {{-10, -5, 0, 5, 5, 0, -5, -10},
+     {-5, 0, 5 , 10, 10, 5, 0, -5},
+     {10, 15, 25, 35, 35, 25, 15, -10},
+     {5, 5, 10, 30, 30, 10, 5, 5},
+     {0, 0, 0, 30, 30, 0, 0, 0},
+     {5, 10, 20, 20, 20, 20, 10, 5},
+     {-35, -20, -5, 5, 5, -5, -20, -35},
+     {-50, -35, -15, -10, -10, -15, -35, -50}},  // knight
+    
+    {{-5, 0, 5, 10, 10, 5, 0, -5},
+     {0, 5, 10, 20, 20, 10, 5, 0},
+     {10, 15, 25, 40, 40, 25, 15, 10},
+     {5, 10, 20, 30, 30, 20, 10, 5},
+     {5, 10, 15, 25, 25, 15, 10, 5},
+     {5, -5, -10, 0, 0, -10, -5, 5},
+     {5, 10, 10, -25, -25, 10, 10, 5},
+     {-10, -5, -20, -5, -5, -20, -5, -10}},  // bishop
+
+    {{5, 10, 10, 10, 10, 10, 10, 5},
+     {10, 10, 15, 20, 20, 15, 10, 10},
+     {10, 10, 20, 30, 30, 20, 10, 10},
+     {0, 10, 15, 25, 25, 15, 10, 5},
+     {0, 5, 10, 20, 20, 10, 5, 0},
+     {0, 0, 10, 15, 15, 10, 0, 0},
+     {-5, 0, 0, 10, 10, 0, 0, -5},
+     {-10, 0, 0, 15, 15, 10, 0, -10}},  // rook
+
+    {{5, 10, 15, 15, 15, 15, 10, 5},
+     {5, 10, 15, 25, 25, 30, 15, 10},
+     {5, 20, 25, 30, 30, 35, 20, 5},
+     {0, 5, 15, 25, 25, 15, 5, 0},
+     {0, 5, 10, 20, 20, 10, 5, 0},
+     {-5, 5, 0, 5, 5, 5, 5, -5},
+     {-10, -5, 0, 0, 0, 0, -5, -10},
+     {-15, -10, -5, -10, -10, -5, -10, -15}},  // queen
+
+    {{5, 10, 15, 30, 30, 15, 10, 5},
+     {5, 10, 15, 20, 20, 15, 10, 5},
+     {10, 10, 20, 30, 30, 20, 10, 10},
+     {5, 10, 20, 30, 30, 20, 10, 5},
+     {0, 10, 15, 30, 30, 15, 10, 0},
+     {5, -5, -10, 0, 0, -10, -5, 5},
+     {10, 10, 0, 0, 0, 0, 10, 10},
+     {10, 15, 30, 0, 0, 10, 40, 10}}  // king
+};
+/*
+short pstBlack[6][8][8] = {
     {{0, 0, 0, 0, 0, 0, 0, 0},
      {50, 50, 50, 50, 50, 50, 50, 50},
      {10, 10, 20, 30, 30, 20, 10, 10},
@@ -61,7 +117,8 @@ short pst[6][8][8] = {
      {5, -5, -10, 0, 0, -10, -5, 5},
      {5, 10, 10, -25, -25, 10, 10, 5},
      {0, 0, 0, 0, 0, 0, 0, 0}}  // king
-};
+     
+};*/
 
 // Values of each piece pawn, knight, bishop, rook, queen, king.
 // Should remain near 100 * piece value with max of ~32,000
@@ -95,15 +152,27 @@ int Evaluate::evaluate_cheap() {
     value += piece_values(board.get_queens(), piece[4]);
     value += piece_values(board.get_kings(), piece[5]);
 
-    // FIXME make sure pins aren't out of date (maybe check in make_move if the piece moving is a pinned piece taking the pinner?)
-    auto pins = board.get_pins();
-    value += 30 * (pins[0].size() - pins[1].size());
-
     if (board.is_checkmate()) {
-        value = 2e9 * (board.get_side_to_move() ? -1 : 1);
+        value = -2e9;
     } else if (board.is_stalemate()) {
         value = 0;
     }
+    // whats the best way to generate both side's moves?
+
+    return value * (board.get_side_to_move() ? -1 : 1);
+}
+int Evaluate::static_evaluate_cheap(Board board) {
+    int value = 0;
+
+    value += piece_values(board.get_pawns(), piece[0]);
+    value += piece_values(board.get_knights(), piece[1]);
+    value += piece_values(board.get_bishops(), piece[2]);
+    value += piece_values(board.get_rooks(), piece[3]);
+    value += piece_values(board.get_queens(), piece[4]);
+    value += piece_values(board.get_kings(), piece[5]);
+
+    // whats the best way to generate both side's moves?
+
     return value * (board.get_side_to_move() ? -1 : 1);
 }
 

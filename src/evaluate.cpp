@@ -12,7 +12,7 @@
 
 // Piece-square table: used to give additional value to pieces based on their position.
 // Should be in the range [-100, 100]
-short pstWhite = {
+short pst_white[6][8][8] = {
     {{0, 0, 0, 0, 0, 0, 0, 0},
      {50, 50, 50, 50, 50, 50, 50, 50},
      {20, 20, 25, 35, 35, 25, 20, 20},
@@ -21,16 +21,16 @@ short pstWhite = {
      {5, 0, -5, 5, 5, -5, 0, 5},
      {5, 10, 10, -25, -25, 10, 10, 5},
      {0, 0, 0, 0, 0, 0, 0, 0}},  // pawn
-    
+
     {{-10, -5, 0, 5, 5, 0, -5, -10},
-     {-5, 0, 5 , 10, 10, 5, 0, -5},
+     {-5, 0, 5, 10, 10, 5, 0, -5},
      {10, 15, 25, 35, 35, 25, 15, -10},
      {5, 5, 10, 30, 30, 10, 5, 5},
      {0, 0, 0, 30, 30, 0, 0, 0},
      {5, 10, 20, 20, 20, 20, 10, 5},
      {-35, -20, -5, 5, 5, -5, -20, -35},
      {-50, -35, -15, -10, -10, -15, -35, -50}},  // knight
-    
+
     {{-5, 0, 5, 10, 10, 5, 0, -5},
      {0, 5, 10, 20, 20, 10, 5, 0},
      {10, 15, 25, 40, 40, 25, 15, 10},
@@ -68,7 +68,7 @@ short pstWhite = {
      {10, 15, 30, 0, 0, 10, 40, 10}}  // king
 };
 /*
-short pstBlack[6][8][8] = {
+short pst_black[6][8][8] = {
     {{0, 0, 0, 0, 0, 0, 0, 0},
      {50, 50, 50, 50, 50, 50, 50, 50},
      {10, 10, 20, 30, 30, 20, 10, 10},
@@ -134,7 +134,7 @@ void Evaluate::initialize_pst() {
     for (int i = 0; i < 6; i++) {
         for (int j = 0; j < 8; j++) {
             for (int k = 0; k < 8; k++) {
-                pst[i][j][k] += piece[i];
+                pst_white[i][j][k] += piece[i];
             }
         }
     }
@@ -142,7 +142,7 @@ void Evaluate::initialize_pst() {
 }
 
 // A cheap evaluation that just uses piece counts
-int Evaluate::evaluate_cheap() {
+int Evaluate::evaluate_cheap() const {
     int value = 0;
 
     value += piece_values(board.get_pawns(), piece[0]);
@@ -157,37 +157,21 @@ int Evaluate::evaluate_cheap() {
     } else if (board.is_stalemate()) {
         value = 0;
     }
-    // whats the best way to generate both side's moves?
-
-    return value * (board.get_side_to_move() ? -1 : 1);
-}
-int Evaluate::static_evaluate_cheap(Board board) {
-    int value = 0;
-
-    value += piece_values(board.get_pawns(), piece[0]);
-    value += piece_values(board.get_knights(), piece[1]);
-    value += piece_values(board.get_bishops(), piece[2]);
-    value += piece_values(board.get_rooks(), piece[3]);
-    value += piece_values(board.get_queens(), piece[4]);
-    value += piece_values(board.get_kings(), piece[5]);
-
-    // whats the best way to generate both side's moves?
 
     return value * (board.get_side_to_move() ? -1 : 1);
 }
 
 // More expensive evaluation that calculates the score of the position based on the pst
-int Evaluate::evaluate() {
+int Evaluate::evaluate() const {
     int value = 0;
 
-    // TODO: get all cartesian positions of pieces on the board
+    // PST stuff
 
-    return value * (board.get_side_to_move() ? -1 : 1);
-}
-int Evaluate::static_evaluate(Board board) {
-    int value = 0;
-
-    // TODO: get all cartesian positions of pieces on the board
+    if (board.is_checkmate()) {
+        value = -2e9;
+    } else if (board.is_stalemate()) {
+        value = 0;
+    }
 
     return value * (board.get_side_to_move() ? -1 : 1);
 }
@@ -206,6 +190,6 @@ int Evaluate::move_evaluate(Board board, Move move) const {
     return value;
 }
 
-int Evaluate::piece_values(std::array<uint64_t, 2> piece_boards, int value) {
+int Evaluate::piece_values(std::array<uint64_t, 2> piece_boards, int value) const {
     return value * (__builtin_popcountll(piece_boards[0]) - __builtin_popcountll(piece_boards[1]));
 }

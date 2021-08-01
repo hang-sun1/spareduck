@@ -54,9 +54,37 @@ export function toColor(chess) {
 // Plays a move and then switches players.
 export function playOtherSide(ground, chess) {
   return (from, to) => {
+    if (to[1] === '1') {
+      let rows = ground.getFen().split('/');
+      console.log('white on last rank', rows);
+      let ind = rows[7].indexOf('p');
+      if (ind > 0) {
+        let piece = prompt('Promote to (q,r,n,b)', 'q');
+        rows[7] =
+          rows[7].substring(0, ind) +
+          piece.toLowerCase() +
+          rows[7].substring(ind + 1);
+        const config = { fen: rows.join('/') };
+        ground.set(config);
+      }
+    } else if (to[1] === '8') {
+      let rows = ground.getFen().split('/');
+      console.log('white on last rank', rows);
+      let ind = rows[0].indexOf('P');
+      if (ind > 0) {
+        let piece = prompt('Promote to (Q,R,N,B)', 'Q');
+        rows[0] =
+          rows[0].substring(0, ind) +
+          piece.toUpperCase() +
+          rows[0].substring(ind + 1);
+        const config = { fen: rows.join('/') };
+        ground.set(config);
+      }
+    }
     from = algebraicToIndex(from);
     to = algebraicToIndex(to);
     chess._make_move(from, to);
+    //ground.toggleOrientation();
     ground.set({
       turnColor: toColor(chess),
       check: chess._in_check(),

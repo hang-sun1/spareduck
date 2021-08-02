@@ -726,7 +726,7 @@ std::vector<Move> Board::generate_moves() {
                 dest_plus_one = __builtin_ffsll(map);
                 continue;
             }
-            if (((1ULL << dest) & 0xff00000000000000) && ((1ULL << dest) & 0xff)) {
+            if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
                 Move promote_to_bishop = Move(from, dest, MoveType::PROMOTE_TO_BISHOP);
                 Move promote_to_knight = Move(from, dest, MoveType::PROMOTE_TO_KNIGHT);
                 Move promote_to_queen = Move(from, dest, MoveType::PROMOTE_TO_QUEEN);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "move.h"
+#include "move.hpp"
 
 typedef enum NodeType {
     EXACT = 0,

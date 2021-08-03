@@ -1,4 +1,4 @@
-#include "table_entry.h"
+#include "table_entry.hpp"
 
 /* 
     Entry in the transposition table:

@@ -2,9 +2,9 @@
 #include <string>
 #include <vector>
 
-#include "board.h"
-#include "evaluate.h"
-#include "move.h"
+#include "board.hpp"
+#include "evaluate.hpp"
+#include "move.hpp"
 #include "search.h"
 
 #ifndef TESTING

@@ -2,9 +2,8 @@
 
 #include <vector>
 
-#include "move.h"
-#include "board.h"
-#include "side.h"
+#include "move.hpp"
+#include "side.hpp"
 
 struct History {
     Side side_to_move;

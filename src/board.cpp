@@ -1,4 +1,3 @@
-#include "board.h"
 
 #include <algorithm>
 #include <array>
@@ -11,8 +10,9 @@
 #include <stack>
 #include <vector>
 
-#include "history.h"
-#include "move.h"
+#include "history.hpp"
+#include "move.hpp"
+#include "board.hpp"
 
 using std::uint64_t;
 

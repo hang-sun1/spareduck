@@ -8,9 +8,9 @@
 #include <utility>
 #include <vector>
 
-#include "history.h"
-#include "move.h"
-#include "side.h"
+#include "history.hpp"
+#include "move.hpp"
+#include "side.hpp"
 
 using std::uint64_t;
 

@@ -1,7 +1,7 @@
 #include <cstring>
 #include <optional>
 
-#include "nnue.h"
+#include "nnue.hpp"
 
 
 int NNUE::evaluate() {

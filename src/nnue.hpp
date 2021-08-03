@@ -5,8 +5,8 @@
 #include <immintrin.h>
 #include <optional>
 
-#include "move.h"
-#include "board.h"
+#include "move.hpp"
+#include "board.hpp"
 
 using std::int16_t;
 using std::size_t;

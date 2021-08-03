@@ -56,9 +56,8 @@ const init = (chess, fen) => {
   });
 
   setInterval(() => {
-    const evaluation = chess._get_engine_evaluation(); // To work with negamax this eval function swaps sign based on who's moving, this causes a bug for the frontend
+    const evaluation = chess._get_engine_evaluation();
     let eval_bar = document.getElementById('eval-bar');
-    //console.log('eval: ', evaluation);
     const eval_percent = Math.floor(evaluation / 50 + 50);
     eval_bar.innerHTML = `<div style='margin-left:2px;'>${evaluation}</div>`;
     eval_bar.setAttribute(
@@ -87,10 +86,11 @@ const init_buttons = (chess) => {
 const run_tests = (chess) => {
   let fails = [];
   data.records.forEach((record, hang_is_a_troll) => {
-    console.log(hang_is_a_troll);
+    console.log(hang_is_a_troll, record.moves[0]);
     let moves = chess.test_position(record.fen, record.moves.shift());
     let i = Math.min(moves.size(), record.moves.length);
     while (i--) {
+      console.log(moves.get(i), record.moves[i]);
       if (moves.get(i) !== record.moves[i]) {
         fails.push(record.fen);
         break;

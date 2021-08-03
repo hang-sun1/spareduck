@@ -123,19 +123,19 @@ extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-bool start_from_position(std::string fen) {
+void start_from_position(std::string fen) {
     game_board = Board(fen);
-    //board_eval = Evaluate(game_board);
-    //search_engine = Search(game_board);
-    return true;
+    return;
 }
 }
 
 // Runs a test on the DB of FEN positions, returns the failed positions engine PV.
 std::vector<std::string> test_position(std::string fen, std::string move) {
     start_from_position(fen);
-    Move start_move = Move(move.substr(0, 2), move.substr(2, 4));
+    Move start_move = Move(move.substr(0, 2), move.substr(2, 4)); // BUG: this move representation doesnt work
+    std::cout << "test_position " << move << " " << start_move << std::endl;
     game_board.make_move(start_move);
+
     search_engine.get_engine_move();
     std::vector<Move> pv = search_engine.get_principal_variation();
     std::vector<std::string> pv_algebraic;

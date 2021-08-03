@@ -145,17 +145,18 @@ void Evaluate::initialize_pst() {
 int Evaluate::evaluate_cheap() const {
     int value = 0;
 
-    value += piece_values(board.get_pawns(), piece[0]);
-    value += piece_values(board.get_knights(), piece[1]);
-    value += piece_values(board.get_bishops(), piece[2]);
-    value += piece_values(board.get_rooks(), piece[3]);
-    value += piece_values(board.get_queens(), piece[4]);
-    value += piece_values(board.get_kings(), piece[5]);
-
     if (board.is_checkmate()) {
-        value = -2e9;
+        return -2e9;
     } else if (board.is_stalemate()) {
         value = 0;
+    } else {
+        //value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
+        value += piece_values(board.get_pawns(), piece[0]);
+        value += piece_values(board.get_knights(), piece[1]);
+        value += piece_values(board.get_bishops(), piece[2]);
+        value += piece_values(board.get_rooks(), piece[3]);
+        value += piece_values(board.get_queens(), piece[4]);
+        value += piece_values(board.get_kings(), piece[5]);
     }
 
     return value * (board.get_side_to_move() ? -1 : 1);

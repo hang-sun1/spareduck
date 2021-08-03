@@ -148,7 +148,7 @@ int Evaluate::evaluate_cheap() const {
     if (board.is_checkmate()) {
         return board.get_side_to_move() ? INT32_MIN: INT32_MAX;
     } else if (board.is_stalemate()) {
-        value = 0;
+        return 0;
     } else {
         //value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
         value += piece_values(board.get_pawns(), piece[0]);

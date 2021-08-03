@@ -55,7 +55,7 @@ export function toColor(chess) {
 function checkPromotion(ground, to) {
   if (to[1] === '1') {
     let rows = ground.getFen().split('/');
-    console.log('white on last rank', rows);
+    // console.log('white on last rank', rows);
     let ind = rows[7].indexOf('p');
     if (ind > 0) {
       let piece = prompt('Promote to (q,r,n,b)', 'q');
@@ -69,7 +69,7 @@ function checkPromotion(ground, to) {
     }
   } else if (to[1] === '8') {
     let rows = ground.getFen().split('/');
-    console.log('white on last rank', rows);
+    // console.log('white on last rank', rows);
     let ind = rows[0].indexOf('P');
     if (ind > 0) {
       let piece = prompt('Promote to (Q,R,N,B)', 'Q');
@@ -91,7 +91,13 @@ export function playOtherSide(ground, chess) {
     let promotion = checkPromotion(ground, to); // returns false if no promote else q,r,n,b
     from = algebraicToIndex(from);
     to = algebraicToIndex(to);
-    chess._make_move(from, to);
+    console.log(promotion)
+    if (promotion ) {
+      console.log(promotion)
+      chess._make_move(from, to, true, promotion.toLowerCase().charCodeAt(0))
+    } else {
+      chess._make_move(from, to, false, 1);
+    }
     //ground.toggleOrientation();
     ground.set({
       turnColor: toColor(chess),

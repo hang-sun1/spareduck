@@ -46,6 +46,8 @@ class Move {
 
     bool is_capture() const;
 
+    bool is_promotion() const;
+
     std::string origin_square_algebraic() const;
 
     std::string destination_square_algebraic() const;

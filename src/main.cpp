@@ -30,13 +30,44 @@ extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
-void make_move(int from, int to) {
+void make_move(int from, int to, bool promotion, int promote_to) {
     auto moves = game_board.get_moves();
     auto mov = Move(from, to, MoveType::QUIET);
+    auto promote_type = MoveType::PROMOTE_TO_QUEEN;
+    auto capture_promote_type = MoveType::CAPTURE_AND_PROMOTE_TO_QUEEN;
+
+    if (promotion) {
+        switch (promote_to) {
+            case 113:
+                break;
+            case 114:
+                promote_type = MoveType::PROMOTE_TO_ROOK;
+                capture_promote_type = MoveType::CAPTURE_AND_PROMOTE_TO_ROOK;
+                break;
+            case 98:
+                promote_type = MoveType::PROMOTE_TO_BISHOP;
+                capture_promote_type = MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP;
+                break;
+            case 110:
+                promote_type = MoveType::PROMOTE_TO_KNIGHT;
+                capture_promote_type = MoveType::CAPTURE_AND_PROMOTE_TO_KNIGHT;
+                break;
+        }
+    }
+
     for (auto &m : moves) {
         if (m.origin_square() == from && m.destination_square() == to) {
-            mov = m;
-            break;
+            if (promotion) {
+                std::cout << static_cast<uint16_t>(m.type()) << std::endl;
+                if (m.type() == promote_type || m.type() == capture_promote_type) {
+                    std::cout << "sometihing happened!" << std::endl;
+                    mov = m;
+                    break;
+                }
+            } else {
+                mov = m;
+                break;
+            }
         }
     }
     game_board.make_move(mov);

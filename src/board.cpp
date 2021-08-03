@@ -730,7 +730,7 @@ std::vector<Move> Board::generate_moves() {
                 dest_plus_one = __builtin_ffsll(map);
                 continue;
             }
-            if (((1ULL << dest) & 0xff00000000000000) && ((1ULL << dest) & 0xff)) {
+            if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
                 Move promote_to_bishop = Move(from, dest, MoveType::PROMOTE_TO_BISHOP);
                 Move promote_to_knight = Move(from, dest, MoveType::PROMOTE_TO_KNIGHT);
                 Move promote_to_queen = Move(from, dest, MoveType::PROMOTE_TO_QUEEN);
@@ -886,7 +886,7 @@ void Board::make_move(Move move) {
     } else {
         en_passant_target = 65;
     }
-    
+
     int moved = -1;
     int captured = -1;
     std::array<std::array<uint64_t, 2> *, 6> arr = {&bishops, &knights, &rooks, &queens, &kings, &pawns};
@@ -917,6 +917,21 @@ void Board::make_move(Move move) {
             move_bitboard = 0x1f00000000000000;
         }
         long_castle_rights[current_move] = false;
+    } else if (move.is_promotion()) {
+        if (move.type() == MoveType::PROMOTE_TO_QUEEN || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_QUEEN) {
+            pawns[current_move] &= ~(1ULL << move.origin_square());
+            queens[current_move] |= (1ULL << move.destination_square());
+        } else if (move.type() == MoveType::PROMOTE_TO_ROOK || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_ROOK) {
+            pawns[current_move] &= ~(1ULL << move.origin_square());
+            rooks[current_move] |= (1ULL << move.destination_square());
+        } else if (move.type() == MoveType::PROMOTE_TO_KNIGHT || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_KNIGHT) {
+            pawns[current_move] &= ~(1ULL << move.origin_square());
+            knights[current_move] |= (1ULL << move.destination_square());
+        } else if (move.type() == MoveType::PROMOTE_TO_BISHOP || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP) {
+            pawns[current_move] &= ~(1ULL << move.origin_square());
+            bishops[current_move] |= (1ULL << move.destination_square());
+        }
+        move_bitboard = (1ULL << move.origin_square()) | (1ULL << move.destination_square());
     } else {
         auto from = move.origin_square();
         auto to = move.destination_square();

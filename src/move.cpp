@@ -45,6 +45,11 @@ bool Move::is_capture() const {
     return static_cast<uint16_t>(t) == 2 || static_cast<uint16_t>(t) > 8;
 }
 
+bool Move::is_promotion() const {
+    auto as_integer = static_cast<uint16_t>(t);
+    return as_integer >= 5 && as_integer <= 12;
+}
+
 std::string Move::origin_square_algebraic() const{
     uint16_t origin = origin_square();
     char algebraic_move[3] = {(char)((origin & 7) + 'a'),

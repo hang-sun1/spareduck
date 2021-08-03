@@ -1,7 +1,7 @@
 import csv
 
-count = 20
-type = "mateIn1"
+count = 5
+type = "mateIn2"
 
 with open("./lichess_db_puzzle.csv", newline='') as db:
     #PuzzleId,FEN,Moves,Rating,RatingDeviation,Popularity,NbPlays,Themes,GameUrl

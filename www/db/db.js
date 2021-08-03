@@ -1,43 +1,10 @@
-module.exports = {
-  num_records: 20,
-  type: 'mateIn1',
-  records: [
-    {
-      fen: '6k1/2p2ppp/pnp5/B7/2P3PP/1P1bPPR1/r6r/3R2K1 b - - 1 29',
-      moves: ['d3e2', 'd1d8'],
-      rating: '607',
-      themes: ['backRankMate', 'mate', 'mateIn1', 'middlegame', 'oneMove'],
-    },
-    {
-      fen: '6k1/pb2r1pN/1n4Bp/3p4/1P2pR2/P7/3R1PPP/2r3K1 w - - 2 30',
-      moves: ['d2d1', 'c1d1'],
-      rating: '706',
-      themes: [
-        'backRankMate',
-        'hangingPiece',
-        'mate',
-        'mateIn1',
-        'middlegame',
-        'oneMove',
-      ],
-    },
-    {
-      fen: '2k4r/pp3pp1/4pn2/2np2p1/8/1B1P1Pq1/PPPN1R2/R2Q3K w - - 6 20',
-      moves: ['f2h2', 'g3h2'],
-      rating: '754',
-      themes: ['kingsideAttack', 'mate', 'mateIn1', 'middlegame', 'oneMove'],
-    },
-    {
-      fen: '1r3rk1/2p1Nppb/p2nq3/1p2p1Pp/4Qn1P/2P1N3/PPB2P1K/3R2R1 b - - 5 28',
-      moves: ['e6e7', 'e4h7'],
-      rating: '865',
-      themes: ['kingsideAttack', 'mate', 'mateIn1', 'middlegame', 'oneMove'],
-    },
-    {
-      fen: '3kRr2/3n1B1p/2pP4/p1n5/Ppp5/8/1P3PPP/4R1K1 b - - 8 32',
-      moves: ['f8e8', 'e1e8'],
-      rating: '881',
-      themes: ['endgame', 'mate', 'mateIn1', 'oneMove'],
-    },
-  ],
-};
+module.exports={
+num_records: 5,
+type: 'mateIn2',
+records:[
+{fen:'4r1k1/5ppp/r1p5/p1n1RP2/8/2P2N1P/2P3P1/3R2K1 b - - 0 21',moves:['e8e5', 'd1d8', 'e5e8', 'd8e8'],rating:'1128',themes:['backRankMate', 'endgame', 'mate', 'mateIn2', 'short']},
+{fen:'5r1k/pp4pp/5p2/1BbQp1r1/6K1/7P/1PP3P1/3R3R w - - 2 26',moves:['g4h4', 'c5f2', 'g2g3', 'f2g3'],rating:'1019',themes:['mate', 'mateIn2', 'middlegame', 'short']},
+{fen:'2r5/pR5p/5p1k/4p3/4r3/B4nPP/PP3P2/1K2R3 w - - 0 27',moves:['e1e4', 'f3d2', 'b1a1', 'c8c1'],rating:'1777',themes:['backRankMate', 'endgame', 'fork', 'mate', 'mateIn2', 'short']},
+{fen:'r6k/2q3pp/8/2p1n3/R1Qp4/7P/2PB1PP1/6K1 b - - 0 32',moves:['e5c4', 'a4a8', 'c7b8', 'a8b8'],rating:'641',themes:['backRankMate', 'endgame', 'hangingPiece', 'mate', 'mateIn2', 'short']},
+{fen:'6k1/pp3pp1/2p1q1Pp/3b4/8/6Q1/PB3Pp1/3RrNK1 b - - 2 27',moves:['e1d1', 'g3b8', 'e6e8', 'b8e8'],rating:'695',themes:['endgame', 'mate', 'mateIn2', 'short']},
+]};

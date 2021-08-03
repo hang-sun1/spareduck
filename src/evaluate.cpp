@@ -146,7 +146,7 @@ int Evaluate::evaluate_cheap() const {
     int value = 0;
 
     if (board.is_checkmate()) {
-        return -2e9;
+        return board.get_side_to_move() ? INT32_MIN: INT32_MAX;
     } else if (board.is_stalemate()) {
         value = 0;
     } else {

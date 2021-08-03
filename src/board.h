@@ -31,14 +31,8 @@ class Board {
     std::array<uint64_t, 2> pawns;
     std::array<uint64_t, 2> pawn_defends;
     std::array<uint64_t, 2> all_per_side;
-    // a map of the squares which each side attack (subset of defense)
     std::array<uint64_t, 2> attack_maps;
-    // a map of the squares which each side defends
     std::array<uint64_t, 2> defense_maps;
-    // a map of attacks if there were no opposing pieces on the board
-    // essentially the set of attacked squaresif piece movement weren't
-    // blocked by opposing pieces
-    std::array<uint64_t, 2> unimpeded_maps;
     std::array<std::array<uint64_t, 64>, 8> rank_attack_lookup;
     std::array<uint64_t, 64> diagonal_mask_lookup;
     std::array<uint64_t, 64> antidiagonal_mask_lookup;

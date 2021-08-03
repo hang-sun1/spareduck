@@ -5,6 +5,7 @@
 
 #include "board.h"
 #include "move.h"
+#include "nnue.h"
 
 class Evaluate {
    public:

@@ -1378,7 +1378,7 @@ bool Board::is_checkmate() const {
 }
 
 bool Board::is_stalemate() const {
-    return in_check() && moves.size() == 0;
+    return !in_check() && moves.size() == 0;
 }
 
 std::vector<Move> Board::get_moves() {

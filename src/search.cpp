@@ -29,7 +29,7 @@ Move Search::get_engine_move() {
         std::vector<Move> temp_pv;
 
         board.make_move(moves[i]);
-        int next_eval = -search(-1000, 1000, 4, temp_pv);
+        int next_eval = -search(-10000, 10000, 5, temp_pv);
         board.unmake_move(moves[i]);
         std::cout << "next_eval " << next_eval << std::endl;
         // update bestEval
@@ -57,9 +57,8 @@ Move Search::get_engine_move() {
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     if (depth <= 0) {
+        int curr_eval = quiesce(alpha, beta, pv);
         //int curr_eval = evaluate.evaluate_cheap();
-        int curr_eval = quiesce(alpha, beta, pv, 0);
-
         NodeType type;  // Should this always be EXACT??
         if (curr_eval <= alpha) {
             type = NodeType::UPPER;
@@ -70,19 +69,23 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         }
         if (pv.size())
             t_table.put(board, pv.front(), curr_eval, type, static_cast<uint8_t>(depth));
-        //pv.clear();  // REMOVE WHEN USING QUIESCE;
+        //pv.clear();
         return curr_eval;
     }
 
-    /* futility pruning
-    bool is_futile = false;
-    if (depth == 1) {
-        if (!(pv.front().is_capture() || board.in_check())) {
-            int curr_eval = evaluate.evaluate_cheap();
-            const int MINOR_VAL = 300;
-            if (curr_eval + MINOR_VAL < alpha) {
-                is_futile = true;
-            }
+    // futility pruning
+    bool is_futile = false;  // No futility while in check
+    /*if (depth == 1) {
+        int curr_eval = evaluate.evaluate_cheap();
+        const int MINOR_VAL = 300;
+        if (curr_eval + MINOR_VAL < alpha) {
+            is_futile = true;
+        }
+    } else if (depth == 2) {
+        int curr_eval = evaluate.evaluate_cheap();
+        const int ROOK_VAL = 500;
+        if (curr_eval + ROOK_VAL < alpha) {
+            is_futile = true;
         }
     }*/
 
@@ -134,6 +137,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     }
 
     for (int i = 0; i < move_count; i++) {
+        if (is_futile && !moves[i].is_capture()) {  // && !moves[i].is_check()
+            continue;
+        }
+
         board.make_move(moves[i]);
         int next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
         board.unmake_move(moves[i]);
@@ -173,10 +180,8 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, int depth) {
+int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
     pv.clear();
-    //std::cout << "qsearch depth: " << depth << std::endl;
-    //std::cout << "alpha and beta: " << alpha << " " << beta << std::endl;
 
     // TODO: handle loud positions
     if (board.in_check()) {
@@ -187,8 +192,9 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, int depth) {
 
     int stand_pat = evaluate.evaluate_cheap();
     if (stand_pat >= beta) {
-        return beta;
+        return stand_pat;
     }
+
     // Delta pruning - TODO: handle promotion
     const int DELTA = 900;  // queen / max material swing value
     if (stand_pat + DELTA < alpha) {
@@ -207,9 +213,8 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, int depth) {
     for (int i = 0; i < move_count; i++) {
         // skip if move isn't capture
         if (moves[i].is_capture()) {
-            //std::cout << "capture: " << moves[i] << std::endl;
             board.make_move(moves[i]);
-            int next_eval = -quiesce(-beta, -alpha, temp_pv, depth + 1);
+            int next_eval = -quiesce(-beta, -alpha, temp_pv);
             board.unmake_move(moves[i]);
 
             if (next_eval >= beta) {

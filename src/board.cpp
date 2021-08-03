@@ -1,4 +1,3 @@
-#include "board.h"
 
 #include <algorithm>
 #include <array>
@@ -11,8 +10,9 @@
 #include <stack>
 #include <vector>
 
-#include "history.h"
-#include "move.h"
+#include "history.hpp"
+#include "move.hpp"
+#include "board.hpp"
 
 using std::uint64_t;
 
@@ -172,8 +172,6 @@ std::array<uint64_t, 64> Board::generate_knight_lookup() {
 // return an array containing the available pawn moves, this includes only
 // non capture moves
 uint64_t Board::generate_pawn_moves(uint8_t square, uint64_t board_occ) const {
-    size_t to_move = static_cast<size_t>(side_to_move);
-    size_t not_to_move = 1 - to_move;
     uint64_t one_piece_board = 1ULL << square;
     uint64_t moves = 0;
     uint64_t all_pieces = board_occ;
@@ -205,12 +203,10 @@ uint64_t Board::generate_pawn_moves(uint8_t square, uint64_t board_occ) const {
 uint64_t Board::generate_pawn_attacks(uint8_t square, uint64_t board_occ) const {
     uint64_t a_file = 0x0101010101010101;
     uint64_t h_file = 0x8080808080808080;
-    size_t to_move = static_cast<size_t>(side_to_move);
-    size_t not_to_move = 1 - to_move;
     uint64_t one_piece_board = 1ULL << square;
     uint64_t moves = 0;
     uint8_t file = square & 7;
-    uint64_t all_pieces = board_occ;
+    // uint64_t all_pieces = board_occ;
     if (side_to_move == Side::WHITE) {
         uint64_t potential_moves = (one_piece_board << 7) | (one_piece_board << 9);
         if (file == 0) {
@@ -299,7 +295,7 @@ uint64_t Board::generate_rook_moves(uint8_t square, uint64_t board_occ) const {
     board_occ = a1h8_diag_mask * this->rank_attack_lookup[(square ^ 56) >> 3][static_cast<uint8_t>(board_occ)];
     uint64_t file_moves = (h_file_mask & board_occ) >> (file ^ 7);
 
-    auto to_move = static_cast<size_t>(side_to_move);
+    // auto to_move = static_cast<size_t>(side_to_move);
     auto defended_squares = file_moves | rank_moves;
     // auto attacked_squares = defended_squares & (~all_per_side[to_move]);
     // defense_maps[to_move] |= defended_squares;
@@ -324,7 +320,7 @@ uint64_t Board::generate_bishop_moves(uint8_t square, uint64_t board_occ) const 
     antidiagonal_defend = a_file_mask * this->rank_attack_lookup[file][antidiagonal_defend];
     antidiagonal_defend = antidiagonal_defend & this->antidiagonal_mask_lookup[square];
     //diagonal_defend = 0;
-    auto to_move = static_cast<size_t>(side_to_move);
+    // auto to_move = static_cast<size_t>(side_to_move);
     auto defended_squares = diagonal_defend | antidiagonal_defend;
     return defended_squares & ~(1ULL << square);
 }
@@ -522,9 +518,9 @@ std::array<std::array<uint64_t, 64>, 64> Board::generate_in_between() {
             if (i_file == j_file) {
                 auto lower = std::min(i_rank, j_rank);
                 auto higher = std::max(i_rank, j_rank);
-                auto file = i_file;
-                auto lower_sq = std::min(i, j);
-                int k = 1;
+                // auto file = i_file;
+                // auto lower_sq = std::min(i, j);
+                // int k = 1;
                 lookup_table[i][j] = 0;
                 for (size_t k = lower + 1; k < higher; ++k) {
                     int shift_amount = 8 * k;
@@ -623,7 +619,7 @@ std::vector<Move> Board::generate_moves() {
 
     int piece_giving_check = -1;
 
-    uint64_t blocking_squares = 0xffffffffffffffffUL;
+    // uint64_t blocking_squares = 0xffffffffffffffffUL;
     if (in_check()) {
         int check_counter = 0;
         if ((queen_defends[other_side] & kings[side])) {

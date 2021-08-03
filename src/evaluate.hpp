@@ -3,8 +3,9 @@
 #include <array>
 #include <cstdint>
 
-#include "board.h"
-#include "move.h"
+#include "board.hpp"
+#include "move.hpp"
+#include "nnue.hpp"
 
 class Evaluate {
    public:

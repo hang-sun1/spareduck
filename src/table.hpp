@@ -3,9 +3,9 @@
 #include <optional>
 #include <vector>
 
-#include "board.h"
-#include "move.h"
-#include "table_entry.h"
+#include "board.hpp"
+#include "move.hpp"
+#include "table_entry.hpp"
 
 class Table {
    public:

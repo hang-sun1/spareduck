@@ -6,6 +6,7 @@
 #include <cstdint>
 #include "../src/move.h"
 #include <chrono>
+#include "../src/nnue.h"
 using namespace std::chrono;
 
 int captures = 0;

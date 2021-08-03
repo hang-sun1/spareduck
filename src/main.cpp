@@ -2,16 +2,18 @@
 #include <string>
 #include <vector>
 
-#include "board.h"
-#include "evaluate.h"
-#include "move.h"
+#include "board.hpp"
+#include "evaluate.hpp"
+#include "move.hpp"
 #include "search.h"
 
 #ifndef TESTING
 #include <emscripten.h>
 #include <emscripten/bind.h>
+#include <wasm_simd128.h>
 using namespace emscripten;
 #endif
+#include <immintrin.h>
 
 Board game_board = Board();
 Evaluate board_eval = Evaluate(game_board);
@@ -150,11 +152,42 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
 // Main function.
 extern "C" {
 #ifndef TESTING
+extern "C" {
 EMSCRIPTEN_KEEPALIVE
-#endif
 int main() {
+    alignas(16) int8_t a[16] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    alignas(16) std::array<int8_t, 16> b = { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+    alignas(16) std::array<int16_t, 8> output;
+    __m128i in_a = _mm_load_si128((__m128i *)&a);
+    __m128i in_b = _mm_load_si128((__m128i *)&b);
+    __m128i prod = _mm_maddubs_epi16(in_a, in_b); 
+
+
+    _mm_store_si128((__m128i*) &output, prod);
+    /*__m128i hi64  = _mm_shuffle_epi32(prod, _MM_SHUFFLE(1, 0, 3, 2));
+    __m128i sum64 = _mm_add_epi32(hi64, prod);
+    __m128i hi32 = _mm_shufflelo_epi16(sum64, _MM_SHUFFLE(1, 0, 3, 2));
+    __m128i sum32 = _mm_add_epi32(sum64, hi32);
+    __m128i hi16 = _mm_shuffle_epi8(sum32, _mm_set1_epi8( _MM_SHUFFLE(1, 0, 3, 2)));
+    __m128i sum16 = _mm_add_epi8(sum32, hi16);
+    int x = _mm_cvtsi128_si32(sum16); */
+    __m128i x = _mm_hadd_epi16(prod, prod);
+    x = _mm_hadd_epi16(x, x);
+    x = _mm_hadd_epi16(x, x);
+    int res = _mm_extract_epi16(x, 0);
+    
+    //v128_t ina = wasm_v128_load(&a);
+    //v128_t inb = wasm_v128_load(&b);
+    //v128_t prod = wasm_i16x8_mul(ina, inb);
+    //wasm_v128_store(&output, prod);
+    for (auto &n: output) {
+        std::cout << (int) n << " ";
+    }
+    std::cout << std::endl;
+    std::cout << res << std::endl;
 }
 }
+#endif
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {

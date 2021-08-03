@@ -5,11 +5,11 @@
 #include <optional>
 #include <vector>
 
-#include "board.h"
-#include "evaluate.h"
-#include "move.h"
-#include "table.h"
-#include "table_entry.h"
+#include "board.hpp"
+#include "evaluate.hpp"
+#include "move.hpp"
+#include "table.hpp"
+#include "table_entry.hpp"
 
 class Search {
    public:

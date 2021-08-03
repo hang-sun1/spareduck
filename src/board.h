@@ -101,7 +101,7 @@ class Board {
     std::array<uint64_t, 2> get_kings() const;
     std::array<uint64_t, 2> get_pawns() const;
     std::array<std::vector<uint8_t>, 2> get_pins() const;
-
+    // returns piece positions
     std::vector<uint8_t> get_piece_pos(char piece_type) const;
 
     uint64_t hash() const;

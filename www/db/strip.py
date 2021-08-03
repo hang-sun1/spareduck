@@ -1,7 +1,7 @@
 import csv
 
 count = 20
-type = "popular"
+type = "mateIn1"
 
 with open("./lichess_db_puzzle.csv", newline='') as db:
     #PuzzleId,FEN,Moves,Rating,RatingDeviation,Popularity,NbPlays,Themes,GameUrl

@@ -59,7 +59,7 @@ private:
     alignas(16) std::array<int8_t, LAYER3_SIZE> b3;
     alignas(16) std::array<int8_t, LAYER3_SIZE> a3;
     alignas(16) std::array<std::array<int8_t, LAYER3_SIZE>, 1> w3;
-    std::array<int8_t, 1> b4
+    std::array<int8_t, 1> b4;
     alignas(16) std::array<std::array<uint8_t, INPUT_SIZE>, 2> halfkp;
 
     // compute the activations of layers beyond the first (the first is a special case)

@@ -5,7 +5,7 @@
 #include "board.hpp"
 #include "evaluate.hpp"
 #include "move.hpp"
-#include "search.h"
+#include "search.hpp"
 
 #ifndef TESTING
 #include <emscripten.h>
@@ -15,9 +15,9 @@ using namespace emscripten;
 #endif
 #include <immintrin.h>
 
-Board game_board = Board();
-Evaluate board_eval = Evaluate(game_board);
-Search search_engine = Search(game_board);
+Board game_board;
+Evaluate board_evaluate(game_board);
+Search search_engine(game_board);
 
 // Returns side to move.
 extern "C" {
@@ -150,7 +150,6 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
 }
 
 // Main function.
-extern "C" {
 #ifndef TESTING
 extern "C" {
 EMSCRIPTEN_KEEPALIVE

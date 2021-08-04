@@ -16,6 +16,7 @@ using std::uint64_t;
 
 class Board {
    private:
+    uint64_t hash;
     std::stack<History> history;
     std::array<std::array<uint64_t, 64>, 12> hash_helper;
     std::array<uint64_t, 2> knights;
@@ -31,7 +32,7 @@ class Board {
     std::array<uint64_t, 2> pawns;
     std::array<uint64_t, 2> pawn_defends;
     std::array<uint64_t, 2> all_per_side;
-    std::array<uint64_t, 2> attack_maps;
+    // std::array<uint64_t, 2> attack_maps;
     std::array<uint64_t, 2> defense_maps;
     std::array<std::array<uint64_t, 64>, 8> rank_attack_lookup;
     std::array<uint64_t, 64> diagonal_mask_lookup;
@@ -47,9 +48,9 @@ class Board {
     uint64_t generate_queen_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_knight_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_king_moves(uint8_t square, uint64_t board_occ) const;
-    uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ) const;
-    uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ) const;
-    std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type) const;
+    uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ, Side side) const;
+    uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ, Side side) const;
+    std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side) const;
     Side side_to_move;
     std::array<std::vector<uint8_t>, 2> pinned_pieces;
     std::vector<Move> moves;
@@ -61,7 +62,7 @@ class Board {
     uint64_t rook_xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square) const;
     uint64_t bishop_xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square) const;
 
-    bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board, char move_type) const;
+    bool king_still_under_attack(uint8_t move_dest, uint64_t king_board, uint64_t piece_board, char move_type, Side other_side) const;
     void parse_fen(std::string fen);
 
    public:
@@ -98,7 +99,8 @@ class Board {
 
     std::vector<uint8_t> get_piece_pos(char piece_type) const;
 
-    uint64_t hash() const;
+    uint64_t intial_hash() const;
+    uint64_t get_hash() const;
     bool in_check() const;
     bool is_checkmate() const;
     bool is_stalemate() const;

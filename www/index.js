@@ -36,7 +36,7 @@ const init = (chess, fen) => {
 
   if (fen) {
     config.fen = fen;
-    chess.start_from_position(fen);
+    chess.start_fr1om_position(fen);
     config.movable.color = fen.includes('w') ? 'white' : 'black';
     config.turnColor = config.movable.color;
   }
@@ -49,7 +49,7 @@ const init = (chess, fen) => {
   ground.set({
     movable: {
       events: {
-        //after: playOtherSide(ground, chess),
+        // after: playOtherSide(ground, chess),
         after: aiPlay(ground, chess),
       },
     },

@@ -101,7 +101,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    return board_eval.evaluate_cheap() * (game_board.get_side_to_move() ? -1 : 1);
+    return board_evaluate.evaluate_cheap() * (game_board.get_side_to_move() ? -1 : 1);
 }
 }
 
@@ -183,7 +183,6 @@ int main() {
     }
     std::cout << std::endl;
     std::cout << res << std::endl;
-}
 }
 
 #ifndef TESTING

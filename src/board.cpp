@@ -59,7 +59,7 @@ Board::Board() {
     this->moved_piece_boards = std::vector<std::array<uint64_t, 2> *>();
     this->taken_piece_boards = std::vector<std::array<uint64_t, 2> *>();
     this->hash_helper = Board::initialize_hash();
-    this->hash = intial_hash();
+    this->hash = initial_hash();
     this->moves = this->generate_moves();
     // there is no en passant target yet, so just set it to some square off the board
     this->en_passant_target = 65;
@@ -119,9 +119,8 @@ Board::Board(std::string fen) {
     this->moved_piece_boards = std::vector<std::array<uint64_t, 2> *>();
     this->taken_piece_boards = std::vector<std::array<uint64_t, 2> *>();
     this->hash_helper = Board::initialize_hash();
+    this->hash = Board::initial_hash();
     this->moves = this->generate_moves();
-    std::cout << pawn_defends[0] << std::endl;
-    std::cout << pawn_defends[1] << std::endl;
 }
 
 // returns a array containing the valid moves for a king given
@@ -488,19 +487,20 @@ std::array<uint64_t, 64> Board::generate_antidiagonal_mask_map() {
     return lookup_table;
 }
 
-std::array<std::array<uint64_t, 64>, 12> Board::initialize_hash() {
+std::array<std::array<uint64_t, 64>, 13> Board::initialize_hash() {
     std::random_device rd;
     std::mt19937_64 e2(rd());
 
     std::uniform_int_distribution<uint64_t> dist(std::llround(std::pow(2, 61)), std::llround(std::pow(2, 62)));
 
-    std::array<std::array<uint64_t, 64>, 12> table;
+    std::array<std::array<uint64_t, 64>, 13> table;
     for (int i = 0; i < 64; ++i) {
-        for (int j = 0; j < 12; ++j) {
+        for (int j = 0; j < 13; ++j) {
             uint64_t random_num = dist(e2);
             table[j][i] = random_num;
         }
     }
+
     return table;
 }
 
@@ -897,17 +897,26 @@ void Board::make_move(Move move) {
     int moved = -1;
     int captured = -1;
     std::array<std::array<uint64_t, 2> *, 6> arr = {&bishops, &knights, &rooks, &queens, &kings, &pawns};
+    std::array<Piece, 6> piece_idents = { BISHOP, KNIGHT, ROOK, QUEEN, KING, PAWN };
 
     if (move.type() == MoveType::SHORT_CASTLES) {
         if (side_to_move == Side::WHITE) {
             kings[current_move] = 0x40;
             rooks[current_move] &= ~0x80;
             rooks[current_move] |= 0x20;
+            hash ^= hash_helper[2*KING][4];
+            hash ^= hash_helper[2*KING][6];
+            hash ^= hash_helper[2*ROOK][7];
+            hash ^= hash_helper[2*ROOK][5];
             move_bitboard = 0xf0;
         } else {
             kings[current_move] = 0x4000000000000000;
             rooks[current_move] &= ~0x8000000000000000;
             rooks[current_move] |= 0x2000000000000000;
+            hash ^= hash_helper[2*KING+1][60];
+            hash ^= hash_helper[2*KING+1][62];
+            hash ^= hash_helper[2*ROOK+1][63];
+            hash ^= hash_helper[2*ROOK+1][61];
             move_bitboard = 0xf000000000000000;
         }
         short_castle_rights[current_move] = false;
@@ -916,29 +925,22 @@ void Board::make_move(Move move) {
             kings[current_move] = 0x4;
             rooks[current_move] &= ~0x1;
             rooks[current_move] |= 0x8;
+            hash ^= hash_helper[2*KING][4];
+            hash ^= hash_helper[2*KING][2];
+            hash ^= hash_helper[2*ROOK][0];
+            hash ^= hash_helper[2*ROOK][3];
             move_bitboard = 0x1f;
         } else {
             kings[current_move] = 0x400000000000000;
             rooks[current_move] &= ~0x100000000000000;
             rooks[current_move] |= 0x800000000000000;
+            hash ^= hash_helper[2*KING+1][60];
+            hash ^= hash_helper[2*KING+1][58];
+            hash ^= hash_helper[2*ROOK+1][56];
+            hash ^= hash_helper[2*ROOK+1][59];
             move_bitboard = 0x1f00000000000000;
         }
         long_castle_rights[current_move] = false;
-    } else if (move.is_promotion()) {
-        if (move.type() == MoveType::PROMOTE_TO_QUEEN || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_QUEEN) {
-            pawns[current_move] &= ~(1ULL << move.origin_square());
-            queens[current_move] |= (1ULL << move.destination_square());
-        } else if (move.type() == MoveType::PROMOTE_TO_ROOK || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_ROOK) {
-            pawns[current_move] &= ~(1ULL << move.origin_square());
-            rooks[current_move] |= (1ULL << move.destination_square());
-        } else if (move.type() == MoveType::PROMOTE_TO_KNIGHT || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_KNIGHT) {
-            pawns[current_move] &= ~(1ULL << move.origin_square());
-            knights[current_move] |= (1ULL << move.destination_square());
-        } else if (move.type() == MoveType::PROMOTE_TO_BISHOP || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP) {
-            pawns[current_move] &= ~(1ULL << move.origin_square());
-            bishops[current_move] |= (1ULL << move.destination_square());
-        }
-        move_bitboard = (1ULL << move.origin_square()) | (1ULL << move.destination_square());
     } else {
         auto from = move.origin_square();
         auto to = move.destination_square();
@@ -948,10 +950,12 @@ void Board::make_move(Move move) {
             if (side_to_move == Side::WHITE) {
                 if (from == 4 || from == 7) {
                     short_castle_rights[current_move] = false;
+                    hash ^= hash_helper[13][1];
                 }
             } else {
                 if (from == 63 || from == 60) {
                     short_castle_rights[current_move] = false;
+                    hash ^= hash_helper[13][2];
                 }
             }
         }
@@ -960,10 +964,12 @@ void Board::make_move(Move move) {
             if (side_to_move == Side::WHITE) {
                 if (from == 4 || from == 0) {
                     long_castle_rights[current_move] = false;
+                    hash ^= hash_helper[13][3];
                 }
             } else {
                 if (from == 60 || from == 56) {
                     long_castle_rights[current_move] = false;
+                    hash ^= hash_helper[13][4];
                 }
             }
         }
@@ -976,16 +982,45 @@ void Board::make_move(Move move) {
             if (((*piece_arr_ptr)[current_move] & (1ULL << from))) {
                 (*piece_arr_ptr)[current_move] &= ~(1ULL << from);
                 (*piece_arr_ptr)[current_move] |= 1ULL << to;
+                hash ^= hash_helper[2*piece_idents[i]+current_move][from];
+                hash ^= hash_helper[2*piece_idents[i]+current_move][to];
                 moved = i;
                 // moved.push_back(i);
             }
             if (((*piece_arr_ptr)[other_move] & (1ULL << to))) {
                 (*piece_arr_ptr)[other_move] &= ~(1ULL << to);
+                hash ^= hash_helper[2*piece_idents[i]+other_move][to];
                 captured = i;
                 // captured.push_back(i);
                 // capture = true;
             }
         }
+        
+        if (move.is_promotion()) {
+            if (move.type() == MoveType::PROMOTE_TO_QUEEN || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_QUEEN) {
+                pawns[current_move] &= ~(1ULL << move.origin_square());
+                queens[current_move] |= (1ULL << move.destination_square());
+                hash ^= hash_helper[2*QUEEN+current_move][to];
+                hash ^= hash_helper[2*PAWN+current_move][to];
+            } else if (move.type() == MoveType::PROMOTE_TO_ROOK || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_ROOK) {
+                pawns[current_move] &= ~(1ULL << move.origin_square());
+                rooks[current_move] |= (1ULL << move.destination_square());
+                hash ^= hash_helper[2*ROOK+current_move][to];
+                hash ^= hash_helper[2*PAWN+current_move][to];
+            } else if (move.type() == MoveType::PROMOTE_TO_KNIGHT || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_KNIGHT) {
+                pawns[current_move] &= ~(1ULL << move.origin_square());
+                knights[current_move] |= (1ULL << move.destination_square());
+                hash ^= hash_helper[2*KNIGHT+current_move][to];
+                hash ^= hash_helper[2*PAWN+current_move][to];
+            } else if (move.type() == MoveType::PROMOTE_TO_BISHOP || move.type() == MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP) {
+                pawns[current_move] &= ~(1ULL << move.origin_square());
+                bishops[current_move] |= (1ULL << move.destination_square());
+                hash ^= hash_helper[2*BISHOP+current_move][to];
+                hash ^= hash_helper[2*PAWN+current_move][to];
+            }
+        }
+
+        
     }
 
     // attack_maps[current_move] = 0;
@@ -1025,6 +1060,7 @@ void Board::make_move(Move move) {
 
     // now flip whose turn it is
     this->side_to_move = static_cast<Side>(other_move);
+    this->hash ^= hash_helper[13][0];
     this->defense_maps[current_move] = pawn_defends[current_move] | rook_defends[current_move] |
                                        knight_defends[current_move] | bishop_defends[current_move] | queen_defends[current_move] | king_defends[current_move];
     this->defense_maps[other_move] = pawn_defends[other_move] | rook_defends[other_move] |
@@ -1322,7 +1358,7 @@ std::vector<uint8_t> Board::get_piece_pos(char piece_type) const {
 
 
 
-uint64_t Board::intial_hash() const {
+uint64_t Board::initial_hash() const {
     uint64_t hash = 0;
     for (int i = 0; i < 64; ++i) {
         auto wp = pawns[0];
@@ -1337,37 +1373,45 @@ uint64_t Board::intial_hash() const {
         auto bk = kings[1];
         auto wn = knights[0];
         auto bn = knights[1];
-        int j = 0;
+        int j = -1;
         uint64_t piece_board = 1ULL << i;
         if ((wp & piece_board)) {
-            j = 1;
+            j = PAWN;
         } else if ((bp & piece_board)) {
-            j = 2;
+            j = PAWN;
         } else if ((wq & piece_board)) {
-            j = 3;
+            j = QUEEN;
         } else if ((bq & piece_board)) {
-            j = 4;
+            j = QUEEN;
         } else if ((wr & piece_board)) {
-            j = 5;
+            j = ROOK;
         } else if ((br & piece_board)) {
-            j = 6;
+            j = ROOK;
         } else if ((wb & piece_board)) {
-            j = 7;
+            j = BISHOP;
         } else if ((bb & piece_board)) {
-            j = 8;
+            j = BISHOP;
         } else if ((wk & piece_board)) {
-            j = 9;
+            j = KING;
         } else if ((bk & piece_board)) {
-            j = 10;
+            j = KING;
         } else if ((wn & piece_board)) {
-            j = 11;
+            j = KNIGHT;
         } else if ((bn & piece_board)) {
-            j = 12;
+            j = KNIGHT;
         }
-        if (j) {
+
+        if (j > 0) {
+            j = 2*j + static_cast<size_t>(side_to_move);
             hash = hash ^ hash_helper[j][i];
         }
     }
+
+    // of the 13th row, the first column is for the side to move, the second and third
+    // column represent kingside castling rights of white and black respectively
+    // the fourth and fifth represent queenside castling rights for white and black respectively
+    // (they don't need to be set rn, but rather just applied when the states they represent change)
+
     return hash;
 }
 

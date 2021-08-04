@@ -11,6 +11,7 @@
 #include "history.hpp"
 #include "move.hpp"
 #include "side.hpp"
+#include "piece.hpp"
 
 using std::uint64_t;
 
@@ -18,7 +19,7 @@ class Board {
    private:
     uint64_t hash;
     std::stack<History> history;
-    std::array<std::array<uint64_t, 64>, 12> hash_helper;
+    std::array<std::array<uint64_t, 64>, 13> hash_helper;
     std::array<uint64_t, 2> knights;
     std::array<uint64_t, 2> knight_defends;
     std::array<uint64_t, 2> bishops;
@@ -78,7 +79,7 @@ class Board {
     static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
     static std::array<uint64_t, 64> generate_diagonal_mask_map();
     static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
-    static std::array<std::array<uint64_t, 64>, 12> initialize_hash();
+    static std::array<std::array<uint64_t, 64>, 13> initialize_hash();
     static std::array<std::array<uint64_t, 64>, 64> generate_in_between();
 
     // move and side functions
@@ -99,7 +100,7 @@ class Board {
     // returns piece positions
     std::vector<uint8_t> get_piece_pos(char piece_type) const;
 
-    uint64_t intial_hash() const;
+    uint64_t initial_hash() const;
     uint64_t get_hash() const;
     bool in_check() const;
     bool is_checkmate() const;

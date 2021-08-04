@@ -55,10 +55,10 @@ int NNUE::evaluate() {
     return compute_activation<LAYER3_SIZE, 1>(a3, w3, b4, dummy);
 }
 
-void NNUE::update_non_king_move(Move move, PieceType moved_piece, std::optional<PieceType> captured) {
+void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured) {
     
 }
 
-void NNUE::update_king_move(Move move, std::optional<PieceType> captured) {
+void NNUE::update_king_move(Move move, std::optional<Piece> captured) {
     
 }

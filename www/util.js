@@ -55,9 +55,8 @@ export function toColor(chess) {
 function checkPromotion(ground, to) {
   if (to[1] === '1') {
     let rows = ground.getFen().split('/');
-    // console.log('white on last rank', rows);
     let ind = rows[7].indexOf('p');
-    if (ind > 0) {
+    if (ind > -1) {
       let piece = prompt('Promote to (q,r,n,b)', 'q');
       rows[7] =
         rows[7].substring(0, ind) +
@@ -69,9 +68,9 @@ function checkPromotion(ground, to) {
     }
   } else if (to[1] === '8') {
     let rows = ground.getFen().split('/');
-    // console.log('white on last rank', rows);
+    console.log('checkPromotion: ', rows);
     let ind = rows[0].indexOf('P');
-    if (ind > 0) {
+    if (ind > -1) {
       let piece = prompt('Promote to (Q,R,N,B)', 'Q');
       rows[0] =
         rows[0].substring(0, ind) +
@@ -91,10 +90,9 @@ export function playOtherSide(ground, chess) {
     let promotion = checkPromotion(ground, to); // returns false if no promote else q,r,n,b
     from = algebraicToIndex(from);
     to = algebraicToIndex(to);
-    console.log(promotion)
-    if (promotion ) {
-      console.log(promotion)
-      chess._make_move(from, to, true, promotion.toLowerCase().charCodeAt(0))
+    if (promotion) {
+      console.log(promotion);
+      chess._make_move(from, to, true, promotion.toLowerCase().charCodeAt(0));
     } else {
       chess._make_move(from, to, false, 1);
     }
@@ -116,7 +114,12 @@ export function aiPlay(ground, chess) {
     chess._make_move(algebraicToIndex(from), algebraicToIndex(to));
     console.log('ai making move for', toColor(chess));
     setTimeout(() => {
+      console.time('get_engine_move');
+
       const ai_move = chess.get_engine_move();
+
+      console.timeEnd('get_engine_move');
+
       let ai_from = ai_move.substring(0, 2);
       let ai_to = ai_move.substring(2);
       console.log({ to, from, ai_to, ai_from });

@@ -22,16 +22,16 @@ Move Search::get_engine_move() {
 
     std::cout << "get_engine_move " << (board.get_side_to_move() ? "black" : "white") << std::endl;
 
-    int best_eval = -10000;
+    int best_eval = -100000;
     Move best_move = Move(moves[0]);
 
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp_pv;
 
         board.make_move(moves[i]);
-        int next_eval = -search(-10000, 10000, 5, temp_pv);
+        int next_eval = -search(-100000, 100000, 4, temp_pv);
         board.unmake_move(moves[i]);
-        std::cout << "next_eval " << next_eval << std::endl;
+        std::cout << "next_eval " << moves[i] << " => " << next_eval << std::endl;
         // update bestEval
         if (next_eval > best_eval) {
             best_eval = next_eval;
@@ -56,9 +56,16 @@ Move Search::get_engine_move() {
 }
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
+    std::vector<Move> moves = board.get_moves();
+    int move_count = moves.size();
+
+    if (move_count == 0 && board.in_check()) {
+        // update tt
+        return evaluate.evaluate_cheap();
+    }
+
     if (depth <= 0) {
         int curr_eval = quiesce(alpha, beta, pv);
-        //int curr_eval = evaluate.evaluate_cheap();
         NodeType type;  // Should this always be EXACT??
         if (curr_eval <= alpha) {
             type = NodeType::UPPER;
@@ -69,34 +76,33 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         }
         if (pv.size())
             t_table.put(board, pv.front(), curr_eval, type, static_cast<uint8_t>(depth));
-        //pv.clear();
+
         return curr_eval;
     }
 
     // futility pruning
     bool is_futile = false;  // No futility while in check
-    /*if (depth == 1) {
+    if (depth == 1) {
         int curr_eval = evaluate.evaluate_cheap();
-        const int MINOR_VAL = 300;
+        const int MINOR_VAL = 310;
         if (curr_eval + MINOR_VAL < alpha) {
             is_futile = true;
         }
     } else if (depth == 2) {
         int curr_eval = evaluate.evaluate_cheap();
-        const int ROOK_VAL = 500;
+        const int ROOK_VAL = 510;
         if (curr_eval + ROOK_VAL < alpha) {
             is_futile = true;
         }
-    }*/
+    }
+    is_futile = !board.in_check() && is_futile;
 
-    std::vector<Move> moves = board.get_moves();
-    int move_count = moves.size();
     std::vector<Move> temp_pv;
     int best_eval = INT_MIN;
+    int j = 0;  // move swap counter
 
     // Check transposition table for current position.
     std::optional<TableEntry> t_position;  // = t_table.get(*board);
-
     if (t_position.has_value()) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {
@@ -120,14 +126,13 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             if (moves[i] == t_position->get_move()) {  // TODO: check if move valid?
                 moves[i] = moves[0];
                 moves[0] = t_position->get_move();
+                j++;
                 break;
             }
         }
     }
-
     // move ordering:  captures first
-    int j = 1;  // move swap counter
-    for (int i = 1; i < move_count; i++) {
+    for (int i = j; i < move_count; i++) {
         if (moves[i].is_capture()) {
             Move temp_move = moves[j];
             moves[j] = moves[i];
@@ -137,7 +142,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     }
 
     for (int i = 0; i < move_count; i++) {
-        if (is_futile && !moves[i].is_capture()) {  // && !moves[i].is_check()
+        if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check() also implicitly tries move from hashtable
             continue;
         }
 
@@ -218,12 +223,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
             board.unmake_move(moves[i]);
 
             if (next_eval >= beta) {
-                // Add new move to front of p_var and copy temp onto p_var
-                pv.clear();
-                pv.push_back(moves[i]);
-                for (int j = 0; j < temp_pv.size(); j++) {
-                    pv.push_back(temp_pv[j]);
-                }
+                // Update pv?
                 return beta;
             }
             if (next_eval > alpha) {

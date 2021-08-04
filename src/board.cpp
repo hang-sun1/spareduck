@@ -1172,8 +1172,8 @@ void Board::parse_fen(std::string fen) {
         ++i;
     }
     // check side to move
-    i += 2;
-    side_to_move = fen[i] == 'w' ? Side::WHITE : Side::WHITE;
+    i++;
+    side_to_move = fen[i] == 'w' ? Side::WHITE : Side::BLACK;
     // check castling rights
     i += 2;
 

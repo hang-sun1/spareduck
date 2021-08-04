@@ -146,11 +146,11 @@ int Evaluate::evaluate_cheap() const {
     int value = 0;
 
     if (board.is_checkmate()) {
-        return board.get_side_to_move() ? INT32_MIN: INT32_MAX;
+        return INT32_MIN + 1;
     } else if (board.is_stalemate()) {
         return 0;
     } else {
-        //value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
+        value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
         value += piece_values(board.get_pawns(), piece[0]);
         value += piece_values(board.get_knights(), piece[1]);
         value += piece_values(board.get_bishops(), piece[2]);
@@ -166,12 +166,12 @@ int Evaluate::evaluate_cheap() const {
 int Evaluate::evaluate() const {
     int value = 0;
 
-    // PST stuff
-
     if (board.is_checkmate()) {
-        value = -2e9;
+        return INT32_MAX;
     } else if (board.is_stalemate()) {
-        value = 0;
+        return 0;
+    } else {
+        // PST stuff
     }
 
     return value * (board.get_side_to_move() ? -1 : 1);

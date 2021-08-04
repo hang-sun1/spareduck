@@ -12,6 +12,7 @@ Move::Move(std::string from, std::string to) {
     MoveType type = MoveType::QUIET;
 
     move_repr = (from_square << 10) | (to_square << 4) | static_cast<uint16_t>(type);
+    this->t = type;
 }
 
 Move::Move() {}
@@ -38,11 +39,11 @@ uint16_t Move::destination_square() const {
 
 MoveType Move::type() const {
     return t;
-    // return static_cast<MoveType>(move_repr & 0xf);
 }
 
 bool Move::is_capture() const {
-    return static_cast<uint16_t>(t) == 2 || static_cast<uint16_t>(t) > 8;
+    auto as_integer = static_cast<uint16_t>(t);
+    return as_integer == 2 || as_integer > 8;
 }
 
 bool Move::is_promotion() const {

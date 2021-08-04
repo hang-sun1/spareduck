@@ -11,6 +11,7 @@ services:
       - ./www/index.js:/usr/src/spareduck/www/index.js
       - ./www/util.js:/usr/src/spareduck/www/util.js
       - ./www/index.html:/usr/src/spareduck/www/index.html
+      - ./www/db/db.js:/usr/src/spareduck/www/db.js
       - node_modules:/usr/src/spareduck/www/node_modules
     working_dir: /usr/src/spareduck/www
     image: spareduck:latest

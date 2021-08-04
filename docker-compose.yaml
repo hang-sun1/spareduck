@@ -3,7 +3,7 @@ services:
   engine:
     build:
       context: .
-      dockerfile: nobash.Dockerfile
+      dockerfile: Dockerfile
     ports:
       - '8080:8080'
     volumes:

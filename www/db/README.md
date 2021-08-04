@@ -6,7 +6,7 @@ A stripped down version of [lichess's puzzle database](https://database.lichess.
 
 **`count`**: number of positions
 
-**`type`**: type of positions. one of `['popular','advantage', 'endgame', 'opening', 'short','crushing', 'exposedKing', 'long', 'middlegame', 'skewer','advancedPawn', 'bishopEndgame','hangingPiece','defensiveMove',master', 'masterVsMaster','superGM','attraction','discoveredAttack', 'kingsideAttack','capturingDefender','deflection','mateIn3','mate']`. and im sure there are more documented somewhere.
+**`type`**: type of positions. one of `'popular', rating (number), 'advantage', 'endgame', 'opening', 'short','crushing', 'exposedKing', 'long', 'middlegame', 'skewer','advancedPawn', 'bishopEndgame','hangingPiece','defensiveMove','master', 'masterVsMaster','superGM','attraction','discoveredAttack', 'kingsideAttack','capturingDefender','deflection','mateIn3','mate']`. and im sure there are more documented somewhere.
 
 #### Format:
 

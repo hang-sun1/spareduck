@@ -29,7 +29,7 @@ Move Search::get_engine_move() {
         std::vector<Move> temp_pv;
 
         board.make_move(moves[i]);
-        int next_eval = -search(-100000, 100000, 3, temp_pv);
+        int next_eval = -search(-100000, 100000, 4, temp_pv);
         board.unmake_move(moves[i]);
         std::cout << "next_eval " << moves[i] << " => " << next_eval << std::endl;
         // update bestEval
@@ -82,20 +82,20 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 
     // futility pruning
     bool is_futile = false;  // No futility while in check
-    /*if (depth == 1) {
+    if (depth == 1) {
         int curr_eval = evaluate.evaluate_cheap();
-        const int MINOR_VAL = 300;
+        const int MINOR_VAL = 310;
         if (curr_eval + MINOR_VAL < alpha) {
             is_futile = true;
         }
     } else if (depth == 2) {
         int curr_eval = evaluate.evaluate_cheap();
-        const int ROOK_VAL = 500;
+        const int ROOK_VAL = 510;
         if (curr_eval + ROOK_VAL < alpha) {
             is_futile = true;
         }
     }
-    is_futile = !board.in_check() && is_futile*/
+    is_futile = !board.in_check() && is_futile;
 
     std::vector<Move> temp_pv;
     int best_eval = INT_MIN;
@@ -142,7 +142,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     }
 
     for (int i = 0; i < move_count; i++) {
-        if (is_futile && !moves[i].is_capture()) {  // && !moves[i].is_check()
+        if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check() also implicitly tries move from hashtable
             continue;
         }
 

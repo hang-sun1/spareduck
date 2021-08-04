@@ -1,10 +1,10 @@
 module.exports={
 num_records: 5,
-type: 'mateIn2',
+type: '2100',
 records:[
-{fen:'4r1k1/5ppp/r1p5/p1n1RP2/8/2P2N1P/2P3P1/3R2K1 b - - 0 21',moves:['e8e5', 'd1d8', 'e5e8', 'd8e8'],rating:'1128',themes:['backRankMate', 'endgame', 'mate', 'mateIn2', 'short']},
-{fen:'5r1k/pp4pp/5p2/1BbQp1r1/6K1/7P/1PP3P1/3R3R w - - 2 26',moves:['g4h4', 'c5f2', 'g2g3', 'f2g3'],rating:'1019',themes:['mate', 'mateIn2', 'middlegame', 'short']},
-{fen:'2r5/pR5p/5p1k/4p3/4r3/B4nPP/PP3P2/1K2R3 w - - 0 27',moves:['e1e4', 'f3d2', 'b1a1', 'c8c1'],rating:'1777',themes:['backRankMate', 'endgame', 'fork', 'mate', 'mateIn2', 'short']},
-{fen:'r6k/2q3pp/8/2p1n3/R1Qp4/7P/2PB1PP1/6K1 b - - 0 32',moves:['e5c4', 'a4a8', 'c7b8', 'a8b8'],rating:'641',themes:['backRankMate', 'endgame', 'hangingPiece', 'mate', 'mateIn2', 'short']},
-{fen:'6k1/pp3pp1/2p1q1Pp/3b4/8/6Q1/PB3Pp1/3RrNK1 b - - 2 27',moves:['e1d1', 'g3b8', 'e6e8', 'b8e8'],rating:'695',themes:['endgame', 'mate', 'mateIn2', 'short']},
+{fen:'3q1rk1/1pp3pp/5p1P/4pPP1/rb1pP3/3P1N2/b1P1B3/2QK2RR b - - 7 26',moves:['d8a8', 'g5g6', 'h7g6', 'h6g7'],rating:'2349',themes:['advancedPawn', 'crushing', 'kingsideAttack', 'middlegame', 'quietMove', 'short']},
+{fen:'2kr3r/pp3p2/4p2p/1N1p2p1/3Q4/1P1P4/2q2PPP/5RK1 b - - 1 20',moves:['b7b6', 'd4a1', 'a7a5', 'f1c1'],rating:'2339',themes:['advantage', 'endgame', 'pin', 'short']},
+{fen:'2r3k1/p1q2pp1/Q3p2p/b1Np4/2nP1P2/4P1P1/5K1P/2B1N3 b - - 3 33',moves:['c7b6', 'a6c8', 'g8h7', 'c8b7'],rating:'2165',themes:['advantage', 'hangingPiece', 'middlegame', 'short']},
+{fen:'3r1rk1/1b1n1pp1/3p4/p4PPQ/4P3/3q1BN1/8/2R2RK1 b - - 1 28',moves:['d7e5', 'f5f6', 'e5f3', 'f1f3'],rating:'2460',themes:['advantage', 'middlegame', 'short']},
+{fen:'r1b1k2N/ppp3pp/2n5/2bp4/7q/1B4n1/PPPP1P1P/RNBQ1RK1 w q - 0 10',moves:['f1e1', 'g3e4', 'e1e4', 'd5e4', 'd1h5', 'h4h5', 'b3f7', 'h5f7'],rating:'2148',themes:['crushing', 'defensiveMove', 'middlegame', 'veryLong']},
 ]};

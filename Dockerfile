@@ -12,12 +12,12 @@ COPY www ./www
 RUN cd www && npm install
 COPY CMakeLists.txt ./
 COPY src ./src
+COPY test ./test
+COPY test.sh ./
 RUN rm -rf build/ && mkdir build
 WORKDIR  /usr/src/spareduck/build
 RUN emcmake cmake .. && cmake --build . --target spareduck -j
 WORKDIR /usr/src/spareduck
-COPY test ./test
-COPY test.sh ./
 RUN cp build/spareduck.js ./www/ && mkdir -p ./www/dist && cp build/spareduck.wasm ./www/dist && cp build/spareduck.wasm ./www && cp ./www/index.html ./www/dist/
 WORKDIR /usr/src/spareduck/www
 EXPOSE 8080

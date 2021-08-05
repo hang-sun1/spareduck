@@ -658,18 +658,6 @@ std::vector<Move> Board::generate_moves() {
         }
     }
     std::vector<std::pair<uint64_t, uint8_t>> most_maps;
-    // auto board_occ = all_per_side[0] | all_per_side[1];
-    // auto queen_maps = defense_maps_for_piece(queens[side], board_occ, &Board::generate_queen_moves);
-    // auto bishop_maps = defense_maps_for_piece(bishops[side], board_occ, &Board::generate_bishop_moves);
-    // auto rook_maps = defense_maps_for_piece(rooks[side], board_occ, &Board::generate_rook_moves);
-    // auto king_maps = defense_maps_for_piece(kings[side], board_occ, &Board::generate_king_moves);
-    // auto knight_maps = defense_maps_for_piece(knights[side], board_occ, &Board::generate_knight_moves);
-    // auto pawn_move_maps = defense_maps_for_piece(pawns[side], board_occ, &Board::generate_pawn_moves);
-    // auto pawn_capture_maps = defense_maps_for_piece(pawns[side], board_occ, &Board::generate_pawn_attacks);
-
-    // for (auto &m: king_maps) {
-    //     m.first &= ~attack_maps[other_side];
-    // }
 
     for (auto &m : pawn_capture_maps) {
         m.first &= ~all_per_side[side];
@@ -754,10 +742,7 @@ std::vector<Move> Board::generate_moves() {
     most_maps.insert(most_maps.end(), queen_maps.begin(), queen_maps.end());
     most_maps.insert(most_maps.end(), bishop_maps.begin(), bishop_maps.end());
     most_maps.insert(most_maps.end(), rook_maps.begin(), rook_maps.end());
-    // most_maps.insert(most_maps.end(), king_maps.begin(), king_maps.end());
     most_maps.insert(most_maps.end(), knight_maps.begin(), knight_maps.end());
-    // all_maps.insert(all_maps.end(), pawn_move_maps.begin(), pawn_move_maps.end());
-    // all_maps.insert(all_maps.end(), pawn_capture_maps.begin(), pawn_capture_maps.end());
 
     for (auto &m : most_maps) {
         m.first &= ~all_per_side[side];
@@ -1045,9 +1030,7 @@ void Board::make_move(Move move) {
                 (*def_maps[i])[other_move] |= map.first;
             }
         }
-    }
 
-    for (size_t i = 0; i < 6; ++i) {
         if (i == moved || ((*def_maps[i])[current_move] & move_bitboard)) {
             auto maps = this->defense_maps_for_piece((*arr[i])[current_move], all_per_side[current_move] | all_per_side[other_move],
                 gen_funcs[i], side_to_move);
@@ -1060,6 +1043,7 @@ void Board::make_move(Move move) {
 
     // now flip whose turn it is
     this->side_to_move = static_cast<Side>(other_move);
+    // flip the side to move part of the hash
     this->hash ^= hash_helper[13][0];
     this->defense_maps[current_move] = pawn_defends[current_move] | rook_defends[current_move] |
                                        knight_defends[current_move] | bishop_defends[current_move] | queen_defends[current_move] | king_defends[current_move];
@@ -1095,6 +1079,7 @@ void Board::unmake_move(Move move) {
     this->short_castle_rights = pop.short_castle_rights;
     this->moves = pop.moves;
     this->en_passant_target = pop.en_passant_target;
+    this->hash = pop.hash;
 }
 
 uint64_t Board::rook_xray_attacks(uint64_t occ, uint64_t blockers, uint8_t square) const {

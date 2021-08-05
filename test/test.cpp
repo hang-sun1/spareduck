@@ -2,11 +2,13 @@
 #include "catch.hpp"
 #define private public
 
-#include "../src/board.h"
-#include <cstdint>
-#include "../src/move.h"
 #include <chrono>
-#include "../src/nnue.h"
+#include <cstdint>
+
+#include "../src/board.hpp"
+#include "../src/move.hpp"
+#include "../src/nnue.hpp"
+
 using namespace std::chrono;
 
 int captures = 0;
@@ -61,14 +63,14 @@ TEST_CASE("proper moves are generated", "[board]") {
     }
     SECTION("correctly makes a move") {
         Board b;
-        auto starting_hash = b.hash();
+        auto starting_hash = b.get_hash();
         REQUIRE(b.side_to_move == Side::WHITE);
         auto moves = b.get_moves();
         auto first_move = moves[0];
         auto knight_board = b.knights[0];
         b.make_move(first_move);
         REQUIRE(b.side_to_move == Side::BLACK);
-        auto first_hash = b.hash();
+        auto first_hash = b.get_hash();
         REQUIRE(starting_hash != first_hash);
         moves = b.get_moves();
         REQUIRE(b.get_moves().size() == 20);
@@ -81,15 +83,15 @@ TEST_CASE("proper moves are generated", "[board]") {
 
     SECTION("correctly unmakes a move") {
         Board b;
-        auto starting_hash = b.hash();
+        auto starting_hash = b.get_hash();
         b.make_move(b.get_moves()[0]);
         REQUIRE(b.side_to_move == Side::BLACK);
         
-        auto second_hash = b.hash();
+        auto second_hash = b.get_hash();
         REQUIRE(second_hash != starting_hash);
         
         b.unmake_move(b.get_moves()[0]);
-        REQUIRE(b.hash() == starting_hash);
+        REQUIRE(b.get_hash() == starting_hash);
         REQUIRE(b.side_to_move == Side::WHITE);
     }
 

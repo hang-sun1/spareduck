@@ -12,6 +12,7 @@
 
 using namespace std::chrono;
 
+int captures = 0;
 // taken from the chess programming wiki
 uint64_t perft(int depth /* assuming >= 1 */, Board *b) {
     auto move_list = b->get_moves();

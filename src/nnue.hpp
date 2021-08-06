@@ -8,6 +8,7 @@
 
 #include "board.hpp"
 #include "move.hpp"
+#include "piece.hpp"
 
 using std::int16_t;
 using std::size_t;
@@ -18,22 +19,14 @@ static const size_t LAYER1_SIZE = 256;
 static const size_t LAYER2_SIZE = 32;
 static const size_t LAYER3_SIZE = 32;
 
-enum PieceType : size_t {
-    PAWN = 0,
-    KNIGHT = 1,
-    BISHOP = 2,
-    QUEEN = 3,
-    KING = 4,
-    ROOK = 5,
-};
 
 class NNUE {
    public:
     NNUE(Side current_to_move);
 
     int evaluate();
-    void update_non_king_move(Move move, PieceType moved_piece, std::optional<PieceType> captured);
-    void update_king_move(Move move, std::optional<PieceType> captured);
+    void update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured);
+    void update_king_move(Move move, std::optional<Piece> captured);
 
    private:
     // std::array<int16_t, INPUT_SIZE * LAYER1_SIZE> w0_white;

@@ -1,12 +1,15 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
+
+#include <chrono>
+#include <cstdint>
+
 #define private public
 
-#include "../src/board.h"
-#include <cstdint>
-#include "../src/move.h"
-#include <chrono>
-#include "../src/nnue.h"
+#include "../src/board.hpp"
+#include "../src/move.hpp"
+#include "../src/nnue.hpp"
+
 using namespace std::chrono;
 
 int captures = 0;
@@ -38,21 +41,6 @@ uint64_t perft(int depth /* assuming >= 1 */, Board *b) {
 
 
 TEST_CASE("proper moves are generated", "[board]") {
-    SECTION("generates valid knight moves") {
-        auto lookup_table = Board::generate_knight_lookup();
-        REQUIRE(lookup_table[0] == 0x020400);
-        REQUIRE(lookup_table[55] == 0x2000204000000000);
-    }
-    SECTION("generates valid king moves") {
-        auto lookup_table = Board::generate_king_lookup();
-        REQUIRE(lookup_table[0] ==  0x0302);
-    }
-    SECTION("generates correct move maps") {
-        auto lookup_table = Board::generate_rank_attacks();
-        REQUIRE(lookup_table[3][38] == 0b01110100);
-        auto diagonal_masks = Board::generate_diagonal_mask_map();
-        REQUIRE(diagonal_masks[61] == 2310355422147575808);
-    }
     SECTION("finds 20 moves from start position") {
         Board b;
         REQUIRE(b.get_moves().size() == 20);
@@ -61,36 +49,30 @@ TEST_CASE("proper moves are generated", "[board]") {
     }
     SECTION("correctly makes a move") {
         Board b;
-        auto starting_hash = b.hash();
-        REQUIRE(b.side_to_move == Side::WHITE);
+        auto starting_hash = b.get_hash();
         auto moves = b.get_moves();
         auto first_move = moves[0];
-        auto knight_board = b.knights[0];
         b.make_move(first_move);
-        REQUIRE(b.side_to_move == Side::BLACK);
-        auto first_hash = b.hash();
+        auto first_hash = b.get_hash();
         REQUIRE(starting_hash != first_hash);
         moves = b.get_moves();
         REQUIRE(b.get_moves().size() == 20);
         b.make_move(b.get_moves()[0]);
         REQUIRE(b.get_moves().size() == 19);
         b.unmake_move(first_move);
-        REQUIRE(b.side_to_move == Side::BLACK);
         REQUIRE(b.get_moves().size() == 20);
     }
 
     SECTION("correctly unmakes a move") {
         Board b;
-        auto starting_hash = b.hash();
+        auto starting_hash = b.get_hash();
         b.make_move(b.get_moves()[0]);
-        REQUIRE(b.side_to_move == Side::BLACK);
         
-        auto second_hash = b.hash();
+        auto second_hash = b.get_hash();
         REQUIRE(second_hash != starting_hash);
         
         b.unmake_move(b.get_moves()[0]);
-        REQUIRE(b.hash() == starting_hash);
-        REQUIRE(b.side_to_move == Side::WHITE);
+        REQUIRE(b.get_hash() == starting_hash);
     }
 
     SECTION("generates correct number of moves to certain depth") {
@@ -111,7 +93,6 @@ TEST_CASE("proper moves are generated", "[board]") {
             auto duration = duration_cast<milliseconds>(stop - start);
             std::cout << count << " nodes searched in " << duration.count() << " ms\n";
             // std::cout << captures << " captures" << std::endl;
-
         }
         
         auto start = high_resolution_clock::now();
@@ -127,7 +108,7 @@ TEST_CASE("proper moves are generated", "[board]") {
 
     SECTION("fen parser works correctly") {
         Board a;
-        Board b = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        Board b("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         REQUIRE(a.all_per_side == b.all_per_side);
         REQUIRE(a.get_moves().size() == b.get_moves().size());
     }

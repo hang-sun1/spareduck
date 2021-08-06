@@ -5,3 +5,4 @@ www/dist
 spareduck.js
 spareduck.wasm
 .vscode
+.cache

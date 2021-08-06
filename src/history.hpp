@@ -26,4 +26,5 @@ struct History {
     std::array<bool, 2> long_castle_rights;
     std::vector<Move> moves;
     uint8_t en_passant_target;
+    uint64_t hash;
 };

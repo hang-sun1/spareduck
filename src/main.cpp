@@ -6,6 +6,7 @@
 #include "evaluate.hpp"
 #include "move.hpp"
 #include "search.hpp"
+#include "game.hpp"
 
 #ifndef TESTING
 #include <emscripten.h>
@@ -15,9 +16,9 @@ using namespace emscripten;
 #endif
 #include <immintrin.h>
 
-Board game_board = Board();
-Evaluate board_eval = Evaluate(game_board);
-Search search_engine = Search(game_board);
+Board game_board;
+Evaluate board_evaluate(game_board);
+Search search_engine(game_board);
 
 // Returns side to move.
 extern "C" {
@@ -101,7 +102,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    return board_eval.evaluate_cheap() * (game_board.get_side_to_move() ? -1 : 1);
+    return board_evaluate.evaluate_cheap() * (game_board.get_side_to_move() ? -1 : 1);
 }
 }
 
@@ -150,7 +151,6 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
 }
 
 // Main function.
-extern "C" {
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
@@ -185,7 +185,6 @@ int main() {
     std::cout << std::endl;
     std::cout << res << std::endl;
 }
-}
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {
@@ -214,9 +213,23 @@ EMSCRIPTEN_BINDINGS(module) {
         .value("CAPTURE_AND_PROMOTE_TO_ROOK", MoveType::CAPTURE_AND_PROMOTE_TO_ROOK)
         .value("CAPTURE_AND_PROMOTE_TO_BISHOP", MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP)
         .value("EN_PASSANT", MoveType::EN_PASSANT);
+    
     class_<Move>("Move")
         .constructor<uint16_t, uint16_t, MoveType>()
         .function("origin_square_algebraic", &Move::origin_square_algebraic)
         .function("destination_square_algebraic", &Move::destination_square_algebraic);
+    
+    // class_<Game>("Game")
+    //     .constructor<>()
+    //     .function("make_move", &Game::make_move)
+    //     .function("get_moves", &Game::get_moves)
+    //     .function("get_engine_moves()", &Game::get_engine_moves)
+    //     .function("get_engine_evaluation", &Game::get_engine_evaluation)
+    //     .function("get_principal_variation", &Game::get_principal_variation)
+    //     .function("in_check", &Game::in_check)
+    //     .function("start_from_position", &Game::start_from_position)
+    //     .function("test_position", &Game::test_position)
+    //     ;
+
 }
 #endif

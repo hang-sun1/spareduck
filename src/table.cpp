@@ -12,21 +12,24 @@
 
 Table::Table() {
     table.reserve(TABLE_LENGTH);
+    for (int i = 0; i < TABLE_LENGTH; i++) {
+        table[i] = TableEntry(0, {}, 0, {}, 0);
+    }
 }
 
-void Table::put(const Board position, const TableEntry entry) {
+void Table::put(const Board& position, const TableEntry entry) {
     uint32_t hash_index = position.hash() & (TABLE_LENGTH - 1);
     table[hash_index] = entry;
 }
 
-void Table::put(Board position, Move move, int16_t eval, NodeType type, uint8_t depth) {
+void Table::put(const Board& position, Move move, int16_t eval, NodeType type, uint8_t depth) {
     uint64_t hash = position.hash();
     uint32_t hash_index = hash & (TABLE_LENGTH - 1);
     uint32_t hash_upper = hash >> TABLE_BITS;
     table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
 }
 
-std::optional<TableEntry> Table::get(const Board position) {
+std::optional<TableEntry> Table::get(const Board& position) {
     const uint64_t hash = position.hash();
     uint32_t hash_index = hash & (TABLE_LENGTH - 1);
     uint32_t hash_upper = hash >> TABLE_BITS;
@@ -47,12 +50,12 @@ std::optional<TableEntry> Table::get(uint64_t hash) {
 
 // Gets the principal variation of a position
 // Currently out of use due to frequency of infinite looping
-std::vector<Move> Table::get_variation(Board position) {
+std::vector<Move> Table::get_variation(Board& position) {
     std::vector<Move> variation;
     uint8_t count = 0;
 
     std::optional<TableEntry> node = this->get(position);
-    while (node) {
+    while (node && count < 5) {  // RANDOMLY CHOSEN PV DEPTH CUTOFF
         count++;
         std::cout << node->get_move() << std::endl;
         variation.push_back(node->get_move());
@@ -69,6 +72,6 @@ std::vector<Move> Table::get_variation(Board position) {
 
 // does this work??
 void Table::clear() {
-    table.clear(); 
+    table.clear();
     table.reserve(TABLE_LENGTH);
 }

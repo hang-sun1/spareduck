@@ -22,6 +22,18 @@ Move Search::get_engine_move() {
 
     std::cout << "get_engine_move " << (board.get_side_to_move() ? "black" : "white") << std::endl;
 
+    // Move last pv move to the front (if valid)
+    if (principal_variation.size() > 1) {
+        Move pv_move = principal_variation[2];
+        for (int i = 0; i < move_count; i++) {
+            if (moves[i] == pv_move) {
+                moves[i] = moves[0];
+                moves[0] = pv_move;
+                break;
+            }
+        }
+    }
+
     int best_eval = -100000;
     Move best_move = Move(moves[0]);
 
@@ -48,9 +60,9 @@ Move Search::get_engine_move() {
 
     t_table.clear();
 
-    std::cout << "PRINCIPAL-VARIATION" << std::endl;
+    /*std::cout << "PRINCIPAL-VARIATION" << std::endl;
     for (int i = 0; i < principal_variation.size(); i++)
-        std::cout << i << "th move " << principal_variation.at(i) << std::endl;
+        std::cout << i << "th move " << principal_variation.at(i) << std::endl;*/
 
     return best_move;
 }
@@ -66,22 +78,25 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 
     if (depth <= 0) {
         int curr_eval = quiesce(alpha, beta, pv);
-        NodeType type;  // Should this always be EXACT??
-        if (curr_eval <= alpha) {
-            type = NodeType::UPPER;
-        } else if (curr_eval >= beta) {
-            type = NodeType::LOWER;
-        } else {
-            type = NodeType::EXACT;
-        }
-        if (pv.size())
+
+        if (pv.size()) {
+            NodeType type;  // Should this always be EXACT??
+            if (curr_eval <= alpha) {
+                type = NodeType::UPPER;
+            } else if (curr_eval >= beta) {
+                type = NodeType::LOWER;
+            } else {
+                type = NodeType::EXACT;
+            }
+
             t_table.put(board, pv.front(), curr_eval, type, static_cast<uint8_t>(depth));
+        }
 
         return curr_eval;
     }
 
     // futility pruning
-    bool is_futile = false;  // No futility while in check
+    bool is_futile = false;
     if (depth == 1) {
         int curr_eval = evaluate.evaluate_cheap();
         const int MINOR_VAL = 310;
@@ -97,12 +112,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     }
     is_futile = !board.in_check() && is_futile;
 
-    std::vector<Move> temp_pv;
-    int best_eval = INT_MIN;
     int j = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position;  // = t_table.get(*board);
+    std::optional<TableEntry> t_position;//t_table.get(board);
     if (t_position.has_value()) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {
@@ -118,7 +131,9 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
                     return t_position->get_eval();
             }
 
-            // return if alpha > beta?
+            if (alpha > beta) {
+                return alpha;
+            }
         }
 
         // move ordering: transposition table first
@@ -140,6 +155,9 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             j++;
         }
     }
+
+    std::vector<Move> temp_pv;  // Local pv
+    int best_eval = INT_MIN;
 
     for (int i = 0; i < move_count; i++) {
         if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check() also implicitly tries move from hashtable

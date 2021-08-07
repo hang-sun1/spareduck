@@ -115,5 +115,5 @@ NNUE::NNUE(Side current_to_move) {
     } else {
         std::cout << "failed to load network" << std::endl;
     }
-    emscripten_fetch_close(fetch)
+    emscripten_fetch_close(fetch);
 }

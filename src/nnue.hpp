@@ -57,10 +57,9 @@ class NNUE {
         std::array<int32_t, OUT> temp_out;
         for (size_t i = 0; i < OUT; ++i) {
             __m128i acc = _mm_set1_epi16(1);
-            auto weight_vec = weights[i];
             for (size_t j = 0; j < IN; j += 16) {
                 __m128i i1 = _mm_load_si128((__m128i *)&input[j]);
-                __m128i w1 = _mm_load_si128((__m128i *)&weight_vec[IN*(bucket*OUT)+j]);
+                __m128i w1 = _mm_load_si128((__m128i *)&weights[IN*(bucket*OUT)+j]);
                 __m128i p1 = _mm_maddubs_epi16(i1, w1);
                 acc = _mm_madd_epi16(acc, p1);
 

@@ -6,3 +6,4 @@ spareduck.js
 spareduck.wasm
 .vscode
 .cache
+.history

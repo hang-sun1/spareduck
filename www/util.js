@@ -111,7 +111,15 @@ export function playOtherSide(ground, chess) {
 // play against ai
 export function aiPlay(ground, chess) {
   return (from, to) => {
-    chess._make_move(algebraicToIndex(from), algebraicToIndex(to));
+    let promotion = checkPromotion(ground, to); // returns false if no promote else q,r,n,b
+    from = algebraicToIndex(from);
+    to = algebraicToIndex(to);
+    if (promotion) {
+      console.log(promotion);
+      chess._make_move(from, to, true, promotion.toLowerCase().charCodeAt(0));
+    } else {
+      chess._make_move(from, to, false, 1);
+    }
     console.log('ai making move for', toColor(chess));
     setTimeout(() => {
       console.time('get_engine_move');

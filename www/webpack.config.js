@@ -1,15 +1,12 @@
 // webpack configuration taken from https://gist.github.com/surma/b2705b6cca29357ebea1c9e6e15684cc
 
+const WorkerPlugin = require('worker-plugin');
 const path = require('path');
 
 module.exports = {
   mode: 'development',
   context: path.resolve(__dirname, '.'),
-  entry: [
-    'webpack/hot/dev-server',
-    'webpack-dev-server/client?http://localhost:8080/',
-    './index.js',
-  ],
+  entry: './index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
@@ -61,4 +58,5 @@ module.exports = {
       },
     ],
   },
+  plugins: [new WorkerPlugin()],
 };

@@ -3,39 +3,12 @@
     https://github.com/ornicar/chessground-examples/blob/master/src/util.ts
 */
 
-// Move conversion functions
-function indexToAlgebraic(n) {
-  let file = n & 7;
-  let rank = n >> 3;
-  rank += 1;
-  let files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-  file = files[file];
-  return file + rank;
-}
-
-function algebraicToIndex(square) {
-  let file = square.charCodeAt(0) - 97;
-  let rank = parseInt(square[1]) - 1;
-  return 8 * rank + file;
-}
-
 // Returns a map of moves square -> squares
-export function toDests(chess) {
-  console.log('getting dests for', toColor(chess));
+export async function toDests(chess) {
+  console.log('getting dests for', await toColor(chess));
   const dests = new Map();
-  let moves = [];
-  let moves_vect = chess.get_moves();
-  for (let i = 0; i < moves_vect.size(); i += 2) {
-    let from = moves_vect.get(i);
-    let to = moves_vect.get(i + 1);
-    /*if (to === "O-O" || to === "O-O-O") {
-      dests.set(to, undefined);
-      continue;
-    }*/
-    moves.push(from);
-    moves.push(to);
-  }
-
+  let moves = await chess.get_moves();
+  console.log(moves);
   for (let i = 0; i < moves.length; i += 2) {
     if (dests.has(moves[i])) {
       dests.set(moves[i], dests.get(moves[i]).concat(moves[i + 1]));
@@ -47,8 +20,8 @@ export function toDests(chess) {
 }
 
 // Maps engine side representation to strings.
-export function toColor(chess) {
-  return chess._get_side_to_move() ? 'black' : 'white';
+export async function toColor(chess) {
+  return (await chess.get_side_to_move()) ? 'black' : 'white';
 }
 
 // checks if
@@ -86,23 +59,28 @@ function checkPromotion(ground, to) {
 
 // Plays a move and then switches players.
 export function playOtherSide(ground, chess) {
-  return (from, to) => {
+  return async (from, to) => {
     let promotion = checkPromotion(ground, to); // returns false if no promote else q,r,n,b
     from = algebraicToIndex(from);
     to = algebraicToIndex(to);
     if (promotion) {
       console.log(promotion);
-      chess._make_move(from, to, true, promotion.toLowerCase().charCodeAt(0));
+      await chess.make_move(
+        from,
+        to,
+        true,
+        promotion.toLowerCase().charCodeAt(0),
+      );
     } else {
-      chess._make_move(from, to, false, 1);
+      await chess.make_move(from, to, false, 1);
     }
     //ground.toggleOrientation();
     ground.set({
-      turnColor: toColor(chess),
-      check: chess._in_check(),
+      turnColor: await toColor(chess),
+      check: await chess.in_check(),
       movable: {
-        color: toColor(chess),
-        dests: toDests(chess),
+        color: await toColor(chess),
+        dests: await toDests(chess),
       },
     });
   };
@@ -110,21 +88,22 @@ export function playOtherSide(ground, chess) {
 
 // play against ai
 export function aiPlay(ground, chess) {
-  return (from, to) => {
+  return async (from, to) => {
     let promotion = checkPromotion(ground, to); // returns false if no promote else q,r,n,b
     from = algebraicToIndex(from);
     to = algebraicToIndex(to);
     if (promotion) {
       console.log(promotion);
-      chess._make_move(from, to, true, promotion.toLowerCase().charCodeAt(0));
+      promotion = promotion.toLowerCase().charCodeAt(0);
+      await chess.make_move(from, to, true, promotion);
     } else {
-      chess._make_move(from, to, false, 1);
+      await chess.make_move(from, to, false, 1);
     }
-    console.log('ai making move for', toColor(chess));
-    setTimeout(() => {
+    console.log('ai making move for', await toColor(chess));
+    setTimeout(async () => {
       console.time('get_engine_move');
 
-      const ai_move = chess.get_engine_move();
+      const ai_move = await chess.get_engine_move();
 
       console.timeEnd('get_engine_move');
 
@@ -133,13 +112,29 @@ export function aiPlay(ground, chess) {
       console.log({ to, from, ai_to, ai_from });
       ground.move(ai_from, ai_to);
       ground.set({
-        turnColor: toColor(chess),
+        turnColor: await toColor(chess),
         movable: {
-          color: toColor(chess),
-          dests: toDests(chess),
+          color: await toColor(chess),
+          dests: await toDests(chess),
         },
       });
     }, 250);
     ground.playPremove();
   };
+}
+
+// Move conversion functions
+function indexToAlgebraic(n) {
+  let file = n & 7;
+  let rank = n >> 3;
+  rank += 1;
+  let files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  file = files[file];
+  return file + rank;
+}
+
+function algebraicToIndex(square) {
+  let file = square.charCodeAt(0) - 97;
+  let rank = parseInt(square[1]) - 1;
+  return 8 * rank + file;
 }

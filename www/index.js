@@ -9,7 +9,11 @@ const data = require('./db/db');
     Chess board interface. Build using Chessground.
     https://github.com/ornicar/chessground
 */
-const init = async (fen) => {
+const init = async (
+  init_config = { fen: false, side: 'white', playAi: true },
+) => {
+  const { fen, side, playAi } = init_config;
+
   // Initialize web worker
   const worker = new Worker('./worker.js', { type: 'module' });
   const EngineWorker = Comlink.wrap(worker);
@@ -24,7 +28,7 @@ const init = async (fen) => {
   const config = {
     turnColor: await toColor(engine_worker),
     movable: {
-      color: 'white', // sets starting color
+      color: side, // sets starting color
       free: false,
       dests: await toDests(engine_worker),
     },
@@ -48,8 +52,9 @@ const init = async (fen) => {
   ground.set({
     movable: {
       events: {
-        // after: await playOtherSide(ground, engine_worker),
-        after: await aiPlay(ground, engine_worker),
+        after: playAi
+          ? await aiPlay(ground, engine_worker)
+          : await playOtherSide(ground, engine_worker),
       },
     },
   });
@@ -73,8 +78,17 @@ const init = async (fen) => {
 };
 
 const init_buttons = (engine_worker) => {
+  document.getElementById('swap-button').addEventListener('click', function () {
+    init({ side: 'black' });
+  });
   document.getElementById('test-button').addEventListener('click', function () {
     run_tests(engine_worker);
+  });
+  document.getElementById('self-button').addEventListener('click', function () {
+    init({ playAi: false });
+  });
+  document.getElementById('rst-button').addEventListener('click', function () {
+    init();
   });
   // TODO add reset, switch sides, and play local buttons
 };

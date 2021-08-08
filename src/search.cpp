@@ -115,7 +115,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int j = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position;//t_table.get(board);
+    std::optional<TableEntry> t_position;  //t_table.get(board);
     if (t_position.has_value()) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {

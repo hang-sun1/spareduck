@@ -6,10 +6,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - '8080:8080'
-    volumes:
+    volumes: # This is hilariously bad
       - ./src:/usr/src/spareduck/src/
       - ./www/index.js:/usr/src/spareduck/www/index.js
       - ./www/util.js:/usr/src/spareduck/www/util.js
+      - ./www/worker.js:/usr/src/spareduck/www/worker.js
       - ./www/index.html:/usr/src/spareduck/www/index.html
       - ./www/db/db.js:/usr/src/spareduck/www/db.js
       - node_modules:/usr/src/spareduck/www/node_modules

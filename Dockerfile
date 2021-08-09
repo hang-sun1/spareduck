@@ -20,5 +20,6 @@ RUN emcmake cmake .. && cmake --build . --target spareduck -j
 WORKDIR /usr/src/spareduck
 RUN cp build/spareduck.js ./www/ && mkdir -p ./www/dist && cp build/spareduck.wasm ./www/dist && cp build/spareduck.wasm ./www && cp ./www/index.html ./www/dist/
 WORKDIR /usr/src/spareduck/www
+RUN npm run build
 EXPOSE 8080
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "serve"]

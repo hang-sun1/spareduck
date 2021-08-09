@@ -1,6 +1,8 @@
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstring>
 
 #include "board.hpp"
 #include "evaluate.hpp"
@@ -12,13 +14,18 @@
 #include <emscripten.h>
 #include <emscripten/bind.h>
 #include <wasm_simd128.h>
+#include <emscripten/fetch.h>
 using namespace emscripten;
 #endif
 #include <immintrin.h>
 
 Board game_board;
-Evaluate board_evaluate(game_board);
-Search search_engine(game_board);
+NNUE nnue; //(static_cast<Side>(game_board.get_side_to_move()));
+Evaluate board_evaluate(game_board, nnue);
+Search search_engine(game_board, board_evaluate);
+
+//dummy comment
+
 
 // Returns side to move.
 extern "C" {
@@ -150,40 +157,34 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
     return pv_algebraic;
 }
 
+#ifndef TESTING 
+void on_succeed(emscripten_fetch_t* fetch) {
+    std::cout << "network loading succeeded with " << fetch->numBytes << " bytes downloaded" << std::endl;
+    auto new_nnue = NNUE(Side::WHITE, fetch);
+    // nnue = new_nnue;
+    emscripten_fetch_close(fetch);
+}
+
+void on_fail(emscripten_fetch_t* fetch) {
+    std::cout << "failed to load network" << std::endl;
+    emscripten_fetch_close(fetch);
+}
+#endif
+
 // Main function.
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
 #endif
 int main() {
-    alignas(16) int8_t a[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    alignas(16) std::array<int8_t, 16> b = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-    alignas(16) std::array<int16_t, 8> output;
-    __m128i in_a = _mm_load_si128((__m128i *)&a);
-    __m128i in_b = _mm_load_si128((__m128i *)&b);
-    __m128i prod = _mm_maddubs_epi16(in_a, in_b);
+    std::cout << "attempting to load network" << std::endl;
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+    strcpy(attr.requestMethod, "GET");
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_PERSIST_FILE;
+    attr.onsuccess = on_succeed;
+    attr.onerror = on_fail;
+    emscripten_fetch(&attr, "https://storage.googleapis.com/spareduck/network.bin");
 
-    _mm_store_si128((__m128i *)&output, prod);
-    /*__m128i hi64  = _mm_shuffle_epi32(prod, _MM_SHUFFLE(1, 0, 3, 2));
-    __m128i sum64 = _mm_add_epi32(hi64, prod);
-    __m128i hi32 = _mm_shufflelo_epi16(sum64, _MM_SHUFFLE(1, 0, 3, 2));
-    __m128i sum32 = _mm_add_epi32(sum64, hi32);
-    __m128i hi16 = _mm_shuffle_epi8(sum32, _mm_set1_epi8( _MM_SHUFFLE(1, 0, 3, 2)));
-    __m128i sum16 = _mm_add_epi8(sum32, hi16);
-    int x = _mm_cvtsi128_si32(sum16); */
-    __m128i x = _mm_hadd_epi16(prod, prod);
-    x = _mm_hadd_epi16(x, x);
-    x = _mm_hadd_epi16(x, x);
-    int res = _mm_extract_epi16(x, 0);
-
-    //v128_t ina = wasm_v128_load(&a);
-    //v128_t inb = wasm_v128_load(&b);
-    //v128_t prod = wasm_i16x8_mul(ina, inb);
-    //wasm_v128_store(&output, prod);
-    for (auto &n : output) {
-        std::cout << (int)n << " ";
-    }
-    std::cout << std::endl;
-    std::cout << res << std::endl;
 }
 
 #ifndef TESTING

@@ -125,8 +125,8 @@ short pst_black[6][8][8] = {
 static const short piece[6] = {100, 300, 300, 500, 900, 30000};
 
 // Evaluation constructor
-Evaluate::Evaluate(Board& start_board) : board(start_board) {
-    this->board = start_board;
+Evaluate::Evaluate(Board& start_board, NNUE& nnue) : board(start_board), nnue(nnue) {
+    // this->board = start_board;
 }
 
 // Adds piece values to pst

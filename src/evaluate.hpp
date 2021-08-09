@@ -9,7 +9,7 @@
 
 class Evaluate {
    public:
-    Evaluate(Board& board);
+    Evaluate(Board& board, NNUE& nnue);
     int evaluate_cheap() const;
     int evaluate() const;
     int start_evaluate() const;
@@ -18,6 +18,7 @@ class Evaluate {
 
    private:
     Board& board;
+    NNUE& nnue;
     void initialize_pst();
     int piece_values(std::array<uint64_t, 2> piece_boards, int value) const;
 };

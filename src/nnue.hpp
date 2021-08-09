@@ -6,10 +6,15 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <utility>
 
 #include "board.hpp"
 #include "move.hpp"
 #include "piece.hpp"
+
+#ifndef TESTING
+#include <emscripten/fetch.h>
+#endif
 
 using std::int16_t;
 using std::size_t;
@@ -23,36 +28,51 @@ static const size_t LAYER3_SIZE = 32;
 
 class NNUE {
    public:
-    NNUE(Side current_to_move);
+    NNUE();
+    NNUE(Side current_to_move, emscripten_fetch_t* data);
 
     int evaluate(size_t piece_count);
     void update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured);
     void update_king_move(Move move, std::optional<Piece> captured);
 
    private:
-    alignas(16) std::array<int16_t, INPUT_SIZE * LAYER1_SIZE> w0;
-    alignas(16) std::array<int32_t, INPUT_SIZE*8> wps;
-    alignas(16) std::array<int16_t, LAYER1_SIZE> b1;
-    alignas(16) std::array<int16_t, LAYER1_SIZE> a1_white;
-    alignas(16) std::array<int8_t, LAYER1_SIZE> a1_white_with_bias;
-    alignas(16) std::array<int16_t, LAYER1_SIZE> a1_black;
-    alignas(16) std::array<int8_t, LAYER1_SIZE> a1_black_with_bias;
-    alignas(16) std::array<int8_t, 8*2*LAYER1_SIZE*LAYER2_SIZE> w1;
-    alignas(16) std::array<int32_t, 8*LAYER2_SIZE> b2;
-    alignas(16) std::array<int8_t, LAYER2_SIZE> a2;
-    alignas(16) std::array<int8_t, 8*LAYER2_SIZE*LAYER3_SIZE> w2;
-    alignas(16) std::array<int32_t, 8*LAYER3_SIZE> b3;
-    alignas(16) std::array<int8_t, LAYER3_SIZE> a3;
-    alignas(16) std::array<int8_t, 8*LAYER3_SIZE> w3;
-    std::array<int32_t, 8> b4;
-    alignas(16) std::array<std::array<uint8_t, INPUT_SIZE>, 2> halfka;
+    // std::unique_ptr<std::array<int16_t, INPUT_SIZE * LAYER1_SIZE>> w0;
+    std::unique_ptr<int16_t[]> w0;
+    // std::unique_ptr<std::array<int32_t, INPUT_SIZE*8>> wps;
+    std::unique_ptr<int32_t[]> wps;
+    // std::unique_ptr<std::array<int16_t, LAYER1_SIZE>> b1;
+    std::unique_ptr<int16_t[]> b1;
+    // std::unique_ptr<std::array<int16_t, LAYER1_SIZE>> a1_white;
+    std::unique_ptr<int16_t[]> a1_white;
+    // std::unique_ptr<std::array<int8_t, LAYER1_SIZE>> a1_white_with_bias;
+    std::unique_ptr<int8_t[]> a1_white_with_bias;
+    // std::unique_ptr<std::array<int16_t, LAYER1_SIZE>> a1_black;
+    std::unique_ptr<int16_t[]> a1_black;
+    // std::unique_ptr<std::array<int8_t, LAYER1_SIZE>> a1_black_with_bias;
+    std::unique_ptr<int8_t[]> a1_black_with_bias;
+    // std::unique_ptr<std::array<int8_t, 8*2*LAYER1_SIZE*LAYER2_SIZE>> w1;
+    std::unique_ptr<int8_t[]> w1;
+    // std::unique_ptr<std::array<int32_t, 8*LAYER2_SIZE>> b2;
+    std::unique_ptr<int32_t[]> b2;
+    // std::unique_ptr<std::array<int8_t, LAYER2_SIZE>> a2;
+    std::unique_ptr<int8_t[]> a2;
+    // std::unique_ptr<std::array<int8_t, 8*LAYER2_SIZE*LAYER3_SIZE>> w2;
+    std::unique_ptr<int8_t[]> w2;
+    // std::unique_ptr<std::array<int32_t, 8*LAYER3_SIZE>> b3;
+    std::unique_ptr<int32_t[]> b3;
+    // std::unique_ptr<std::array<int8_t, LAYER3_SIZE>> a3;
+    std::unique_ptr<int8_t[]> a3;
+    // std::unique_ptr<std::array<int8_t, 8*LAYER3_SIZE>> w3;
+    std::unique_ptr<int8_t[]> w3;
+    // std::unique_ptr<std::array<int32_t, 8>> b4;
+    std::unique_ptr<int32_t[]> b4;
 
     // compute the activations of layers beyond the first (the first is a special case)
     // returns an int, but the result is only relevant when the output layer is being computed
     // otherwise it should be ignored
     template <size_t IN, size_t OUT>
-    int compute_activation(std::array<int8_t, IN> &input, std::array<int8_t, 8*IN*OUT> &weights, std::array<int32_t, OUT*8> &biases,
-                           std::array<int8_t, OUT> &output, size_t piece_count) {
+    int compute_activation(int8_t* input, int8_t* weights, int32_t* biases,
+                           int8_t* output, size_t piece_count) {
         size_t bucket = (piece_count - 1) / 4;
         std::array<int32_t, OUT> temp_out;
         for (size_t i = 0; i < OUT; ++i) {

@@ -7,3 +7,4 @@ spareduck.wasm
 .vscode
 .cache
 .history
+*.bin

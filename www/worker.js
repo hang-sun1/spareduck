@@ -7,7 +7,6 @@ class EngineWorker {
   }
   async init() {
     this._chess = await spareduck();
-    console.log(this._chess);
     if (this._fen) {
       this.start_from_position(fen);
     }

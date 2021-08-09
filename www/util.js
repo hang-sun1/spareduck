@@ -8,7 +8,7 @@ export async function toDests(chess) {
   console.log('getting dests for', await toColor(chess));
   const dests = new Map();
   let moves = await chess.get_moves();
-  console.log(moves);
+  //console.log(moves);
   for (let i = 0; i < moves.length; i += 2) {
     if (dests.has(moves[i])) {
       dests.set(moves[i], dests.get(moves[i]).concat(moves[i + 1]));
@@ -102,14 +102,11 @@ export function aiPlay(ground, chess) {
     console.log('ai making move for', await toColor(chess));
     setTimeout(async () => {
       console.time('get_engine_move');
-
       const ai_move = await chess.get_engine_move();
-
       console.timeEnd('get_engine_move');
 
       let ai_from = ai_move.substring(0, 2);
       let ai_to = ai_move.substring(2);
-      console.log({ to, from, ai_to, ai_from });
       ground.move(ai_from, ai_to);
       ground.set({
         turnColor: await toColor(chess),

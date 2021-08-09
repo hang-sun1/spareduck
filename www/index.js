@@ -9,10 +9,14 @@ const data = require('./db/db');
     Chess board interface. Build using Chessground.
     https://github.com/ornicar/chessground
 */
-const init = async (
-  init_config = { fen: false, side: 'white', playAi: true },
-) => {
-  const { fen, side, playAi } = init_config;
+const init = async (init_config = {}) => {
+  // Combine fixed params
+  const { fen, side, playAi } = {
+    fen: false,
+    side: 'white',
+    playAi: true,
+    ...init_config,
+  };
 
   // Initialize web worker
   const worker = new Worker('./worker.js', { type: 'module' });
@@ -20,10 +24,8 @@ const init = async (
   const engine_worker = await new EngineWorker(fen);
   await engine_worker.init();
 
-  console.log(engine_worker);
-  console.log('------------------');
-
-  init_buttons(engine_worker);
+  // Initialize buttons
+  init_buttons(engine_worker, worker);
 
   const config = {
     turnColor: await toColor(engine_worker),
@@ -32,6 +34,7 @@ const init = async (
       free: false,
       dests: await toDests(engine_worker),
     },
+    orientation: side,
     draggable: {
       showGhost: true,
     },
@@ -49,17 +52,38 @@ const init = async (
     config,
   );
 
+  let after = playAi ? aiPlay : playOtherSide;
   ground.set({
     movable: {
       events: {
-        after: playAi
-          ? await aiPlay(ground, engine_worker)
-          : await playOtherSide(ground, engine_worker),
+        after: after(ground, engine_worker),
       },
     },
   });
 
+  if (side === 'black') {
+    const open_book = [
+      ['e2', 'e4'],
+      ['d2', 'd4'],
+      ['c2', 'c4'],
+      ['g1', 'g3'],
+      ['a2', 'a4'],
+    ];
+    const open_move = open_book[Math.floor(Math.random() * open_book.length)];
+    await engine_worker.make_move(open_move[0], open_move[1], false, 1);
+    ground.move(open_move[0], open_move[1]);
+    ground.set({
+      turnColor: await toColor(engine_worker),
+      movable: {
+        color: await toColor(engine_worker),
+        dests: await toDests(engine_worker),
+      },
+    });
+  }
+
+  // UI update loop
   setInterval(async () => {
+    // Evaluation
     const evaluation = await engine_worker.get_engine_evaluation();
     let eval_bar = document.getElementById('eval-bar');
     const eval_percent = Math.floor(evaluation / 50 + 50);
@@ -69,30 +93,35 @@ const init = async (
       `height: 18px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${eval_percent}%, black ${eval_percent}%, black 100%);border: 2px solid black;`,
     );
 
+    // Principal Variation
     let pv_elem = document.getElementById('p-var');
     let pv = await engine_worker.get_principal_variation();
-
     pv_elem.innerHTML = 'Principal Variation: ' + pv.join(', ');
+
     return;
   }, 2000);
 };
 
-const init_buttons = (engine_worker) => {
+// Initialize button bar
+const init_buttons = (engine_worker, worker) => {
   document.getElementById('swap-button').addEventListener('click', function () {
+    worker.terminate();
     init({ side: 'black' });
   });
   document.getElementById('test-button').addEventListener('click', function () {
     run_tests(engine_worker);
   });
   document.getElementById('self-button').addEventListener('click', function () {
+    worker.terminate();
     init({ playAi: false });
   });
-  document.getElementById('rst-button').addEventListener('click', function () {
+  document.getElementById('play-button').addEventListener('click', function () {
+    worker.terminate();
     init();
   });
-  // TODO add reset, switch sides, and play local buttons
 };
 
+// Run tests from puzzle DB and show failed FENS
 const run_tests = (engine_worker) => {
   let fails = [];
   data.records.forEach(async (record, hang_is_a_troll) => {

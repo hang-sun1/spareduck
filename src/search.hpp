@@ -13,7 +13,7 @@
 
 class Search {
    public:
-    Search(Board& board);
+    Search(Board& board, Evaluate& eval);
     Move get_engine_move();
     std::vector<Move> get_principal_variation();
 

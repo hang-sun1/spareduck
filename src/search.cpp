@@ -10,7 +10,7 @@
 */
 
 // Search constructor
-Search::Search(Board &start_board) : board(start_board), evaluate(Evaluate(start_board)) {
+Search::Search(Board &start_board, Evaluate& eval) : board(start_board), evaluate(eval) {
     Table t_table;
     std::vector<Move> principal_variation;
     principal_variation.reserve(10);

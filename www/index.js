@@ -1,33 +1,36 @@
 import { Chessground } from 'chessground';
 import { toColor, toDests, aiPlay, playOtherSide } from './util';
 require('./chessground.styles.css');
-
-import spareduck from './spareduck.js';
-import spareduckModule from './spareduck.wasm';
-const module = spareduck();
+import * as Comlink from 'comlink';
 
 const data = require('./db/db');
-
-console.log(
-  module.then((m) => {
-    console.log('hello', toColor(m));
-    console.log(data);
-    init(m);
-    init_buttons(m);
-  }),
-);
 
 /*
     Chess board interface. Build using Chessground.
     https://github.com/ornicar/chessground
 */
-const init = (chess, fen) => {
+const init = async (
+  init_config = { fen: false, side: 'white', playAi: true },
+) => {
+  const { fen, side, playAi } = init_config;
+
+  // Initialize web worker
+  const worker = new Worker('./worker.js', { type: 'module' });
+  const EngineWorker = Comlink.wrap(worker);
+  const engine_worker = await new EngineWorker(fen);
+  await engine_worker.init();
+
+  console.log(engine_worker);
+  console.log('------------------');
+
+  init_buttons(engine_worker);
+
   const config = {
-    turnColor: toColor(chess),
+    turnColor: await toColor(engine_worker),
     movable: {
-      color: 'white', // sets starting color
+      color: side, // sets starting color
       free: false,
-      dests: toDests(chess),
+      dests: await toDests(engine_worker),
     },
     draggable: {
       showGhost: true,
@@ -36,7 +39,7 @@ const init = (chess, fen) => {
 
   if (fen) {
     config.fen = fen;
-    chess.start_fr1om_position(fen);
+    //await engine_worker.start_from_position(fen);
     config.movable.color = fen.includes('w') ? 'white' : 'black';
     config.turnColor = config.movable.color;
   }
@@ -49,14 +52,15 @@ const init = (chess, fen) => {
   ground.set({
     movable: {
       events: {
-        // after: playOtherSide(ground, chess),
-        after: aiPlay(ground, chess),
+        after: playAi
+          ? await aiPlay(ground, engine_worker)
+          : await playOtherSide(ground, engine_worker),
       },
     },
   });
 
-  setInterval(() => {
-    const evaluation = chess._get_engine_evaluation();
+  setInterval(async () => {
+    const evaluation = await engine_worker.get_engine_evaluation();
     let eval_bar = document.getElementById('eval-bar');
     const eval_percent = Math.floor(evaluation / 50 + 50);
     eval_bar.innerHTML = `<div style='margin-left:2px;'>${evaluation}</div>`;
@@ -66,32 +70,41 @@ const init = (chess, fen) => {
     );
 
     let pv_elem = document.getElementById('p-var');
-    let pv = chess.get_principal_variation();
-    let pv_list = new Array(pv.size());
-    for (let i = 0; i < pv.size(); i++) {
-      pv_list[i] =
-        pv.get(i).origin_square_algebraic() +
-        pv.get(i).destination_square_algebraic();
-    }
-    pv_elem.innerHTML = 'Principal Variation: ' + pv_list.join(', ');
+    let pv = await engine_worker.get_principal_variation();
+
+    pv_elem.innerHTML = 'Principal Variation: ' + pv.join(', ');
+    return;
   }, 2000);
 };
 
-const init_buttons = (chess) => {
-  document.getElementById('test-button').addEventListener('click', function () {
-    run_tests(chess);
+const init_buttons = (engine_worker) => {
+  document.getElementById('swap-button').addEventListener('click', function () {
+    init({ side: 'black' });
   });
+  document.getElementById('test-button').addEventListener('click', function () {
+    run_tests(engine_worker);
+  });
+  document.getElementById('self-button').addEventListener('click', function () {
+    init({ playAi: false });
+  });
+  document.getElementById('rst-button').addEventListener('click', function () {
+    init();
+  });
+  // TODO add reset, switch sides, and play local buttons
 };
 
-const run_tests = (chess) => {
+const run_tests = (engine_worker) => {
   let fails = [];
-  data.records.forEach((record, hang_is_a_troll) => {
+  data.records.forEach(async (record, hang_is_a_troll) => {
     console.log(hang_is_a_troll, record.moves[0]);
-    let moves = chess.test_position(record.fen, record.moves.shift());
-    let i = Math.min(moves.size(), record.moves.length);
+    let moves = await engine_worker.test_position(
+      record.fen,
+      record.moves.shift(),
+    );
+    let i = Math.min(moves.length, record.moves.length);
     while (i--) {
-      console.log(moves.get(i), record.moves[i]);
-      if (moves.get(i) !== record.moves[i]) {
+      console.log(moves[i], record.moves[i]);
+      if (moves[i] !== record.moves[i]) {
         fails.push(record.fen);
         break;
       }
@@ -113,10 +126,14 @@ const run_tests = (chess) => {
   fails.forEach((fen, ind) =>
     document
       .getElementById(`position-${ind}`)
-      .addEventListener('click', function () {
-        init(chess, fen);
+      .addEventListener('click', async () => {
+        await init(fen);
       }),
   );
 
   return;
 };
+
+// Start the program
+console.log('hello');
+init();

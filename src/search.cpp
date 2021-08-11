@@ -10,7 +10,7 @@
 */
 
 // Search constructor
-Search::Search(Board &start_board, Evaluate& eval) : board(start_board), evaluate(eval) {
+Search::Search(Board &start_board, Evaluate &eval) : board(start_board), evaluate(eval) {
     Table t_table;
     std::vector<Move> principal_variation;
     principal_variation.reserve(10);
@@ -208,7 +208,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
 
     // TODO: handle loud positions
     if (board.in_check()) {
-        return evaluate.evaluate_cheap();
+        //return evaluate.evaluate_cheap();
         //std::vector<Move> temp_pv;
         //return -search(alpha, beta, 1, temp_pv);
     }

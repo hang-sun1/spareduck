@@ -115,8 +115,8 @@ export function aiPlay(ground, chess) {
           dests: await toDests(chess),
         },
       });
+      ground.playPremove();
     }, 250);
-    ground.playPremove();
   };
 }
 

@@ -77,7 +77,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     }
 
     if (depth <= 0) {
-        int curr_eval = quiesce(alpha, beta, pv);
+        int curr_eval = quiesce(alpha, beta, pv, 0);
 
         if (pv.size()) {
             NodeType type;  // Should this always be EXACT??
@@ -115,7 +115,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int j = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position;  //t_table.get(board);
+    std::optional<TableEntry> t_position;  //= t_table.get(board);
     if (t_position.has_value()) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {
@@ -138,7 +138,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 
         // move ordering: transposition table first
         for (int i = 0; i < move_count; i++) {
-            if (moves[i] == t_position->get_move()) {  // TODO: check if move valid?
+            if (moves[i] == t_position->get_move()) {
                 moves[i] = moves[0];
                 moves[0] = t_position->get_move();
                 j++;
@@ -146,7 +146,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             }
         }
     }
-    // move ordering:  captures first
+    // move ordering: captures first
     for (int i = j; i < move_count; i++) {
         if (moves[i].is_capture()) {
             Move temp_move = moves[j];
@@ -160,7 +160,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int best_eval = INT_MIN;
 
     for (int i = 0; i < move_count; i++) {
-        if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check() also implicitly tries move from hashtable
+        if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check()
             continue;
         }
 
@@ -203,28 +203,28 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
+int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
     pv.clear();
 
-    // TODO: handle loud positions
-    if (board.in_check()) {
-        //return evaluate.evaluate_cheap();
-        //std::vector<Move> temp_pv;
-        //return -search(alpha, beta, 1, temp_pv);
-    }
-
-    int stand_pat = evaluate.evaluate_cheap();
-    if (stand_pat >= beta) {
-        return stand_pat;
-    }
-
-    // Delta pruning - TODO: handle promotion
-    const int DELTA = 900;  // queen / max material swing value
-    if (stand_pat + DELTA < alpha) {
+    if (q_depth > 4) {
         return alpha;
     }
-    if (stand_pat > alpha) {
-        alpha = stand_pat;
+
+    // TODO: handle loud positions
+    if (!board.in_check()) {
+        int stand_pat = evaluate.evaluate_cheap();
+        if (stand_pat >= beta) {
+            return stand_pat;
+        }
+
+        // Delta pruning - TODO: handle promotion
+        const int DELTA = 900;  // queen / max material swing value
+        if (stand_pat + DELTA < alpha) {
+            return alpha;
+        }
+        if (stand_pat > alpha) {
+            alpha = stand_pat;
+        }
     }
 
     //generate all moves
@@ -235,9 +235,9 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
 
     for (int i = 0; i < move_count; i++) {
         // skip if move isn't capture
-        if (moves[i].is_capture()) {
+        if (moves[i].is_capture() || board.in_check()) {
             board.make_move(moves[i]);
-            int next_eval = -quiesce(-beta, -alpha, temp_pv);
+            int next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1);
             board.unmake_move(moves[i]);
 
             if (next_eval >= beta) {

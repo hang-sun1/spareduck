@@ -71,8 +71,9 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
 
+    // Mate or stalemate
     if (move_count == 0 && board.in_check()) {
-        // update tt
+        // Update pv?
         return evaluate.evaluate_cheap();
     }
 
@@ -80,7 +81,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         int curr_eval = quiesce(alpha, beta, pv, 0);
 
         if (pv.size()) {
-            NodeType type;  // Should this always be EXACT??
+            NodeType type;
             if (curr_eval <= alpha) {
                 type = NodeType::UPPER;
             } else if (curr_eval >= beta) {
@@ -89,7 +90,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
                 type = NodeType::EXACT;
             }
 
-            t_table.put(board, pv.front(), curr_eval, type, static_cast<uint8_t>(depth));
+            t_table.put(board, pv.front(), curr_eval, type, 0);  // Null move?
         }
 
         return curr_eval;
@@ -115,7 +116,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int j = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position;  //= t_table.get(board);
+    std::optional<TableEntry> t_position;  // = t_table.get(board);
     if (t_position.has_value()) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {

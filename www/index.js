@@ -68,7 +68,7 @@ const init = async (init_config = {}) => {
       ['e2', 'e4'],
       ['d2', 'd4'],
       ['c2', 'c4'],
-      ['g1', 'g3'],
+      ['g1', 'f3'],
       ['a2', 'a4'],
     ];
     const open_move = open_book[Math.floor(Math.random() * open_book.length)];

@@ -10,7 +10,7 @@
 */
 
 // Search constructor
-Search::Search(Board &start_board, Evaluate& eval) : board(start_board), evaluate(eval) {
+Search::Search(Board &start_board, Evaluate& eval, NNUE &net) : board(start_board), evaluate(eval), nnue(net) {
     Table t_table;
     std::vector<Move> principal_variation;
     principal_variation.reserve(10);
@@ -41,7 +41,7 @@ Move Search::get_engine_move() {
         std::vector<Move> temp_pv;
 
         board.make_move(moves[i]);
-        int next_eval = -search(-100000, 100000, 4, temp_pv);
+        int next_eval = -search(-100000, 100000, 1, temp_pv);
         board.unmake_move(moves[i]);
         std::cout << "next_eval " << moves[i] << " => " << next_eval << std::endl;
         // update bestEval
@@ -163,10 +163,25 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check() also implicitly tries move from hashtable
             continue;
         }
+        auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+        auto pieces_involved = board.make_move(moves[i]);
+        uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
+        uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+        
+        int next_eval;
 
-        board.make_move(moves[i]);
-        int next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
-        board.unmake_move(moves[i]);
+        if (pieces_involved[0].value() != KING) {
+            nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+            next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+            board.unmake_move(moves[i]);
+            nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
+        } else {
+            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+            next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+            board.unmake_move(moves[i]);
+            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+        }
+
 
         // update bestEval
         if (next_eval > best_eval) {

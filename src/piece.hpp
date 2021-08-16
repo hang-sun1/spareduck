@@ -1,6 +1,8 @@
 #pragma once
 
-enum Piece {
+#include <cstdint>
+
+enum Piece: std::size_t {
     PAWN = 0,
     ROOK = 1,
     KNIGHT = 2,

@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <optional>
 
 #include "history.hpp"
 #include "move.hpp"
@@ -83,7 +84,7 @@ class Board {
     static std::array<std::array<uint64_t, 64>, 64> generate_in_between();
 
     // move and side functions
-    void make_move(Move move);
+    std::array<std::optional<Piece>, 2> make_move(Move move);
     void unmake_move(Move move);
     int get_side_to_move();
     std::vector<Move> get_moves();
@@ -98,7 +99,7 @@ class Board {
     std::array<uint64_t, 2> get_pawns() const;
     std::array<std::vector<uint8_t>, 2> get_pins() const;
     // returns piece positions
-    std::vector<uint8_t> get_piece_pos(char piece_type) const;
+    std::vector<uint8_t> get_piece_pos(Piece piece_type, Side s) const;
 
     uint64_t initial_hash() const;
     uint64_t get_hash() const;

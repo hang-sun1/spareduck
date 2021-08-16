@@ -32,40 +32,35 @@ class NNUE {
     NNUE(Side current_to_move, emscripten_fetch_t* data);
 
     int evaluate(size_t piece_count);
-    void update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured);
-    void update_king_move(Move move, std::optional<Piece> captured);
+    void update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured, std::optional<Piece> promoted, uint8_t white_king_square,
+        uint8_t black_king_square, Side side_that_moved, bool reverse_move);
+    void reset_nnue(Move move, std::optional<Piece> captured, uint8_t white_king_square, uint8_t black_king_square, Side side_that_moved, Board &b);
 
    private:
-    // std::unique_ptr<std::array<int16_t, INPUT_SIZE * LAYER1_SIZE>> w0;
+    Side side_to_move;
     std::unique_ptr<int16_t[]> w0;
-    // std::unique_ptr<std::array<int32_t, INPUT_SIZE*8>> wps;
+    std::unique_ptr<int32_t[]> psqt_wts;
     std::unique_ptr<int32_t[]> wps;
-    // std::unique_ptr<std::array<int16_t, LAYER1_SIZE>> b1;
+    std::unique_ptr<int32_t[]> bps;
+    std::unique_ptr<int32_t[]> ps;
     std::unique_ptr<int16_t[]> b1;
-    // std::unique_ptr<std::array<int16_t, LAYER1_SIZE>> a1_white;
     std::unique_ptr<int16_t[]> a1_white;
-    // std::unique_ptr<std::array<int8_t, LAYER1_SIZE>> a1_white_with_bias;
     std::unique_ptr<int8_t[]> a1_white_with_bias;
-    // std::unique_ptr<std::array<int16_t, LAYER1_SIZE>> a1_black;
     std::unique_ptr<int16_t[]> a1_black;
-    // std::unique_ptr<std::array<int8_t, LAYER1_SIZE>> a1_black_with_bias;
     std::unique_ptr<int8_t[]> a1_black_with_bias;
-    // std::unique_ptr<std::array<int8_t, 8*2*LAYER1_SIZE*LAYER2_SIZE>> w1;
     std::unique_ptr<int8_t[]> w1;
-    // std::unique_ptr<std::array<int32_t, 8*LAYER2_SIZE>> b2;
     std::unique_ptr<int32_t[]> b2;
-    // std::unique_ptr<std::array<int8_t, LAYER2_SIZE>> a2;
     std::unique_ptr<int8_t[]> a2;
-    // std::unique_ptr<std::array<int8_t, 8*LAYER2_SIZE*LAYER3_SIZE>> w2;
     std::unique_ptr<int8_t[]> w2;
-    // std::unique_ptr<std::array<int32_t, 8*LAYER3_SIZE>> b3;
     std::unique_ptr<int32_t[]> b3;
-    // std::unique_ptr<std::array<int8_t, LAYER3_SIZE>> a3;
     std::unique_ptr<int8_t[]> a3;
-    // std::unique_ptr<std::array<int8_t, 8*LAYER3_SIZE>> w3;
     std::unique_ptr<int8_t[]> w3;
-    // std::unique_ptr<std::array<int32_t, 8>> b4;
     std::unique_ptr<int32_t[]> b4;
+
+    size_t halfka_index(bool is_white_pov, uint8_t king_square, uint8_t square, Piece piece, Side side_of_piece);
+
+    void update_first_layer_add(size_t white_pov_index, size_t black_pov_index);
+    void update_first_layer_sub(size_t white_pov_index, size_t black_pov_index);
 
     // compute the activations of layers beyond the first (the first is a special case)
     // returns an int, but the result is only relevant when the output layer is being computed

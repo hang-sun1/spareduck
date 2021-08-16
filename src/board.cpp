@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <random>
 #include <stack>
 #include <vector>
@@ -12,6 +13,7 @@
 #include "history.hpp"
 #include "move.hpp"
 #include "board.hpp"
+#include "piece.hpp"
 
 using std::uint64_t;
 
@@ -836,7 +838,7 @@ std::vector<Move> Board::generate_moves() {
     return vec_of_moves;
 }
 
-void Board::make_move(Move move) {
+std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
     History history;
     history.all_per_side = all_per_side;
     history.queens = queens;
@@ -1053,6 +1055,12 @@ void Board::make_move(Move move) {
     // generate the moves for the next side (which also updates attack and defenes maps for
     // the new side to move)
     this->moves = generate_moves();
+
+    auto cap = captured >= 0 ? std::make_optional(piece_idents[captured]) : std::nullopt;
+
+
+    std::array<std::optional<Piece>, 2> pieces_involved = { std::make_optional(piece_idents[moved]), cap };
+    return pieces_involved;
 }
 
 void Board::unmake_move(Move move) {
@@ -1306,27 +1314,27 @@ std::array<std::vector<uint8_t>, 2> Board::get_pins() const {
     return pinned_pieces; 
 }
 
-std::vector<uint8_t> Board::get_piece_pos(char piece_type) const {
+std::vector<uint8_t> Board::get_piece_pos(Piece piece_type, Side s) const {
     std::vector<uint8_t> pos;
-    size_t side = static_cast<size_t>(side_to_move); 
+    size_t side = static_cast<size_t>(s); 
     auto piece_board = pawns[side];
     switch(piece_type) {
-        case 'p':
+        case PAWN:
             piece_board = pawns[side];
             break;
-        case 'r':
+        case ROOK:
             piece_board = rooks[side];
             break;
-        case 'b':
+        case BISHOP:
             piece_board = bishops[side];
             break;
-        case 'q':
+        case QUEEN:
             piece_board = queens[side];
             break;
-        case 'k':
+        case KING:
             piece_board = kings[side];
             break;
-        case 'n':
+        case KNIGHT:
             piece_board = knights[side];
             break;
     }

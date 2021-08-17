@@ -5,7 +5,7 @@ file(GLOB_RECURSE SOURCES LIST_DIRECTORIES true ./src/*.hpp ./src/*.cpp)
 file(GLOB_RECURSE TEST_SOURCES LIST_DIRECTORIES true ./test/*.hpp ./test/*.cpp)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-O3 -Wall -msse2 -mssse3 -msse4.1 -g")
+set(CMAKE_CXX_FLAGS "-O3 -Wall -msse -msse2 -mssse3 -msse4.1 -g")
 
 add_library(spareduck_lib STATIC ${SOURCES})
 add_executable(spareduck ${SOURCES})

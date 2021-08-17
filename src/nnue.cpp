@@ -1,6 +1,7 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <emmintrin.h>
+#include <immintrin.h>
 #include <memory>
 #include <optional>
 #include <iostream>
@@ -11,7 +12,10 @@
 #ifndef TESTING
 #endif
 
-int NNUE::evaluate(size_t piece_count) {
+int NNUE::evaluate(size_t piece_count, Side side_to_move) {
+    if (!ready) {
+        return 0;
+    }
     // efficient updating should have already updated a1_white and a1_black.
     // however the bias and relu are not yet applied to them in order to facilitate
     // efficient updates
@@ -64,7 +68,8 @@ int NNUE::evaluate(size_t piece_count) {
     }
 
     auto side = static_cast<size_t>(side_to_move);
-    auto a = static_cast<int>(side) - 0.5;
+    // auto a = static_cast<int>(side) - 0.5;
+    auto a = side ? 2: -2;
     
     size_t bucket = (piece_count - 1) / 4;
     // evaluate psqts
@@ -72,31 +77,41 @@ int NNUE::evaluate(size_t piece_count) {
         __m128i tmpsqt = _mm_load_si128((__m128i *) &psqtw_to_move[i]);
         __m128i opsqt = _mm_load_si128((__m128i *) &psqtw_other[i]);
         __m128i diff = _mm_sub_epi32(tmpsqt, opsqt);
-        __m128i as = _mm_set1_epi32(a);
-        __m128i res = _mm_mul_epi32(diff, as);
-        _mm_store_si128((__m128i *) &ps[i], res);
+        // __m128i as = _mm_set1_epi32(a);
+        // __m128i res = _mm_div_epi32(diff, as);
+        _mm_store_si128((__m128i *) &ps[i], diff);
     }
 
+    for (int i  = 0; i < 8; ++i) {
+        ps[i] /= a;    
+    }
 
     // 3. construct a vector that is LAYER1_SIZE * 2 long containing the activations
     // of the combined black and white first layer (with the side to move at the start)
     // technically more efficient code would get around this memcpy but for now this is fine
     // TODO order this based on the side to move
     // std::array<int8_t, LAYER1_SIZE*2> combined;
-    std::unique_ptr<int8_t[]> combined = std::make_unique<int8_t[]>(LAYER1_SIZE*2);
-    std::memcpy(combined.get(), a1_to_move, LAYER1_SIZE);
-    std::memcpy(&combined.get()[LAYER1_SIZE], a1_other, LAYER1_SIZE);
+    int8_t* combined = new int8_t[LAYER1_SIZE*2];
+    // std::unique_ptr<int8_t[]> combined = std::make_unique<int8_t[]>(LAYER1_SIZE*2);
+    std::memcpy(combined, a1_to_move, LAYER1_SIZE);
+    std::memcpy(&combined[LAYER1_SIZE], a1_other, LAYER1_SIZE);
 
     // 4. go through the rest of the hidden layers
-    compute_activation<LAYER1_SIZE*2, LAYER2_SIZE>(combined.get(), w1.get(), b2.get(), a2.get(), piece_count);
+    compute_activation<LAYER1_SIZE*2, LAYER2_SIZE>(combined, w1.get(), b2.get(), a2.get(), piece_count);
     compute_activation<LAYER2_SIZE, LAYER3_SIZE>(a2.get(), w2.get(), b3.get(), a3.get(), piece_count);
 
     // 5. calculate the output layer and return;
-    return compute_activation<LAYER3_SIZE, 1>(a3.get(), w3.get(), b4.get(), nullptr, piece_count) + ps[bucket];
+    auto eval = compute_activation<LAYER3_SIZE, 1>(a3.get(), w3.get(), b4.get(), nullptr, piece_count) + ps[bucket];
+    delete [] combined;
+    return eval / 100;
 }
 
 void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured, std::optional<Piece> promoted, uint8_t white_king_square,
     uint8_t black_king_square, Side side_that_moved, bool reverse_move) {
+
+        if (!ready) {
+            return;
+        }
         auto side = static_cast<size_t>(side_that_moved);
         auto other = static_cast<Side>(1 - side);
         auto origin_index_wpov = halfka_index(true, white_king_square, move.origin_square(), moved_piece, side_that_moved);
@@ -136,6 +151,9 @@ void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piec
 void NNUE::reset_nnue(Move move, std::optional<Piece> captured, uint8_t white_king_square, 
     uint8_t black_king_square, Side side_that_moved, Board &b) {
 
+    if (!ready) { 
+        return;
+    }
     auto other_side = static_cast<Side>(1-static_cast<size_t>(side_that_moved));
     
     std::memset(wps.get(), 0, 8*sizeof(int32_t));
@@ -238,7 +256,6 @@ NNUE::NNUE() {
 }
 
 NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
-    side_to_move = current_to_move;
     w0 = std::make_unique<int16_t[]>(INPUT_SIZE*LAYER1_SIZE);
     psqt_wts = std::make_unique<int32_t[]>(INPUT_SIZE*8);
     wps = std::make_unique<int32_t[]>(8);
@@ -294,7 +311,4 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
 
         temp_idx = idx;
     }
-    std::cout << (int) w0[2] << std::endl;
-    std::cout << (int) wps[0] << std::endl;
-    std::cout << (int) b1[1] << std::endl;
 }

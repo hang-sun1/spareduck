@@ -39,10 +39,28 @@ Move Search::get_engine_move() {
 
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp_pv;
+        auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+        auto pieces_involved = board.make_move(moves[i]);
+        uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
+        uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+        
+        int next_eval;
 
-        board.make_move(moves[i]);
-        int next_eval = -search(-100000, 100000, 1, temp_pv);
-        board.unmake_move(moves[i]);
+        if (pieces_involved[0].value() != KING) {
+            nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+            next_eval = -search(-100000, 100000, 1 - 1, temp_pv);
+            board.unmake_move(moves[i]);
+            nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
+        } else {
+            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+            next_eval = -search(-100000, 100000, 1 - 1, temp_pv);
+            board.unmake_move(moves[i]);
+            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+        }
+
+        // board.make_move(moves[i]);
+        // int next_eval = -search(-100000, 100000, 1, temp_pv);
+        // board.unmake_move(moves[i]);
         std::cout << "next_eval " << moves[i] << " => " << next_eval << std::endl;
         // update bestEval
         if (next_eval > best_eval) {
@@ -73,7 +91,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 
     if (move_count == 0 && board.in_check()) {
         // update tt
-        return evaluate.evaluate_cheap();
+        return evaluate.evaluate();
     }
 
     if (depth <= 0) {
@@ -98,13 +116,13 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     // futility pruning
     bool is_futile = false;
     if (depth == 1) {
-        int curr_eval = evaluate.evaluate_cheap();
+        int curr_eval = evaluate.evaluate();
         const int MINOR_VAL = 310;
         if (curr_eval + MINOR_VAL < alpha) {
             is_futile = true;
         }
     } else if (depth == 2) {
-        int curr_eval = evaluate.evaluate_cheap();
+        int curr_eval = evaluate.evaluate();
         const int ROOK_VAL = 510;
         if (curr_eval + ROOK_VAL < alpha) {
             is_futile = true;
@@ -223,12 +241,12 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
 
     // TODO: handle loud positions
     if (board.in_check()) {
-        return evaluate.evaluate_cheap();
+        return evaluate.evaluate();
         //std::vector<Move> temp_pv;
         //return -search(alpha, beta, 1, temp_pv);
     }
 
-    int stand_pat = evaluate.evaluate_cheap();
+    int stand_pat = evaluate.evaluate();
     if (stand_pat >= beta) {
         return stand_pat;
     }

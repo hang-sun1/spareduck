@@ -9,21 +9,25 @@ const data = require('./db/db');
     Chess board interface. Build using Chessground.
     https://github.com/ornicar/chessground
 */
-const init = async (
-  init_config = { fen: false, side: 'white', playAi: true },
-) => {
-  const { fen, side, playAi } = init_config;
+const init = async (init_config = {}) => {
+  // combine fixed params
+  const { fen, side, playAi } = {
+    fen: false,
+    side: 'white',
+    playAi: true,
+    ...init_config,
+  };
 
-  // Initialize web worker
+  // Add loading spinner
+  let spinner = document.createElement('div');
+  spinner.classList.add('spinner');
+  document.body.appendChild(spinner);
+
+  // initialize web worker
   const worker = new Worker('./worker.js', { type: 'module' });
   const EngineWorker = Comlink.wrap(worker);
   const engine_worker = await new EngineWorker(fen);
   await engine_worker.init();
-
-  console.log(engine_worker);
-  console.log('------------------');
-
-  init_buttons(engine_worker);
 
   const config = {
     turnColor: await toColor(engine_worker),
@@ -32,6 +36,7 @@ const init = async (
       free: false,
       dests: await toDests(engine_worker),
     },
+    orientation: side,
     draggable: {
       showGhost: true,
     },
@@ -49,17 +54,44 @@ const init = async (
     config,
   );
 
+  let after = playAi ? aiPlay : playOtherSide;
   ground.set({
     movable: {
       events: {
-        after: playAi
-          ? await aiPlay(ground, engine_worker)
-          : await playOtherSide(ground, engine_worker),
+        after: after(ground, engine_worker),
       },
     },
   });
 
+  if (side === 'black') {
+    const open_book = [
+      ['e2', 'e4'],
+      ['d2', 'd4'],
+      ['c2', 'c4'],
+      ['g1', 'f3'],
+      ['a2', 'a4'],
+    ];
+    const open_move = open_book[Math.floor(Math.random() * open_book.length)];
+    await engine_worker.make_move(open_move[0], open_move[1], false, 1);
+    ground.move(open_move[0], open_move[1]);
+    ground.set({
+      turnColor: await toColor(engine_worker),
+      movable: {
+        color: await toColor(engine_worker),
+        dests: await toDests(engine_worker),
+      },
+    });
+  }
+
+  // initialize buttons
+  init_buttons(engine_worker, worker);
+
+  // remove loading spinner
+  document.body.removeChild(spinner);
+
+  // ui update loop
   setInterval(async () => {
+    // evaluation
     const evaluation = await engine_worker.get_engine_evaluation();
     let eval_bar = document.getElementById('eval-bar');
     const eval_percent = Math.floor(evaluation / 50 + 50);
@@ -69,30 +101,79 @@ const init = async (
       `height: 18px;width: 476px;margin: 12px 0;background:linear-gradient(to right, white ${eval_percent}%, black ${eval_percent}%, black 100%);border: 2px solid black;`,
     );
 
+    // Principal Variation
     let pv_elem = document.getElementById('p-var');
     let pv = await engine_worker.get_principal_variation();
-
     pv_elem.innerHTML = 'Principal Variation: ' + pv.join(', ');
+
     return;
-  }, 2000);
+  }, 500);
 };
 
-const init_buttons = (engine_worker) => {
-  document.getElementById('swap-button').addEventListener('click', function () {
-    init({ side: 'black' });
-  });
-  document.getElementById('test-button').addEventListener('click', function () {
-    run_tests(engine_worker);
-  });
-  document.getElementById('self-button').addEventListener('click', function () {
-    init({ playAi: false });
-  });
-  document.getElementById('rst-button').addEventListener('click', function () {
+// initialize button bar
+const init_buttons = (engine_worker, worker) => {
+  // start a new game as white
+  let handle_white = () => {
+    worker.terminate();
+    destroy_buttons();
     init();
-  });
-  // TODO add reset, switch sides, and play local buttons
+  };
+  document.getElementById('wht-button').addEventListener('click', handle_white);
+
+  // start a new game as black
+  let handle_black = () => {
+    worker.terminate();
+    destroy_buttons();
+    init({ side: 'black' });
+  };
+  document.getElementById('blk-button').addEventListener('click', handle_black);
+
+  //start a new game playing against self
+  let handle_self = () => {
+    worker.terminate();
+    destroy_buttons({ playAi: false });
+    init();
+  };
+  document.getElementById('self-button').addEventListener('click', handle_self);
+
+  // start from fen position
+  let handle_fen = () => {
+    worker.terminate();
+    const default_fen =
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0';
+    destroy_buttons();
+    init({ fen: prompt('Input FEN', default_fen) });
+  };
+  document.getElementById('fen-button').addEventListener('click', handle_fen);
+
+  // run tests from js file
+  let handle_test = () => {
+    destroy_buttons();
+    run_tests(engine_worker);
+  };
+  document.getElementById('test-button').addEventListener('click', handle_test);
+
+  // remove button listeners
+  const destroy_buttons = () => {
+    document
+      .getElementById('wht-button')
+      .removeEventListener('click', handle_white);
+    document
+      .getElementById('blk-button')
+      .removeEventListener('click', handle_black);
+    document
+      .getElementById('self-button')
+      .removeEventListener('click', handle_self);
+    document
+      .getElementById('fen-button')
+      .removeEventListener('click', handle_fen);
+    document
+      .getElementById('test-button')
+      .removeEventListener('click', handle_test);
+  };
 };
 
+// Run tests from puzzle DB and show failed FENS
 const run_tests = (engine_worker) => {
   let fails = [];
   data.records.forEach(async (record, hang_is_a_troll) => {

@@ -13,6 +13,10 @@ TableEntry::TableEntry(uint32_t hash, Move move, int16_t eval, NodeType type, ui
     this->depth = depth;
 }
 
+std::ostream& operator<<(std::ostream& strm, const TableEntry& entry) {
+    return strm << " [" << entry.get_move() << ", " << entry.get_eval() << ", " << entry.get_depth() << "] ";
+}
+
 uint32_t TableEntry::get_upper_hash() const {
     return hash;
 }

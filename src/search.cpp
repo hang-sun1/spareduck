@@ -96,16 +96,17 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     std::vector<Move> moves = board.get_moves();
     int move_count = moves.size();
 
+    // Mate or stalemate
     if (move_count == 0 && board.in_check()) {
         // update tt
         return evaluate.evaluate();
     }
 
     if (depth <= 0) {
-        int curr_eval = quiesce(alpha, beta, pv);
+        int curr_eval = quiesce(alpha, beta, pv, 0);
 
         if (pv.size()) {
-            NodeType type;  // Should this always be EXACT??
+            NodeType type;
             if (curr_eval <= alpha) {
                 type = NodeType::UPPER;
             } else if (curr_eval >= beta) {
@@ -114,7 +115,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
                 type = NodeType::EXACT;
             }
 
-            t_table.put(board, pv.front(), curr_eval, type, static_cast<uint8_t>(depth));
+            t_table.put(board, pv.front(), curr_eval, type, 0);  // Null move?
         }
 
         return curr_eval;
@@ -140,38 +141,38 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int j = 0;  // move swap counter
 
     // Check transposition table for current position.
-    // std::optional<TableEntry> t_position;  //t_table.get(board);
-    // if (t_position.has_value()) {
-    //     if (t_position->get_depth() >= depth) {
-    //         switch (t_position->get_type()) {
-    //             case NodeType::UPPER:
-    //                 if (t_position->get_eval() < beta)
-    //                     beta = t_position->get_eval();
-    //                 break;
-    //             case NodeType::LOWER:
-    //                 if (t_position->get_eval() > alpha)
-    //                     alpha = t_position->get_eval();
-    //                 break;
-    //             default:
-    //                 return t_position->get_eval();
-    //         }
+    std::optional<TableEntry> t_position;  // = t_table.get(board);
+    if (t_position.has_value()) {
+        if (t_position->get_depth() >= depth) {
+            switch (t_position->get_type()) {
+                case NodeType::UPPER:
+                    if (t_position->get_eval() < beta)
+                        beta = t_position->get_eval();
+                    break;
+                case NodeType::LOWER:
+                    if (t_position->get_eval() > alpha)
+                        alpha = t_position->get_eval();
+                    break;
+                default:
+                    return t_position->get_eval();
+            }
 
-    //         if (alpha > beta) {
-    //             return alpha;
-    //         }
-    //     }
+            if (alpha > beta) {
+                return alpha;
+            }
+        }
 
-    //     // move ordering: transposition table first
-    //     for (int i = 0; i < move_count; i++) {
-    //         if (moves[i] == t_position->get_move()) {  // TODO: check if move valid?
-    //             moves[i] = moves[0];
-    //             moves[0] = t_position->get_move();
-    //             j++;
-    //             break;
-    //         }
-    //     }
-    // }
-    // move ordering:  captures first
+        // move ordering: transposition table first
+        for (int i = 0; i < move_count; i++) {
+            if (moves[i] == t_position->get_move()) {
+                moves[i] = moves[0];
+                moves[0] = t_position->get_move();
+                j++;
+                break;
+            }
+        }
+    }
+    // move ordering: captures first
     for (int i = j; i < move_count; i++) {
         if (moves[i].is_capture()) {
             Move temp_move = moves[j];
@@ -185,7 +186,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int best_eval = INT_MIN;
 
     for (int i = 0; i < move_count; i++) {
-        if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check() also implicitly tries move from hashtable
+        if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check()
             continue;
         }
         auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
@@ -249,7 +250,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
+int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
     pv.clear();
 
     if (board.is_checkmate() || board.is_stalemate()) {
@@ -267,14 +268,25 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
     if (stand_pat >= beta) {
         return stand_pat;
     }
-
-    // Delta pruning - TODO: handle promotion
-    const int DELTA = 900;  // queen / max material swing value
-    if (stand_pat + DELTA < alpha) {
+    if (q_depth > 4) {
         return alpha;
     }
-    if (stand_pat > alpha) {
-        alpha = stand_pat;
+
+    // TODO: handle loud positions
+    if (!board.in_check()) {
+        int stand_pat = evaluate.evaluate_cheap();
+        if (stand_pat >= beta) {
+            return stand_pat;
+        }
+
+        // Delta pruning - TODO: handle promotion
+        const int DELTA = 900;  // queen / max material swing value
+        if (stand_pat + DELTA < alpha) {
+            return alpha;
+        }
+        if (stand_pat > alpha) {
+            alpha = stand_pat;
+        }
     }
 
     //generate all moves
@@ -302,12 +314,12 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
 
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -quiesce(-beta, -alpha, temp_pv);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth+1);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
-                next_eval = -quiesce(-beta, -alpha, temp_pv);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth+1);
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
             }

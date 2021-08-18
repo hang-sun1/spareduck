@@ -7,9 +7,8 @@ class EngineWorker {
   }
   async init() {
     this._chess = await spareduck();
-    console.log(this._chess);
     if (this._fen) {
-      this.start_from_position(fen);
+      this.start_from_position(this._fen);
     }
   }
   get_moves() {
@@ -44,7 +43,7 @@ class EngineWorker {
     return this.vect_to_list(this._chess.test_position(fen, moves));
   }
   start_from_position(fen) {
-    this._chess.start_fr1om_position(fen);
+    this._chess.start_from_position(fen);
   }
   vect_to_list(vect) {
     let list = [];

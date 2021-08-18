@@ -48,12 +48,12 @@ Move Search::get_engine_move() {
 
         if (pieces_involved[0].value() != KING) {
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-            next_eval = -search(-100000, 100000, 1 - 1, temp_pv);
+            next_eval = -search(-100000, 100000, 1, temp_pv);
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
             nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
-            next_eval = -search(-100000, 100000, 1 - 1, temp_pv);
+            next_eval = -search(-100000, 100000, 1, temp_pv);
             board.unmake_move(moves[i]);
             nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
         }
@@ -269,9 +269,27 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
     for (int i = 0; i < move_count; i++) {
         // skip if move isn't capture
         if (moves[i].is_capture()) {
-            board.make_move(moves[i]);
-            int next_eval = -quiesce(-beta, -alpha, temp_pv);
-            board.unmake_move(moves[i]);
+            auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+            auto pieces_involved = board.make_move(moves[i]);
+            uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
+            uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+            
+            int next_eval;
+
+            if (pieces_involved[0].value() != KING) {
+                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+                next_eval = -quiesce(-beta, -alpha, temp_pv);
+                board.unmake_move(moves[i]);
+                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
+            } else {
+                nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+                next_eval = -quiesce(-beta, -alpha, temp_pv);
+                board.unmake_move(moves[i]);
+                nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+            }
+            // board.make_move(moves[i]);
+            // int next_eval = -quiesce(-beta, -alpha, temp_pv);
+            // board.unmake_move(moves[i]);
 
             if (next_eval >= beta) {
                 // Update pv?

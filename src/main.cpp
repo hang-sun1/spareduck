@@ -81,8 +81,19 @@ void make_move(int from, int to, bool promotion, int promote_to) {
             }
         }
     }
-    game_board.make_move(mov);
-    return;
+    auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+    auto pieces_involved = game_board.make_move(mov);
+    uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;
+    uint8_t black_king_square = __builtin_ffsll(game_board.get_kings()[1]) - 1;
+    
+    int next_eval;
+
+    if (pieces_involved[0].value() != KING) {
+        nnue.update_non_king_move(mov, pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+    } else {
+        nnue.reset_nnue(mov, pieces_involved[1], white_king_square, black_king_square, side, game_board);
+    }
+    // game_board.make_move(mov);
 }
 }
 
@@ -161,12 +172,14 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
 #ifndef TESTING 
 void on_succeed(emscripten_fetch_t* fetch) {
     std::cout << "network loading succeeded with " << fetch->numBytes << " bytes downloaded" << std::endl;
-    NNUE new_nnue = NNUE(Side::WHITE, fetch);
+    NNUE new_nnue(Side::WHITE, fetch);
     std::cout << "START OF NNUE TESTING" << std::endl;
     // Board a("r3k2r/p6p/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     // Board a("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/4K2R w Kkq - 0 1");
-    Board a("r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2");
-    // Board a;
+    // Board a("r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2");
+    //Board a("rnbqkbnr/1ppppppp/p7/8/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1 w kq - 0 8");
+    // Board a("2bqkbnr/pppppppp/8/4P3/3P4/2NB1N2/PPP2PPP/R1BQK2R w KQkq - 1 7");
+    Board a;
     new_nnue.ready = true;
     new_nnue.reset_nnue(Move(), std::nullopt, 4, 60, Side::WHITE, a);
     auto eval = new_nnue.evaluate(32, Side::BLACK);

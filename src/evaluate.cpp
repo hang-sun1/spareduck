@@ -187,7 +187,7 @@ int Evaluate::evaluate() const {
         piece_count += std::popcount(queens[0]) + std::popcount(queens[1]);
         piece_count += std::popcount(kings[0]) + std::popcount(kings[1]);
 
-        value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move()));
+        value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move())) * (board.get_side_to_move() ? -1 : 1);
     }
 
     return value * (board.get_side_to_move() ? -1 : 1);

@@ -38,24 +38,42 @@ class NNUE {
     void reset_nnue(Move move, std::optional<Piece> captured, uint8_t white_king_square, uint8_t black_king_square, Side side_that_moved, Board &b);
     bool ready = false;
    private:
-    std::unique_ptr<int16_t[]> w0;
-    std::unique_ptr<int32_t[]> psqt_wts;
-    std::unique_ptr<int32_t[]> wps;
-    std::unique_ptr<int32_t[]> bps;
-    std::unique_ptr<int32_t[]> ps;
-    std::unique_ptr<int16_t[]> b1;
-    std::unique_ptr<int16_t[]> a1_white;
-    std::unique_ptr<int8_t[]> a1_white_with_bias;
-    std::unique_ptr<int16_t[]> a1_black;
-    std::unique_ptr<int8_t[]> a1_black_with_bias;
-    std::unique_ptr<int8_t[]> w1;
-    std::unique_ptr<int32_t[]> b2;
-    std::unique_ptr<int8_t[]> a2;
-    std::unique_ptr<int8_t[]> w2;
-    std::unique_ptr<int32_t[]> b3;
-    std::unique_ptr<int8_t[]> a3;
-    std::unique_ptr<int8_t[]> w3;
-    std::unique_ptr<int32_t[]> b4;
+    int16_t* w0;
+    int32_t* psqt_wts;
+    int32_t* wps;
+    int32_t* bps;
+    int32_t* ps;
+    int16_t* b1;
+    int16_t* a1_white;
+    int8_t* a1_white_with_bias;
+    int16_t* a1_black;
+    int8_t* a1_black_with_bias;
+    int8_t* w1;
+    int32_t* b2;
+    int8_t* a2;
+    int8_t* w2;
+    int32_t* b3;
+    int8_t* a3;
+    int8_t* w3;
+    int32_t* b4;
+    // std::unique_ptr<int16_t[]> w0;
+    // std::unique_ptr<int32_t[]> psqt_wts;
+    // std::unique_ptr<int32_t[]> wps;
+    // std::unique_ptr<int32_t[]> bps;
+    // std::unique_ptr<int32_t[]> ps;
+    // std::unique_ptr<int16_t[]> b1;
+    // std::unique_ptr<int16_t[]> a1_white;
+    // std::unique_ptr<int8_t[]> a1_white_with_bias;
+    // std::unique_ptr<int16_t[]> a1_black;
+    // std::unique_ptr<int8_t[]> a1_black_with_bias;
+    // std::unique_ptr<int8_t[]> w1;
+    // std::unique_ptr<int32_t[]> b2;
+    // std::unique_ptr<int8_t[]> a2;
+    // std::unique_ptr<int8_t[]> w2;
+    // std::unique_ptr<int32_t[]> b3;
+    // std::unique_ptr<int8_t[]> a3;
+    // std::unique_ptr<int8_t[]> w3;
+    // std::unique_ptr<int32_t[]> b4;
 
     size_t halfka_index(bool is_white_pov, uint8_t king_square, uint8_t square, Piece piece, Side side_of_piece);
 
@@ -69,7 +87,7 @@ class NNUE {
     int compute_activation(int8_t* input, int8_t* weights, int32_t* biases,
                            int8_t* output, size_t piece_count) {
         size_t bucket = (piece_count - 1) / 4;
-        std::array<int32_t, OUT> temp_out;
+        alignas(16) std::array<int32_t, OUT> temp_out;
         for (size_t i = 0; i < OUT; ++i) {
             __m128i acc = _mm_setzero_si128();
             for (size_t j = 0; j < IN; j += 16) {

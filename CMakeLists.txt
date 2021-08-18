@@ -11,7 +11,7 @@ add_library(spareduck_lib STATIC ${SOURCES})
 add_executable(spareduck ${SOURCES})
 add_executable(spareduck_test ${TEST_SOURCES})
 
-set_target_properties(spareduck PROPERTIES LINK_FLAGS "--bind -s ENVIRONMENT=web -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME=\"spareduck\" -s LLD_REPORT_UNDEFINED -s ASSERTIONS=1 -s MAXIMUM_MEMORY=4GB -s INITIAL_MEMORY=1GB -s FETCH=1")
+set_target_properties(spareduck PROPERTIES LINK_FLAGS "--bind -s ENVIRONMENT=web -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME=\"spareduck\" -s LLD_REPORT_UNDEFINED -s ASSERTIONS=1 -s MAXIMUM_MEMORY=4GB -s INITIAL_MEMORY=1GB -s FETCH=1 -s SAFE_HEAP=1")
 set_target_properties(spareduck PROPERTIES COMPILE_FLAGS "-msimd128")
 
 set_target_properties(spareduck_test PROPERTIES COMPILE_FLAGS "-DTESTING")

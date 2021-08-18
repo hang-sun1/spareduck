@@ -86,8 +86,6 @@ void make_move(int from, int to, bool promotion, int promote_to) {
     uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;
     uint8_t black_king_square = __builtin_ffsll(game_board.get_kings()[1]) - 1;
     
-    int next_eval;
-
     if (pieces_involved[0].value() != KING) {
         nnue.update_non_king_move(mov, pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
     } else {
@@ -179,10 +177,9 @@ void on_succeed(emscripten_fetch_t* fetch) {
     // Board a("r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2");
     //Board a("rnbqkbnr/1ppppppp/p7/8/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1 w kq - 0 8");
     // Board a("2bqkbnr/pppppppp/8/4P3/3P4/2NB1N2/PPP2PPP/R1BQK2R w KQkq - 1 7");
-    Board a;
     new_nnue.ready = true;
-    new_nnue.reset_nnue(Move(), std::nullopt, 4, 60, Side::WHITE, a);
-    auto eval = new_nnue.evaluate(32, Side::BLACK);
+    new_nnue.reset_nnue(Move(), std::nullopt, 4, 60, Side::WHITE, game_board);
+    auto eval = new_nnue.evaluate(32, Side::WHITE);
     std::cout << "Eval: " << eval << std::endl;
     std::cout << "END OF NNUE TESTING" << std::endl;
     nnue = std::move(new_nnue);

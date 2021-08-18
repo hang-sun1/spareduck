@@ -1,6 +1,7 @@
 #include "search.hpp"
 
 #include <iostream>
+#include <assert.h>
 
 /*
     A simple implementation of fail-soft negamax alpha-beta search.
@@ -43,17 +44,23 @@ Move Search::get_engine_move() {
         auto pieces_involved = board.make_move(moves[i]);
         uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
         uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
-        
+
+        if (white_king_square >= 64 || black_king_square >= 64) {
+            board.unmake_move(moves[i]);
+            continue;
+        }
+        assert(white_king_square < 64);
+        assert(black_king_square < 64); 
         int next_eval;
 
         if (pieces_involved[0].value() != KING) {
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-            next_eval = -search(-100000, 100000, 1, temp_pv);
+            next_eval = -search(-100000, 100000, 3, temp_pv);
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
             nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
-            next_eval = -search(-100000, 100000, 1, temp_pv);
+            next_eval = -search(-100000, 100000, 4, temp_pv);
             board.unmake_move(moves[i]);
             nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
         }
@@ -133,37 +140,37 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int j = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position;  //t_table.get(board);
-    if (t_position.has_value()) {
-        if (t_position->get_depth() >= depth) {
-            switch (t_position->get_type()) {
-                case NodeType::UPPER:
-                    if (t_position->get_eval() < beta)
-                        beta = t_position->get_eval();
-                    break;
-                case NodeType::LOWER:
-                    if (t_position->get_eval() > alpha)
-                        alpha = t_position->get_eval();
-                    break;
-                default:
-                    return t_position->get_eval();
-            }
+    // std::optional<TableEntry> t_position;  //t_table.get(board);
+    // if (t_position.has_value()) {
+    //     if (t_position->get_depth() >= depth) {
+    //         switch (t_position->get_type()) {
+    //             case NodeType::UPPER:
+    //                 if (t_position->get_eval() < beta)
+    //                     beta = t_position->get_eval();
+    //                 break;
+    //             case NodeType::LOWER:
+    //                 if (t_position->get_eval() > alpha)
+    //                     alpha = t_position->get_eval();
+    //                 break;
+    //             default:
+    //                 return t_position->get_eval();
+    //         }
 
-            if (alpha > beta) {
-                return alpha;
-            }
-        }
+    //         if (alpha > beta) {
+    //             return alpha;
+    //         }
+    //     }
 
-        // move ordering: transposition table first
-        for (int i = 0; i < move_count; i++) {
-            if (moves[i] == t_position->get_move()) {  // TODO: check if move valid?
-                moves[i] = moves[0];
-                moves[0] = t_position->get_move();
-                j++;
-                break;
-            }
-        }
-    }
+    //     // move ordering: transposition table first
+    //     for (int i = 0; i < move_count; i++) {
+    //         if (moves[i] == t_position->get_move()) {  // TODO: check if move valid?
+    //             moves[i] = moves[0];
+    //             moves[0] = t_position->get_move();
+    //             j++;
+    //             break;
+    //         }
+    //     }
+    // }
     // move ordering:  captures first
     for (int i = j; i < move_count; i++) {
         if (moves[i].is_capture()) {
@@ -185,6 +192,12 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         auto pieces_involved = board.make_move(moves[i]);
         uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
         uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+        if (white_king_square >= 64 || black_king_square >= 64) {
+            board.unmake_move(moves[i]);
+            continue;
+        }
+        assert(white_king_square < 64);
+        assert(black_king_square < 64); 
         
         int next_eval;
 
@@ -239,6 +252,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
     pv.clear();
 
+    if (board.is_checkmate() || board.is_stalemate()) {
+        return evaluate.evaluate();
+    }
+
     // TODO: handle loud positions
     if (board.in_check()) {
         return evaluate.evaluate();
@@ -268,11 +285,18 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv) {
 
     for (int i = 0; i < move_count; i++) {
         // skip if move isn't capture
-        if (moves[i].is_capture()) {
+        if (moves[i].is_capture() || board.in_check()) {
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
             auto pieces_involved = board.make_move(moves[i]);
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+            // std::cout << (unsigned int) white_king_square << (unsigned int) black_king_square << std::endl;
+            // std::cout << "MOVECOUNT " << move_count << std::endl;
+            // FIXME ugly hack
+            if (white_king_square >= 64 || black_king_square >= 64) {
+                board.unmake_move(moves[i]);
+                continue;
+            }
             
             int next_eval;
 

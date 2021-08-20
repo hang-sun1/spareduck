@@ -65,11 +65,13 @@ Board::Board() {
     this->moves = this->generate_moves();
     // there is no en passant target yet, so just set it to some square off the board
     this->en_passant_target = 65;
+    piece_map_vec.reserve(50);
 }
 
 Board::Board(std::string fen) {
     this->in_between = Board::generate_in_between();
     this->history = std::stack<History>();
+    piece_map_vec.reserve(50);
     parse_fen(fen);
     this->rank_attack_lookup = Board::generate_rank_attacks();
     this->diagonal_mask_lookup = Board::generate_diagonal_mask_map();
@@ -92,19 +94,21 @@ Board::Board(std::string fen) {
     auto other_move = 1 - current_move;
     // side_to_move = Side::BLACK;
     for (int i = 0; i < 6; ++i) {
-        auto maps = this->defense_maps_for_piece((*arr[i])[other_move], all_per_side[current_move] | all_per_side[other_move],
-                gen_funcs[i], static_cast<Side>(other_move));
+        piece_map_vec.clear();
+        this->defense_maps_for_piece((*arr[i])[other_move], all_per_side[current_move] | all_per_side[other_move],
+                gen_funcs[i], static_cast<Side>(other_move), piece_map_vec);
         (*def_maps[i])[other_move] = 0;
-        for (auto &map: maps) {
+        for (auto &map: piece_map_vec) {
             (*def_maps[i])[other_move] |= map.first;
         }
     }
     // side_to_move = Side::WHITE;
     for (int i = 0; i < 6; ++i) {
-        auto maps = this->defense_maps_for_piece((*arr[i])[current_move], all_per_side[current_move] | all_per_side[other_move],
-                gen_funcs[i], side_to_move);
+        piece_map_vec.clear();
+        this->defense_maps_for_piece((*arr[i])[current_move], all_per_side[current_move] | all_per_side[other_move],
+                gen_funcs[i], side_to_move, piece_map_vec);
         (*def_maps[i])[current_move] = 0;
-        for (auto &map: maps) {
+        for (auto &map: piece_map_vec) {
             (*def_maps[i])[current_move] |= map.first;
         }
     }
@@ -575,6 +579,7 @@ std::vector<Move> Board::generate_moves() {
     size_t side = static_cast<size_t>(side_to_move);
     size_t other_side = 1 - side;
     std::vector<Move> vec_of_moves;
+    vec_of_moves.reserve(50);
 
     uint64_t pinned = 0;
     int king_loc = __builtin_ffsll(kings[side]) - 1;
@@ -613,7 +618,7 @@ std::vector<Move> Board::generate_moves() {
         pinner &= ~(1ULL << next_square);
     }
     auto board_occ = all_per_side[0] | all_per_side[1];
-    
+
     // auto queen_maps = defense_maps_for_piece(queens[side], board_occ, 'q', side_to_move);
     // auto bishop_maps = defense_maps_for_piece(bishops[side], board_occ, 'b', side_to_move);
     // auto rook_maps = defense_maps_for_piece(rooks[side], board_occ, 'r', side_to_move);
@@ -654,140 +659,148 @@ std::vector<Move> Board::generate_moves() {
             }
 
         }
-        if (check_counter == 2) {
-            queen_maps.clear();
-            rook_maps.clear();
-            bishop_maps.clear();
-            knight_maps.clear();
-            pawn_move_maps.clear();
-            pawn_capture_maps.clear();
-        }
+        // if (check_counter == 2) {
+        //     queen_maps.clear();
+        //     rook_maps.clear();
+        //     bishop_maps.clear();
+        //     knight_maps.clear();
+        //     pawn_move_maps.clear();
+        //     pawn_capture_maps.clear();
+        // }
     }
     std::vector<std::pair<uint64_t, uint8_t>> most_maps;
-    auto pawn_capture_maps = defense_maps_for_piece(pawns[side], board_occ, 'P', side_to_move);
-
-    for (auto &m : pawn_capture_maps) {
-        m.first &= ~all_per_side[side];
-        m.first &= all_per_side[other_side];
-        auto map = m.first;
-        auto from = m.second;
-        int dest_plus_one = __builtin_ffsll(map);
-        while (dest_plus_one) {
-            auto dest = static_cast<uint8_t>(dest_plus_one) - 1;
-            if (piece_giving_check >= 0) {
-                if (king_still_under_attack(dest, kings[side], arr[piece_giving_check], gen_funcs[piece_giving_check],
-                    static_cast<Side>(other_side))) {
+    if (check_counter < 2) {
+        piece_map_vec.clear();
+        defense_maps_for_piece(pawns[side], board_occ, 'P', side_to_move, piece_map_vec);
+        // iterate through pawn captures
+        for (auto &m : piece_map_vec) {
+            m.first &= ~all_per_side[side];
+            m.first &= all_per_side[other_side];
+            auto map = m.first;
+            auto from = m.second;
+            int dest_plus_one = __builtin_ffsll(map);
+            while (dest_plus_one) {
+                auto dest = static_cast<uint8_t>(dest_plus_one) - 1;
+                if (piece_giving_check >= 0) {
+                    if (king_still_under_attack(dest, kings[side], arr[piece_giving_check], gen_funcs[piece_giving_check],
+                        static_cast<Side>(other_side))) {
+                        map &= ~(1ULL << dest);
+                        dest_plus_one = __builtin_ffsll(map);
+                        continue;
+                    }
+                }
+                if (((1ULL << from) & pinned) && !((1ULL << dest) & available_moves[from])) {
                     map &= ~(1ULL << dest);
                     dest_plus_one = __builtin_ffsll(map);
                     continue;
                 }
-            }
-            if (((1ULL << from) & pinned) && !((1ULL << dest) & available_moves[from])) {
+                if (dest == en_passant_target) {
+                    Move en_passant = Move(from, dest, MoveType::EN_PASSANT);
+                    vec_of_moves.push_back(en_passant);
+                }
+                // has the pawn reached the back rank?
+                else if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
+                    Move promote_to_bishop = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP);
+                    Move promote_to_knight = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_KNIGHT);
+                    Move promote_to_queen = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_QUEEN);
+                    Move promote_to_rook = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_ROOK);
+                    vec_of_moves.push_back(promote_to_queen);
+                    vec_of_moves.push_back(promote_to_rook);
+                    vec_of_moves.push_back(promote_to_bishop);
+                    vec_of_moves.push_back(promote_to_knight);
+                } else {
+                    vec_of_moves.push_back(Move(from, dest, MoveType::CAPTURE));
+                }
                 map &= ~(1ULL << dest);
                 dest_plus_one = __builtin_ffsll(map);
-                continue;
             }
-            if (dest == en_passant_target) {
-                Move en_passant = Move(from, dest, MoveType::EN_PASSANT);
-                vec_of_moves.push_back(en_passant);
-            }
-            // has the pawn reached the back rank?
-            else if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
-                Move promote_to_bishop = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP);
-                Move promote_to_knight = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_KNIGHT);
-                Move promote_to_queen = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_QUEEN);
-                Move promote_to_rook = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_ROOK);
-                vec_of_moves.push_back(promote_to_queen);
-                vec_of_moves.push_back(promote_to_rook);
-                vec_of_moves.push_back(promote_to_bishop);
-                vec_of_moves.push_back(promote_to_knight);
-            } else {
-                vec_of_moves.push_back(Move(from, dest, MoveType::CAPTURE));
-            }
-            map &= ~(1ULL << dest);
-            dest_plus_one = __builtin_ffsll(map);
         }
-    }
-
-    for (auto &m : pawn_move_maps) {
-        m.first &= ~all_per_side[side];
-        auto map = m.first;
-        auto from = m.second;
-        int dest_plus_one = __builtin_ffsll(map);
-        while (dest_plus_one) {
-            auto dest = static_cast<uint8_t>(dest_plus_one) - 1;
-            if (piece_giving_check >= 0) {
-                if (king_still_under_attack(dest, kings[side], arr[piece_giving_check], gen_funcs[piece_giving_check],
-                    static_cast<Side>(other_side))) {
+        piece_map_vec.clear();
+        defense_maps_for_piece(pawns[side], board_occ, 'p', side_to_move, piece_map_vec);
+        // iterate through pawn moves
+        for (auto &m : piece_map_vec) {
+            m.first &= ~all_per_side[side];
+            auto map = m.first;
+            auto from = m.second;
+            int dest_plus_one = __builtin_ffsll(map);
+            while (dest_plus_one) {
+                auto dest = static_cast<uint8_t>(dest_plus_one) - 1;
+                if (piece_giving_check >= 0) {
+                    if (king_still_under_attack(dest, kings[side], arr[piece_giving_check], gen_funcs[piece_giving_check],
+                        static_cast<Side>(other_side))) {
+                        map &= ~(1ULL << dest);
+                        dest_plus_one = __builtin_ffsll(map);
+                        continue;
+                    }
+                }
+                if (((1ULL << from) & pinned) && !((1ULL << dest) & available_moves[from])) {
                     map &= ~(1ULL << dest);
                     dest_plus_one = __builtin_ffsll(map);
                     continue;
                 }
-            }
-            if (((1ULL << from) & pinned) && !((1ULL << dest) & available_moves[from])) {
+                if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
+                    Move promote_to_bishop = Move(from, dest, MoveType::PROMOTE_TO_BISHOP);
+                    Move promote_to_knight = Move(from, dest, MoveType::PROMOTE_TO_KNIGHT);
+                    Move promote_to_queen = Move(from, dest, MoveType::PROMOTE_TO_QUEEN);
+                    Move promote_to_rook = Move(from, dest, MoveType::PROMOTE_TO_ROOK);
+                    vec_of_moves.push_back(promote_to_queen);
+                    vec_of_moves.push_back(promote_to_rook);
+                    vec_of_moves.push_back(promote_to_bishop);
+                    vec_of_moves.push_back(promote_to_knight);
+                } else {
+                    vec_of_moves.push_back(Move(from, dest, MoveType::QUIET));
+                }
                 map &= ~(1ULL << dest);
                 dest_plus_one = __builtin_ffsll(map);
-                continue;
             }
-            if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
-                Move promote_to_bishop = Move(from, dest, MoveType::PROMOTE_TO_BISHOP);
-                Move promote_to_knight = Move(from, dest, MoveType::PROMOTE_TO_KNIGHT);
-                Move promote_to_queen = Move(from, dest, MoveType::PROMOTE_TO_QUEEN);
-                Move promote_to_rook = Move(from, dest, MoveType::PROMOTE_TO_ROOK);
-                vec_of_moves.push_back(promote_to_queen);
-                vec_of_moves.push_back(promote_to_rook);
-                vec_of_moves.push_back(promote_to_bishop);
-                vec_of_moves.push_back(promote_to_knight);
-            } else {
-                vec_of_moves.push_back(Move(from, dest, MoveType::QUIET));
-            }
-            map &= ~(1ULL << dest);
-            dest_plus_one = __builtin_ffsll(map);
         }
-    }
+        
+        piece_map_vec.clear();
+        defense_maps_for_piece(queens[side], board_occ, 'q', side_to_move, piece_map_vec);
+        defense_maps_for_piece(knights[side], board_occ, 'n', side_to_move, piece_map_vec);
+        defense_maps_for_piece(bishops[side], board_occ, 'b', side_to_move, piece_map_vec);
+        defense_maps_for_piece(rooks[side], board_occ, 'r', side_to_move, piece_map_vec);
 
-    most_maps.insert(most_maps.end(), queen_maps.begin(), queen_maps.end());
-    most_maps.insert(most_maps.end(), bishop_maps.begin(), bishop_maps.end());
-    most_maps.insert(most_maps.end(), rook_maps.begin(), rook_maps.end());
-    most_maps.insert(most_maps.end(), knight_maps.begin(), knight_maps.end());
-
-    for (auto &m : most_maps) {
-        m.first &= ~all_per_side[side];
-        auto map = m.first;
-        auto from = m.second;
-        int dest_plus_one = __builtin_ffsll(map);
-        while (dest_plus_one) {
-            auto dest = static_cast<uint8_t>(dest_plus_one) - 1;
-            // if (piece_giving_check >= 0 && (kings[side] & (1 << from))) {
-            //     if (king_still_under_attack(dest, (1ULL << dest), arr[piece_giving_check], gen_funcs[piece_giving_check])) {
-            //         map &= ~(1ULL << dest);
-            //         dest_plus_one = __builtin_ffsll(map);
-            //         continue;
-            //     }
-            if (piece_giving_check >= 0) {
-                if (king_still_under_attack(dest, kings[side], arr[piece_giving_check], gen_funcs[piece_giving_check],
-                    static_cast<Side>(other_side))) {
+        for (auto &m : piece_map_vec) {
+            m.first &= ~all_per_side[side];
+            auto map = m.first;
+            auto from = m.second;
+            int dest_plus_one = __builtin_ffsll(map);
+            while (dest_plus_one) {
+                auto dest = static_cast<uint8_t>(dest_plus_one) - 1;
+                // if (piece_giving_check >= 0 && (kings[side] & (1 << from))) {
+                //     if (king_still_under_attack(dest, (1ULL << dest), arr[piece_giving_check], gen_funcs[piece_giving_check])) {
+                //         map &= ~(1ULL << dest);
+                //         dest_plus_one = __builtin_ffsll(map);
+                //         continue;
+                //     }
+                if (piece_giving_check >= 0) {
+                    if (king_still_under_attack(dest, kings[side], arr[piece_giving_check], gen_funcs[piece_giving_check],
+                        static_cast<Side>(other_side))) {
+                        map &= ~(1ULL << dest);
+                        dest_plus_one = __builtin_ffsll(map);
+                        continue;
+                    }
+                }
+                if (((1ULL << from) & pinned) && !((1ULL << dest) & available_moves[from])) {
                     map &= ~(1ULL << dest);
                     dest_plus_one = __builtin_ffsll(map);
                     continue;
                 }
-            }
-            if (((1ULL << from) & pinned) && !((1ULL << dest) & available_moves[from])) {
+                MoveType type = MoveType::QUIET;
+                if (((1ULL << dest) & all_per_side[other_side])) {
+                    type = MoveType::CAPTURE;
+                }
+                vec_of_moves.push_back(Move(from, dest, type));
                 map &= ~(1ULL << dest);
                 dest_plus_one = __builtin_ffsll(map);
-                continue;
             }
-            MoveType type = MoveType::QUIET;
-            if (((1ULL << dest) & all_per_side[other_side])) {
-                type = MoveType::CAPTURE;
-            }
-            vec_of_moves.push_back(Move(from, dest, type));
-            map &= ~(1ULL << dest);
-            dest_plus_one = __builtin_ffsll(map);
         }
     }
-
-    for (auto &m : king_maps) {
+    piece_map_vec.clear();
+    defense_maps_for_piece(kings[side], board_occ, 'k', side_to_move, piece_map_vec);
+    
+    for (auto &m : piece_map_vec) {
         m.first &= ~all_per_side[side];
         m.first &= ~defense_maps[other_side];
         auto map = m.first;
@@ -1041,19 +1054,21 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
 
     for (size_t i = 0; i < 6; ++i) {
         if (i == captured || ((*def_maps[i])[other_move] & move_bitboard)) {
-            auto maps = this->defense_maps_for_piece((*arr[i])[other_move], all_per_side[current_move] | all_per_side[other_move],
-                gen_funcs[i], static_cast<Side>(other_move));
+            piece_map_vec.clear();
+            defense_maps_for_piece((*arr[i])[other_move], all_per_side[current_move] | all_per_side[other_move],
+                gen_funcs[i], static_cast<Side>(other_move), piece_map_vec);
             (*def_maps[i])[other_move] = 0;
-            for (auto &map: maps) {
+            for (auto &map: piece_map_vec) {
                 (*def_maps[i])[other_move] |= map.first;
             }
         }
 
         if (i == moved || ((*def_maps[i])[current_move] & move_bitboard)) {
-            auto maps = this->defense_maps_for_piece((*arr[i])[current_move], all_per_side[current_move] | all_per_side[other_move],
-                gen_funcs[i], side_to_move);
+            piece_map_vec.clear();
+            this->defense_maps_for_piece((*arr[i])[current_move], all_per_side[current_move] | all_per_side[other_move],
+                gen_funcs[i], side_to_move, piece_map_vec);
             (*def_maps[i])[current_move] = 0;
-            for (auto &map: maps) {
+            for (auto &map: piece_map_vec) {
                 (*def_maps[i])[current_move] |= map.first;
             }
         }

@@ -30,12 +30,13 @@ static const size_t LAYER3_SIZE = 32;
 class NNUE {
    public:
     NNUE();
+    ~NNUE();
     NNUE(Side current_to_move, emscripten_fetch_t* data);
 
     int evaluate(size_t piece_count, Side side_to_move);
     void update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured, std::optional<Piece> promoted, uint8_t white_king_square,
         uint8_t black_king_square, Side side_that_moved, bool reverse_move);
-    void reset_nnue(Move move, std::optional<Piece> captured, uint8_t white_king_square, uint8_t black_king_square, Side side_that_moved, Board &b);
+    void reset_nnue(std::optional<Piece> captured, Board &b);
     bool ready = false;
    private:
     int16_t* w0;
@@ -56,24 +57,6 @@ class NNUE {
     int8_t* a3;
     int8_t* w3;
     int32_t* b4;
-    // std::unique_ptr<int16_t[]> w0;
-    // std::unique_ptr<int32_t[]> psqt_wts;
-    // std::unique_ptr<int32_t[]> wps;
-    // std::unique_ptr<int32_t[]> bps;
-    // std::unique_ptr<int32_t[]> ps;
-    // std::unique_ptr<int16_t[]> b1;
-    // std::unique_ptr<int16_t[]> a1_white;
-    // std::unique_ptr<int8_t[]> a1_white_with_bias;
-    // std::unique_ptr<int16_t[]> a1_black;
-    // std::unique_ptr<int8_t[]> a1_black_with_bias;
-    // std::unique_ptr<int8_t[]> w1;
-    // std::unique_ptr<int32_t[]> b2;
-    // std::unique_ptr<int8_t[]> a2;
-    // std::unique_ptr<int8_t[]> w2;
-    // std::unique_ptr<int32_t[]> b3;
-    // std::unique_ptr<int8_t[]> a3;
-    // std::unique_ptr<int8_t[]> w3;
-    // std::unique_ptr<int32_t[]> b4;
 
     size_t halfka_index(bool is_white_pov, uint8_t king_square, uint8_t square, Piece piece, Side side_of_piece);
 
@@ -142,4 +125,5 @@ class NNUE {
         }
         return 0;
     }
+
 };

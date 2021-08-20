@@ -52,10 +52,13 @@ class Board {
     uint64_t generate_king_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ, Side side) const;
     uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ, Side side) const;
-    std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side) const;
+    // std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side) const;
+    void defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side,
+        std::vector<std::pair<uint64_t, uint8_t>> &maps_vec) const;
     Side side_to_move;
     std::array<std::vector<uint8_t>, 2> pinned_pieces;
     std::vector<Move> moves;
+    std::vector<std::pair<uint64_t, uint8_t>> piece_map_vec;
     std::vector<Move> generate_moves();
     void update_board_state(Move move);
     std::vector<Move> made_moves;

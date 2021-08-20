@@ -190,13 +190,14 @@ int Evaluate::evaluate() const {
         value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move())) * (board.get_side_to_move() ? -1 : 1);
     }
 
-    return value * (board.get_side_to_move() ? -1 : 1);
+
+    return value; //  * (board.get_side_to_move() ? -1 : 1);
 }
 
 // Updates the evaluation based on the current move
 int Evaluate::move_evaluate(Board board, Move move) const {
-    std::array<uint16_t, 2> origin = move.origin_square_cartesian();
-    std::array<uint16_t, 2> dest = move.destination_square_cartesian();
+    // std::array<uint16_t, 2> origin = move.origin_square_cartesian();
+    // std::array<uint16_t, 2> dest = move.destination_square_cartesian();
     int value = -1;
     //int value = pst[][dest[0]][dest[1]] - pst[][origin[0]][origin[1]];
 

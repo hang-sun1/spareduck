@@ -8,6 +8,7 @@
 #include <new>
 #include <optional>
 #include <iostream>
+#include <assert.h>
 
 #include "move.hpp"
 #include "nnue.hpp"
@@ -64,16 +65,16 @@ int NNUE::evaluate(size_t piece_count, Side side_to_move) {
         a1_to_move = a1_white_with_bias;
         a1_other = a1_black_with_bias;
     } else {
-        psqtw_to_move = bps;
-        psqtw_other = wps;
+        psqtw_to_move = wps;
+        psqtw_other = bps;
         a1_to_move = a1_black_with_bias;
         a1_other = a1_white_with_bias;
     }
 
     auto side = static_cast<size_t>(side_to_move);
     // auto a = static_cast<int>(side) - 0.5;
-    auto a = side ? 2: -2;
-    
+    // auto a = side ? -2: 2;
+    // auto a = 2;    
     size_t bucket = (piece_count - 1) / 4;
     // evaluate psqts
     for (int i = 0; i < 8; i += 4) {
@@ -85,9 +86,9 @@ int NNUE::evaluate(size_t piece_count, Side side_to_move) {
         _mm_store_si128((__m128i *) &ps[i], diff);
     }
 
-    for (int i  = 0; i < 8; ++i) {
-        ps[i] /= a;    
-    }
+    // for (int i  = 0; i < 8; ++i) {
+    //     ps[i] /= a;    
+    // }
 
     // 3. construct a vector that is LAYER1_SIZE * 2 long containing the activations
     // of the combined black and white first layer (with the side to move at the start)
@@ -105,10 +106,9 @@ int NNUE::evaluate(size_t piece_count, Side side_to_move) {
     compute_activation<LAYER2_SIZE, LAYER3_SIZE>(a2, w2, b3, a3, piece_count);
 
     // 5. calculate the output layer and return;
-    auto eval = compute_activation<LAYER3_SIZE, 1>(a3, w3, b4, nullptr, piece_count) + ps[bucket];
-    // delete [] combined;
-    return eval / 64;
-    return 0;
+    auto eval = compute_activation<LAYER3_SIZE, 1>(a3, w3, b4, nullptr, piece_count);
+    
+    return (eval * (static_cast<size_t>(side_to_move) ? -1 : 1) + ps[bucket] / 2) / 64;
 }
 
 void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured, std::optional<Piece> promoted, uint8_t white_king_square,
@@ -171,23 +171,25 @@ void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piec
         }
 }
 
-void NNUE::reset_nnue(Move move, std::optional<Piece> captured, uint8_t white_king_square, 
-    uint8_t black_king_square, Side side_that_moved, Board &b) {
+void NNUE::reset_nnue(std::optional<Piece> captured, Board &b) {
 
     if (!ready) { 
         return;
     }
-    auto other_side = static_cast<Side>(1-static_cast<size_t>(side_that_moved));
     
     std::memset(wps, 0, 8*sizeof(int32_t));
     std::memset(a1_white, 0, LAYER1_SIZE*sizeof(int16_t));
     std::memset(bps, 0, 8*sizeof(int32_t));
-    // std::memset(a1_black.get(), 0, LAYER1_SIZE*sizeof(int16_t));
-    
+    std::memset(a1_black, 0, LAYER1_SIZE*sizeof(int16_t));
+
+    auto kings = b.get_kings(); 
+    uint8_t white_king_square = __builtin_ffsll(kings[0]) - 1;
+    uint8_t black_king_square = __builtin_ffsll(kings[1]) - 1; 
+
     std::array<Piece, 6> pieces = { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
     for (auto &p: pieces) {
-        auto white_locs = b.get_piece_pos(p, side_that_moved);
-        auto black_locs = b.get_piece_pos(p, other_side);
+        auto white_locs = b.get_piece_pos(p, Side::WHITE);
+        auto black_locs = b.get_piece_pos(p, Side::BLACK);
         for (auto &loc: white_locs) {
             auto idx_wpov = halfka_index(true, white_king_square, loc, p, Side::WHITE);
             auto idx_bpov = halfka_index(false, black_king_square, loc, p, Side::WHITE);
@@ -205,12 +207,12 @@ void NNUE::reset_nnue(Move move, std::optional<Piece> captured, uint8_t white_ki
 size_t NNUE::halfka_index(bool is_white_pov, uint8_t king_square, uint8_t square, Piece piece, Side side_of_piece) {
     size_t side = 1 - static_cast<size_t>(side_of_piece);
     size_t pov = is_white_pov ? 1: 0;
-    size_t color_offset = side != is_white_pov ? 1 : 0;
+    size_t color_offset = side == pov ? 0 : 1;
     size_t index = piece * 2 + color_offset;
     size_t oriented_square = (56 * (!pov)) ^ static_cast<size_t>(square);
     index = 1 + oriented_square + index * 64 + static_cast<size_t>(king_square) * (64 * 12 + 1);
     if (index >= 49216) {
-        std::cout << "WOJWOJFOWOJF: " << (int) king_square << " " << (int) square << " " << piece << " " << 1 - side << std::endl;;
+        std::cout << "Invalid halfka index generated " << (int) king_square << " " << (int) square << " " << piece << " " << 1 - side << std::endl;;
     }
     return index;
 }
@@ -279,6 +281,28 @@ void NNUE::update_first_layer_sub(size_t white_pov_index, size_t black_pov_index
         _mm_store_si128((__m128i *) &wps[i], act_white);
         _mm_store_si128((__m128i *) &bps[i], act_black);
     }
+}
+
+NNUE::~NNUE() {
+    // if (ready) { delete [] w0;
+    //     delete [] psqt_wts;
+    //     delete [] wps;
+    //     delete [] bps;
+    //     delete [] ps;
+    //     delete [] b1;
+    //     delete [] a1_white;
+    //     delete [] a1_white_with_bias;
+    //     delete [] a1_black;
+    //     delete [] a1_black_with_bias;
+    //     delete [] w1;
+    //     delete [] b2;
+    //     delete [] a2;
+    //     delete [] w2;
+    //     delete [] b3;
+    //     delete [] a3;
+    //     delete [] w3;
+    //     delete [] b4;
+    // }
 }
 
 NNUE::NNUE() {
@@ -362,4 +386,5 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
 
         temp_idx = idx;
     }
+    ready = true;
 }

@@ -19,6 +19,9 @@ Search::Search(Board &start_board, Evaluate& eval, NNUE &net) : board(start_boar
 
 Move Search::get_engine_move() {
     std::vector<Move> moves = board.get_moves();
+    for (auto &m: moves) {
+        std::cout << m << std::endl;
+    }
     int move_count = moves.size();
 
     std::cout << "get_engine_move " << (board.get_side_to_move() ? "black" : "white") << std::endl;
@@ -36,7 +39,7 @@ Move Search::get_engine_move() {
     }
 
     int best_eval = -100000;
-    Move best_move = Move(moves[0]);
+    Move best_move = moves[0];
 
     for (int i = 0; i < move_count; i++) {
         std::vector<Move> temp_pv;
@@ -44,6 +47,7 @@ Move Search::get_engine_move() {
         auto pieces_involved = board.make_move(moves[i]);
         uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
         uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+        assert(pieces_involved[0].has_value());
 
         if (white_king_square >= 64 || black_king_square >= 64) {
             board.unmake_move(moves[i]);
@@ -55,14 +59,14 @@ Move Search::get_engine_move() {
 
         if (pieces_involved[0].value() != KING) {
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-            next_eval = -search(-100000, 100000, 3, temp_pv);
+            next_eval = -search(-100000, 100000, 4, temp_pv);
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
-            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+            nnue.reset_nnue(pieces_involved[1],this->board);
             next_eval = -search(-100000, 100000, 4, temp_pv);
             board.unmake_move(moves[i]);
-            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+            nnue.reset_nnue(pieces_involved[1],this->board);
         }
 
         // board.make_move(moves[i]);
@@ -88,7 +92,6 @@ Move Search::get_engine_move() {
     /*std::cout << "PRINCIPAL-VARIATION" << std::endl;
     for (int i = 0; i < principal_variation.size(); i++)
         std::cout << i << "th move " << principal_variation.at(i) << std::endl;*/
-
     return best_move;
 }
 
@@ -208,10 +211,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
-            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+            nnue.reset_nnue(pieces_involved[1],this->board);
             next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
             board.unmake_move(moves[i]);
-            nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+            nnue.reset_nnue(pieces_involved[1],this->board);
         }
 
 
@@ -318,10 +321,10 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
-                nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+                nnue.reset_nnue(pieces_involved[1],this->board);
                 next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth+1);
                 board.unmake_move(moves[i]);
-                nnue.reset_nnue(moves[i], pieces_involved[1], white_king_square, black_king_square, side, this->board);
+                nnue.reset_nnue(pieces_involved[1],this->board);
             }
             // board.make_move(moves[i]);
             // int next_eval = -quiesce(-beta, -alpha, temp_pv);

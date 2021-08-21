@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#define TABLE_BITS 24
+#define TABLE_BITS 25
 #define TABLE_LENGTH (1 << TABLE_BITS)
 
 /*

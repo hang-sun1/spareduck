@@ -365,7 +365,7 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
         std::memcpy(&b4[i], &fetch->data[temp_idx], 4);
         temp_idx += 4;
 
-        temp_idx = idx;
+        // temp_idx = idx;
     }
     ready = true;
 }

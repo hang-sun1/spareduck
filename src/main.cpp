@@ -193,7 +193,7 @@ void on_succeed(emscripten_fetch_t* fetch) {
     auto eval = new_nnue.evaluate(32, Side::WHITE);
     std::cout << "Eval: " << eval << std::endl;
     std::cout << "END OF NNUE TESTING" << std::endl;
-    nnue = std::move(new_nnue);
+    nnue = new_nnue;
     nnue.ready = true;
     emscripten_fetch_close(fetch);
 }

@@ -668,7 +668,6 @@ std::vector<Move> Board::generate_moves() {
         //     pawn_capture_maps.clear();
         // }
     }
-    std::vector<std::pair<uint64_t, uint8_t>> most_maps;
     if (check_counter < 2) {
         piece_map_vec.clear();
         defense_maps_for_piece(pawns[side], board_occ, 'P', side_to_move, piece_map_vec);
@@ -1461,6 +1460,20 @@ bool Board::is_checkmate() const {
 
 bool Board::is_stalemate() const {
     return !in_check() && moves.size() == 0;
+}
+
+Piece Board::piece_on_square(uint8_t square, Side s) {
+    auto side_index = static_cast<size_t>(s);
+    uint64_t piece_board = 1ULL << square;
+    Piece pieces[6] = { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
+    uint64_t boards[6] = { pawns[side_index], knights[side_index], bishops[side_index],  rooks[side_index], queens[side_index], kings[side_index] } ;
+    for (int i = 0; i < 6; ++i) {
+        if ((piece_board & boards[i])) {
+            return pieces[i];
+        }
+    } 
+    // it should never reach here
+    assert(true);
 }
 
 std::vector<Move> Board::get_moves() {

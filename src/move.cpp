@@ -1,8 +1,11 @@
 #include "move.hpp"
+#include "piece.hpp"
+#include <optional>
 
 Move::Move(uint16_t from, uint16_t to, MoveType type) {
     move_repr = (from << 10) | (to << 4) | static_cast<uint16_t>(type);
     this->t = type;
+    captured = std::nullopt;
 }
 
 // New move from algebraic notation.
@@ -13,9 +16,12 @@ Move::Move(std::string from, std::string to) {
 
     move_repr = (from_square << 10) | (to_square << 4) | static_cast<uint16_t>(type);
     this->t = type;
+    captured = std::nullopt;
 }
 
-Move::Move() {}
+Move::Move() {
+
+}
 
 std::ostream& operator<<(std::ostream& strm, const Move& move) {
     return strm << " (" << move.origin_square_algebraic() << ", " << move.destination_square_algebraic() << ") ";
@@ -75,4 +81,20 @@ std::array<uint16_t, 2> Move::origin_square_cartesian() const {
 std::array<uint16_t, 2> Move::destination_square_cartesian()const {
     uint16_t destination = destination_square();
     return {static_cast<uint16_t>(destination & 7), static_cast<uint16_t>(destination >> 3)};
+}
+
+void Move::set_moved(Piece p) {
+    moved = p;    
+}
+
+void Move::set_captured(Piece p) {
+    captured = std::make_optional(p);
+}
+
+Piece Move::get_moved() {
+    return moved; 
+}
+
+std::optional<Piece> Move::get_captured() {
+    return captured;
 }

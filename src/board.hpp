@@ -109,4 +109,5 @@ class Board {
     bool in_check() const;
     bool is_checkmate() const;
     bool is_stalemate() const;
+    Piece piece_on_square(uint8_t square, Side s);
 };

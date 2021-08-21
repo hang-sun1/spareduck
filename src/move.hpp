@@ -1,9 +1,11 @@
 #pragma once
 
+#include "piece.hpp"
 #include <array>
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <optional>
 
 enum class MoveType : uint16_t {
     QUIET = 0,
@@ -56,7 +58,14 @@ class Move {
 
     std::array<uint16_t, 2> destination_square_cartesian() const;
 
+    void set_moved(Piece p);
+    void set_captured (Piece p);
+
+    Piece get_moved();
+    std::optional<Piece> get_captured();
    private:
     uint16_t move_repr;
     MoveType t;
+    Piece moved;
+    std::optional<Piece> captured;
 };

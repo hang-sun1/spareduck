@@ -32,6 +32,8 @@ class NNUE {
     NNUE();
     ~NNUE();
     NNUE(Side current_to_move, emscripten_fetch_t* data);
+    NNUE(const NNUE &nnue2);
+    NNUE& operator=(const NNUE &nnue2);
 
     int evaluate(size_t piece_count, Side side_to_move);
     void update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured, std::optional<Piece> promoted, uint8_t white_king_square,

@@ -1,5 +1,6 @@
 #include "search.hpp"
 
+#include <cstddef>
 #include <iostream>
 #include <assert.h>
 
@@ -18,7 +19,8 @@ Search::Search(Board &start_board, Evaluate& eval, NNUE &net) : board(start_boar
 }
 
 Move Search::get_engine_move() {
-    std::vector<Move> moves = board.get_moves();
+    auto unsorted_moves = board.get_moves();
+    std::vector<Move> moves = sort_moves(unsorted_moves);
     for (auto &m: moves) {
         std::cout << m << std::endl;
     }
@@ -96,7 +98,8 @@ Move Search::get_engine_move() {
 }
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
-    std::vector<Move> moves = board.get_moves();
+    auto unsorted_moves = board.get_moves();
+    std::vector<Move> moves = sort_moves(unsorted_moves);
     int move_count = moves.size();
 
     // Mate or stalemate
@@ -293,12 +296,12 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
     }
 
     //generate all moves
-    std::vector<Move> moves = board.get_moves();
-    //std::vector<Move> captures = sort_captures(moves);
-    int move_count = moves.size();
+    auto unsorted_moves = board.get_moves();
+    std::vector<Move> moves = sort_moves(unsorted_moves);
+    // std::vector<Move> captures = sort_captures(moves);
     std::vector<Move> temp_pv;
 
-    for (int i = 0; i < move_count; i++) {
+    for (size_t i = 0; i < moves.size(); i++) {
         // skip if move isn't capture
         if (moves[i].is_capture() || board.in_check()) {
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
@@ -344,7 +347,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
 }
 
 // bucket sorting captures using Most Valuable Victim - Least Valuable Aggressor
-std::vector<Move> Search::sort_captures(std::vector<Move> moves) {
+std::vector<Move> Search::sort_moves(std::vector<Move> &moves) {
     // 400-800
     std::vector<Move> high;
     // 200-300
@@ -356,22 +359,43 @@ std::vector<Move> Search::sort_captures(std::vector<Move> moves) {
     // < -300
     std::vector<Move> lowest;
 
+    std::vector<Move> others;
+    
     for (int i = 0; i < moves.size(); i++) {
         if (moves[i].is_capture()) {
-            // TODO: switch statement for pieces
-            high.push_back(moves[i]);
+            auto side = static_cast<Side>(board.get_side_to_move());
+            auto other_side = static_cast<Side>(1 - board.get_side_to_move());
+            auto captured = board.piece_on_square(moves[i].destination_square(), other_side);
+            // assert(moves[i].get_captured().has_value());
+            auto captured_value = piece_to_value(captured);
+            auto moved_value = piece_to_value(board.piece_on_square(moves[i].origin_square(), side));
+            auto diff = captured_value - moved_value;
+            if (diff >= 400) {
+                high.push_back(moves[i]);
+            } else if (diff >= 200) {
+                mid.push_back(moves[i]);
+            } else if (diff >= 0) {
+                low.push_back(moves[i]);
+            } else if (diff >= -300) {
+                lower.push_back(moves[i]);
+            } else {
+                lowest.push_back(moves[i]);
+            }
+        } else {
+            others.push_back(moves[i]);
         }
     }
 
-    std::vector<Move> captures;
-    captures.reserve(high.size() + mid.size() + low.size() + lower.size() + lowest.size());
-    captures.insert(captures.end(), high.begin(), high.end());
-    captures.insert(captures.end(), mid.begin(), mid.end());
-    captures.insert(captures.end(), low.begin(), low.end());
-    captures.insert(captures.end(), lower.begin(), lower.end());
-    captures.insert(captures.end(), lowest.begin(), lowest.end());
+    std::vector<Move> sorted_moves;
+    sorted_moves.reserve(high.size() + mid.size() + low.size() + lower.size() + lowest.size() + others.size());
+    sorted_moves.insert(sorted_moves.end(), high.begin(), high.end());
+    sorted_moves.insert(sorted_moves.end(), mid.begin(), mid.end());
+    sorted_moves.insert(sorted_moves.end(), low.begin(), low.end());
+    sorted_moves.insert(sorted_moves.end(), lower.begin(), lower.end());
+    sorted_moves.insert(sorted_moves.end(), lowest.begin(), lowest.end());
+    sorted_moves.insert(sorted_moves.end(), others.begin(), others.end());
 
-    return captures;
+    return sorted_moves;
 }
 
 std::vector<Move> Search::get_principal_variation() {

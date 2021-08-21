@@ -284,25 +284,26 @@ void NNUE::update_first_layer_sub(size_t white_pov_index, size_t black_pov_index
 }
 
 NNUE::~NNUE() {
-    // if (ready) { delete [] w0;
-    //     delete [] psqt_wts;
-    //     delete [] wps;
-    //     delete [] bps;
-    //     delete [] ps;
-    //     delete [] b1;
-    //     delete [] a1_white;
-    //     delete [] a1_white_with_bias;
-    //     delete [] a1_black;
-    //     delete [] a1_black_with_bias;
-    //     delete [] w1;
-    //     delete [] b2;
-    //     delete [] a2;
-    //     delete [] w2;
-    //     delete [] b3;
-    //     delete [] a3;
-    //     delete [] w3;
-    //     delete [] b4;
-    // }
+    if (ready) { 
+        delete [] w0;
+        delete [] psqt_wts;
+        delete [] wps;
+        delete [] bps;
+        delete [] ps;
+        delete [] b1;
+        delete [] a1_white;
+        delete [] a1_white_with_bias;
+        delete [] a1_black;
+        delete [] a1_black_with_bias;
+        delete [] w1;
+        delete [] b2;
+        delete [] a2;
+        delete [] w2;
+        delete [] b3;
+        delete [] a3;
+        delete [] w3;
+        delete [] b4;
+    }
 }
 
 NNUE::NNUE() {
@@ -310,9 +311,7 @@ NNUE::NNUE() {
 }
 
 NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
-    // w0 = std::make_unique<int16_t[]>(INPUT_SIZE*LAYER1_SIZE);
     w0 = new (std::align_val_t(16)) int16_t[INPUT_SIZE*LAYER1_SIZE];
-    // psqt_wts = std::make_unique<int32_t[]>(INPUT_SIZE*8);
     psqt_wts = new (std::align_val_t(16)) int32_t[INPUT_SIZE*8];
     wps = new (std::align_val_t(16)) int32_t[8];
     bps = new (std::align_val_t(16)) int32_t[8];
@@ -333,24 +332,6 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
     w3 = new (std::align_val_t(16)) int8_t[8*LAYER3_SIZE];
     b4 = new (std::align_val_t(16)) int32_t[8];
 
-    // wps = std::make_unique<int32_t[]>(8);
-    // bps = std::make_unique<int32_t[]>(8);
-    // ps = std::make_unique<int32_t[]>(8);
-    // b1 = std::make_unique<int16_t[]>(LAYER1_SIZE);
-    // a1_white = std::make_unique<int16_t[]>(LAYER1_SIZE);
-    // a1_white_with_bias = std::make_unique<int8_t[]>(LAYER1_SIZE);
-    // a1_black = std::make_unique<int16_t[]>(LAYER1_SIZE);
-    // a1_black_with_bias = std::make_unique<int8_t[]>(LAYER1_SIZE);
-    // w1 = std::make_unique<int8_t[]>(8*2*LAYER1_SIZE*LAYER2_SIZE);
-    // b2 = std::make_unique<int32_t[]>(8*LAYER2_SIZE);
-    // a2 = std::make_unique<int8_t[]>(LAYER2_SIZE);
-    
-    // w2 = std::make_unique<int8_t[]>(8*LAYER2_SIZE*LAYER3_SIZE);
-    // b3 = std::make_unique<int32_t[]>(8*LAYER3_SIZE);
-    // a3 = std::make_unique<int8_t[]>(LAYER3_SIZE);
-    
-    // w3 = std::make_unique<int8_t[]>(8*LAYER3_SIZE);
-    // b4 = std::make_unique<int32_t[]>(8);
     
     size_t idx = 0;
     // multiply by 2 as the weights are stored as 16 bit integers
@@ -387,4 +368,144 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
         temp_idx = idx;
     }
     ready = true;
+}
+
+NNUE::NNUE(const NNUE &nnue2) {
+    w0 = new (std::align_val_t(16)) int16_t[INPUT_SIZE*LAYER1_SIZE];
+    std::memcpy(w0, nnue2.w0, INPUT_SIZE*LAYER1_SIZE*2);
+
+    psqt_wts = new (std::align_val_t(16)) int32_t[INPUT_SIZE*8];
+    std::memcpy(psqt_wts, nnue2.psqt_wts, INPUT_SIZE*8*4);
+    
+    wps = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(wps, nnue2.wps, 8*4);
+
+    bps = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(bps, nnue2.bps, 8*4);
+    
+    ps = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(ps, nnue2.ps, 8*4);
+
+    b1 = new (std::align_val_t(16)) int16_t[LAYER1_SIZE];
+    std::memcpy(b1, nnue2.b1, LAYER1_SIZE*2);
+
+    a1_white = new (std::align_val_t(16)) int16_t[LAYER1_SIZE];
+    std::memcpy(a1_white, nnue2.a1_white, LAYER1_SIZE*2);
+
+    a1_black = new (std::align_val_t(16)) int16_t[LAYER1_SIZE];
+    std::memcpy(a1_black, nnue2.a1_black, LAYER1_SIZE*2);
+
+    a1_white_with_bias = new (std::align_val_t(16)) int8_t[LAYER1_SIZE];
+    std::memcpy(a1_white_with_bias, nnue2.a1_white_with_bias, LAYER1_SIZE);
+    
+    a1_black_with_bias = new (std::align_val_t(16)) int8_t[LAYER1_SIZE];
+    std::memcpy(a1_black_with_bias, nnue2.a1_black_with_bias, LAYER1_SIZE);
+    
+    w1 = new (std::align_val_t(16)) int8_t[8*2*LAYER1_SIZE*LAYER2_SIZE];
+    std::memcpy(w1, nnue2.w1, LAYER1_SIZE*LAYER2_SIZE*8*2);
+
+    b2 = new (std::align_val_t(16)) int32_t[8*LAYER2_SIZE];
+    std::memcpy(b2, nnue2.b2, LAYER2_SIZE*4*8);
+    
+    a2 = new (std::align_val_t(16)) int8_t[LAYER2_SIZE];
+    std::memcpy(a2, nnue2.a2, LAYER2_SIZE);
+    
+    w2 = new (std::align_val_t(16)) int8_t[8*LAYER2_SIZE*LAYER3_SIZE];
+    std::memcpy(w2, nnue2.w2, LAYER2_SIZE*LAYER3_SIZE*8);
+    
+    b3 = new (std::align_val_t(16)) int32_t[8*LAYER3_SIZE];
+    std::memcpy(b3, nnue2.b3, LAYER3_SIZE*4*8);
+    
+    a3 = new (std::align_val_t(16)) int8_t[LAYER3_SIZE];
+    std::memcpy(a3, nnue2.a3, LAYER3_SIZE);
+    
+    w3 = new (std::align_val_t(16)) int8_t[8*LAYER3_SIZE];
+    std::memcpy(w3, nnue2.w3, LAYER3_SIZE*8);
+    
+    b4 = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(b4, nnue2.b4, 4*8);
+
+    ready = nnue2.ready;
+}
+
+NNUE& NNUE::operator=(const NNUE &nnue2) {
+    if (this == &nnue2) {
+        return *this;
+    }
+    if (ready) { 
+        delete [] w0;
+        delete [] psqt_wts;
+        delete [] wps;
+        delete [] bps;
+        delete [] ps;
+        delete [] b1;
+        delete [] a1_white;
+        delete [] a1_white_with_bias;
+        delete [] a1_black;
+        delete [] a1_black_with_bias;
+        delete [] w1;
+        delete [] b2;
+        delete [] a2;
+        delete [] w2;
+        delete [] b3;
+        delete [] a3;
+        delete [] w3;
+        delete [] b4;
+    }
+    
+    w0 = new (std::align_val_t(16)) int16_t[INPUT_SIZE*LAYER1_SIZE];
+    std::memcpy(w0, nnue2.w0, INPUT_SIZE*LAYER1_SIZE*2);
+
+    psqt_wts = new (std::align_val_t(16)) int32_t[INPUT_SIZE*8];
+    std::memcpy(psqt_wts, nnue2.psqt_wts, INPUT_SIZE*8*4);
+    
+    wps = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(wps, nnue2.wps, 8*4);
+
+    bps = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(bps, nnue2.bps, 8*4);
+    
+    ps = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(ps, nnue2.ps, 8*4);
+
+    b1 = new (std::align_val_t(16)) int16_t[LAYER1_SIZE];
+    std::memcpy(b1, nnue2.b1, LAYER1_SIZE*2);
+
+    a1_white = new (std::align_val_t(16)) int16_t[LAYER1_SIZE];
+    std::memcpy(a1_white, nnue2.a1_white, LAYER1_SIZE*2);
+
+    a1_black = new (std::align_val_t(16)) int16_t[LAYER1_SIZE];
+    std::memcpy(a1_black, nnue2.a1_black, LAYER1_SIZE*2);
+
+    a1_white_with_bias = new (std::align_val_t(16)) int8_t[LAYER1_SIZE];
+    std::memcpy(a1_white_with_bias, nnue2.a1_white_with_bias, LAYER1_SIZE);
+    
+    a1_black_with_bias = new (std::align_val_t(16)) int8_t[LAYER1_SIZE];
+    std::memcpy(a1_black_with_bias, nnue2.a1_black_with_bias, LAYER1_SIZE);
+    
+    w1 = new (std::align_val_t(16)) int8_t[8*2*LAYER1_SIZE*LAYER2_SIZE];
+    std::memcpy(w1, nnue2.w1, LAYER1_SIZE*LAYER2_SIZE*8*2);
+
+    b2 = new (std::align_val_t(16)) int32_t[8*LAYER2_SIZE];
+    std::memcpy(b2, nnue2.b2, LAYER2_SIZE*4*8);
+    
+    a2 = new (std::align_val_t(16)) int8_t[LAYER2_SIZE];
+    std::memcpy(a2, nnue2.a2, LAYER2_SIZE);
+    
+    w2 = new (std::align_val_t(16)) int8_t[8*LAYER2_SIZE*LAYER3_SIZE];
+    std::memcpy(w2, nnue2.w2, LAYER2_SIZE*LAYER3_SIZE*8);
+    
+    b3 = new (std::align_val_t(16)) int32_t[8*LAYER3_SIZE];
+    std::memcpy(b3, nnue2.b3, LAYER3_SIZE*4*8);
+    
+    a3 = new (std::align_val_t(16)) int8_t[LAYER3_SIZE];
+    std::memcpy(a3, nnue2.a3, LAYER3_SIZE);
+    
+    w3 = new (std::align_val_t(16)) int8_t[8*LAYER3_SIZE];
+    std::memcpy(w3, nnue2.w3, LAYER3_SIZE*8);
+    
+    b4 = new (std::align_val_t(16)) int32_t[8];
+    std::memcpy(b4, nnue2.b4, 4*8);
+    this->ready = nnue2.ready;
+    return *this;
 }

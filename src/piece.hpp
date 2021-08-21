@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 enum Piece: std::size_t {
@@ -10,3 +11,5 @@ enum Piece: std::size_t {
     QUEEN = 4,
     KING = 5,
 };
+
+int piece_to_value(Piece p);

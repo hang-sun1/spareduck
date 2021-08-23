@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <optional>
 
 #include "board.hpp"
 #include "evaluate.hpp"
@@ -22,7 +23,7 @@ using namespace emscripten;
 Board game_board;
 NNUE nnue; //(static_cast<Side>(game_board.get_side_to_move()));
 Evaluate board_evaluate(game_board, nnue);
-Search search_engine(game_board, board_evaluate);
+Search search_engine(game_board, board_evaluate, nnue);
 
 //dummy comment
 
@@ -80,8 +81,17 @@ void make_move(int from, int to, bool promotion, int promote_to) {
             }
         }
     }
-    game_board.make_move(mov);
-    return;
+    auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+    auto pieces_involved = game_board.make_move(mov);
+    uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;
+    uint8_t black_king_square = __builtin_ffsll(game_board.get_kings()[1]) - 1;
+    
+    if (pieces_involved[0].value() != KING) {
+        nnue.update_non_king_move(mov, pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+    } else {
+        nnue.reset_nnue(pieces_involved[1], game_board);
+    }
+    // game_board.make_move(mov);
 }
 }
 
@@ -99,7 +109,18 @@ std::vector<std::string> get_moves() {
 std::string get_engine_move() {
     //Search test = Search(game_board);
     Move move = search_engine.get_engine_move();
-    game_board.make_move(move);
+    std::cout << "hello????" << std::endl;
+    // game_board.make_move(move);
+    auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+    auto pieces_involved = game_board.make_move(move);
+    uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;
+    uint8_t black_king_square = __builtin_ffsll(game_board.get_kings()[1]) - 1;
+    std::cout << pieces_involved[0].value() << std::endl; 
+    if (pieces_involved[0].value() != KING) {
+        nnue.update_non_king_move(move, pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+    } else {
+        nnue.reset_nnue(pieces_involved[1], game_board);
+    }
     return move.origin_square_algebraic() + move.destination_square_algebraic();
 }
 
@@ -109,7 +130,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    return board_evaluate.evaluate_cheap() * (game_board.get_side_to_move() ? -1 : 1);
+    return board_evaluate.evaluate() * (game_board.get_side_to_move() ? -1 : 1);
 }
 }
 
@@ -135,7 +156,7 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 void start_from_position(std::string fen) {
     game_board = Board(fen);
-    return;
+    // nnue.reset_nnue(std::nullopt, game_board);
 }
 }
 
@@ -160,8 +181,20 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
 #ifndef TESTING 
 void on_succeed(emscripten_fetch_t* fetch) {
     std::cout << "network loading succeeded with " << fetch->numBytes << " bytes downloaded" << std::endl;
-    auto new_nnue = NNUE(Side::WHITE, fetch);
-    // nnue = new_nnue;
+    NNUE new_nnue(Side::WHITE, fetch);
+    std::cout << "START OF NNUE TESTING" << std::endl;
+    // Board a("r3k2r/p6p/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    // Board a("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/4K2R w Kkq - 0 1");
+    // Board a("r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2");
+    //Board a("rnbqkbnr/1ppppppp/p7/8/2PPP3/2N2N2/PP2BPPP/R1BQ1RK1 w kq - 0 8");
+    // Board a("2bqkbnr/pppppppp/8/4P3/3P4/2NB1N2/PPP2PPP/R1BQK2R w KQkq - 1 7");
+    new_nnue.ready = true;
+    new_nnue.reset_nnue(std::nullopt, game_board);
+    auto eval = new_nnue.evaluate(32, Side::WHITE);
+    std::cout << "Eval: " << eval << std::endl;
+    std::cout << "END OF NNUE TESTING" << std::endl;
+    nnue = new_nnue;
+    nnue.ready = true;
     emscripten_fetch_close(fetch);
 }
 
@@ -176,6 +209,11 @@ void on_fail(emscripten_fetch_t* fetch) {
 EMSCRIPTEN_KEEPALIVE
 #endif
 int main() {
+    auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+    uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;
+    uint8_t black_king_square = __builtin_ffsll(game_board.get_kings()[1]) - 1;
+    nnue.reset_nnue(std::nullopt, game_board);
+
     std::cout << "attempting to load network" << std::endl;
     emscripten_fetch_attr_t attr;
     emscripten_fetch_attr_init(&attr);

@@ -1,6 +1,7 @@
 #include "evaluate.hpp"
 
 #include <iostream>
+#include <bit>
 
 /* 
     Move evaluation engine.
@@ -167,20 +168,36 @@ int Evaluate::evaluate() const {
     int value = 0;
 
     if (board.is_checkmate()) {
-        return INT32_MAX;
+        return INT32_MIN + 1;
     } else if (board.is_stalemate()) {
         return 0;
     } else {
-        // PST stuff
+        auto pawns = board.get_pawns();
+        auto knights = board.get_knights();
+        auto bishops = board.get_bishops();
+        auto rooks = board.get_rooks();
+        auto queens = board.get_queens();
+        auto kings = board.get_kings();
+
+        size_t piece_count = 0;
+        piece_count += std::popcount(pawns[0]) + std::popcount(pawns[1]);
+        piece_count += std::popcount(knights[0]) + std::popcount(knights[1]);
+        piece_count += std::popcount(bishops[0]) + std::popcount(bishops[1]);
+        piece_count += std::popcount(rooks[0]) + std::popcount(rooks[1]);
+        piece_count += std::popcount(queens[0]) + std::popcount(queens[1]);
+        piece_count += std::popcount(kings[0]) + std::popcount(kings[1]);
+
+        value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move())) * (board.get_side_to_move() ? -1 : 1);
     }
 
-    return value * (board.get_side_to_move() ? -1 : 1);
+
+    return value; //  * (board.get_side_to_move() ? -1 : 1);
 }
 
 // Updates the evaluation based on the current move
 int Evaluate::move_evaluate(Board board, Move move) const {
-    std::array<uint16_t, 2> origin = move.origin_square_cartesian();
-    std::array<uint16_t, 2> dest = move.destination_square_cartesian();
+    // std::array<uint16_t, 2> origin = move.origin_square_cartesian();
+    // std::array<uint16_t, 2> dest = move.destination_square_cartesian();
     int value = -1;
     //int value = pst[][dest[0]][dest[1]] - pst[][origin[0]][origin[1]];
 

@@ -1,10 +1,15 @@
 #pragma once
 
-enum Piece {
+#include <cstddef>
+#include <cstdint>
+
+enum Piece: std::size_t {
     PAWN = 0,
-    ROOK = 1,
-    KNIGHT = 2,
-    BISHOP = 3,
+    KNIGHT = 1,
+    BISHOP = 2,
+    ROOK = 3,
     QUEEN = 4,
     KING = 5,
 };
+
+int piece_to_value(Piece p);

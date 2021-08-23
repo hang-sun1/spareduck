@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <optional>
 
 #include "history.hpp"
 #include "move.hpp"
@@ -51,10 +52,13 @@ class Board {
     uint64_t generate_king_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ, Side side) const;
     uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ, Side side) const;
-    std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side) const;
+    // std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side) const;
+    void defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side,
+        std::vector<std::pair<uint64_t, uint8_t>> &maps_vec) const;
     Side side_to_move;
     std::array<std::vector<uint8_t>, 2> pinned_pieces;
     std::vector<Move> moves;
+    std::vector<std::pair<uint64_t, uint8_t>> piece_map_vec;
     std::vector<Move> generate_moves();
     void update_board_state(Move move);
     std::vector<Move> made_moves;
@@ -83,7 +87,7 @@ class Board {
     static std::array<std::array<uint64_t, 64>, 64> generate_in_between();
 
     // move and side functions
-    void make_move(Move move);
+    std::array<std::optional<Piece>, 2> make_move(Move move);
     void unmake_move(Move move);
     int get_side_to_move();
     std::vector<Move> get_moves();
@@ -98,11 +102,12 @@ class Board {
     std::array<uint64_t, 2> get_pawns() const;
     std::array<std::vector<uint8_t>, 2> get_pins() const;
     // returns piece positions
-    std::vector<uint8_t> get_piece_pos(char piece_type) const;
+    std::vector<uint8_t> get_piece_pos(Piece piece_type, Side s) const;
 
     uint64_t initial_hash() const;
     uint64_t get_hash() const;
     bool in_check() const;
     bool is_checkmate() const;
     bool is_stalemate() const;
+    Piece piece_on_square(uint8_t square, Side s);
 };

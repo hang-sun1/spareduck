@@ -10,10 +10,10 @@ RUN mkdir spareduck
 WORKDIR /usr/src/spareduck
 COPY www ./www
 RUN cd www && npm install
-COPY CMakeLists.txt ./
-COPY src ./src
 COPY test ./test
 COPY test.sh ./
+COPY CMakeLists.txt ./
+COPY src ./src
 RUN rm -rf build/ && mkdir build
 WORKDIR  /usr/src/spareduck/build
 RUN emcmake cmake .. && cmake --build . --target spareduck -j

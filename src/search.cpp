@@ -1,8 +1,9 @@
 #include "search.hpp"
 
+#include <assert.h>
+
 #include <cstddef>
 #include <iostream>
-#include <assert.h>
 
 /*
     A simple implementation of fail-soft negamax alpha-beta search.
@@ -13,7 +14,7 @@
 */
 
 // Search constructor
-Search::Search(Board &start_board, Evaluate& eval, NNUE &net) : board(start_board), evaluate(eval), nnue(net) {
+Search::Search(Board &start_board, Evaluate &eval, NNUE &net) : board(start_board), evaluate(eval), nnue(net) {
     Table t_table;
     std::vector<Move> principal_variation;
     principal_variation.reserve(12);
@@ -22,7 +23,7 @@ Search::Search(Board &start_board, Evaluate& eval, NNUE &net) : board(start_boar
 Move Search::get_engine_move() {
     auto unsorted_moves = board.get_moves();
     std::vector<Move> moves = sort_moves(unsorted_moves);
-    for (auto &m: moves) {
+    for (auto &m : moves) {
         std::cout << m << std::endl;
     }
     int move_count = moves.size();
@@ -57,7 +58,7 @@ Move Search::get_engine_move() {
             continue;
         }
         assert(white_king_square < 64);
-        assert(black_king_square < 64); 
+        assert(black_king_square < 64);
         int next_eval;
 
         if (pieces_involved[0].value() != KING) {
@@ -66,10 +67,10 @@ Move Search::get_engine_move() {
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
-            nnue.reset_nnue(pieces_involved[1],this->board);
+            nnue.reset_nnue(pieces_involved[1], this->board);
             next_eval = -search(-100000, 100000, 4, temp_pv);
             board.unmake_move(moves[i]);
-            nnue.reset_nnue(pieces_involved[1],this->board);
+            nnue.reset_nnue(pieces_involved[1], this->board);
         }
 
         // board.make_move(moves[i]);
@@ -210,8 +211,8 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             continue;
         }
         assert(white_king_square < 64);
-        assert(black_king_square < 64); 
-        
+        assert(black_king_square < 64);
+
         int next_eval;
 
         if (pieces_involved[0].value() != KING) {
@@ -220,10 +221,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
-            nnue.reset_nnue(pieces_involved[1],this->board);
+            nnue.reset_nnue(pieces_involved[1], this->board);
             next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
             board.unmake_move(moves[i]);
-            nnue.reset_nnue(pieces_involved[1],this->board);
+            nnue.reset_nnue(pieces_involved[1], this->board);
         }
 
         board.make_move(moves[i]);
@@ -231,13 +232,11 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         // PV SEARCH
         // Currently this improves search a lot in complex positions but slows down in the opening position
         // Should be better with improved move ordering
-        int next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
-        /*
-        if (move_type == NodeType::EXACT && depth > 1) {
+        /*if (move_type == NodeType::EXACT && depth > 1) {
             next_eval = -search(-alpha - 1, -alpha, depth - 1, temp_pv);
 
             if (next_eval > alpha && next_eval < beta) {
-                // Re conduct full search
+                // Re-conduct full search
                 next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
             }
         } else {
@@ -301,7 +300,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
         }
     }
 
-    //generate all moves    
+    //generate all moves
     auto unsorted_moves = board.get_moves();
     std::vector<Move> moves = sort_moves(unsorted_moves);
     std::vector<Move> temp_pv;
@@ -321,19 +320,19 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 board.unmake_move(moves[i]);
                 continue;
             }
-            
+
             int next_eval;
 
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth+1);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
-                nnue.reset_nnue(pieces_involved[1],this->board);
-                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth+1);
+                nnue.reset_nnue(pieces_involved[1], this->board);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1);
                 board.unmake_move(moves[i]);
-                nnue.reset_nnue(pieces_involved[1],this->board);
+                nnue.reset_nnue(pieces_involved[1], this->board);
             }
             // board.make_move(moves[i]);
             // int next_eval = -quiesce(-beta, -alpha, temp_pv);
@@ -376,7 +375,7 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves) {
     std::vector<Move> lowest;
 
     std::vector<Move> others;
-    
+
     for (int i = 0; i < moves.size(); i++) {
         if (moves[i].is_capture()) {
             auto side = static_cast<Side>(board.get_side_to_move());

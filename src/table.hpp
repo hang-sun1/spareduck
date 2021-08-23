@@ -1,8 +1,8 @@
 #pragma once
 
+#include <stdlib.h>
 #include <optional>
 #include <vector>
-#include <stdlib.h>
 
 #include "board.hpp"
 #include "move.hpp"
@@ -20,4 +20,6 @@ class Table {
 
    private:
     std::vector<TableEntry> table;
+    unsigned int g_seed;
+    int fastrand();
 };

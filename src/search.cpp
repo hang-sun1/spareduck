@@ -152,13 +152,15 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {
                 case NodeType::UPPER:
-                    if (t_position->get_eval() >= beta) {
-                        return t_position->get_eval();
-                    }  // else update beta?
+                    if (t_position->get_eval() > beta) {
+                        //return t_position->get_eval();
+                    } else {
+                        //beta = t_position->get_eval();
+                    }
                     break;
                 case NodeType::LOWER:
-                    if (t_position->get_eval() <= alpha) {
-                        return alpha;
+                    if (t_position->get_eval() < alpha) {
+                        //return alpha;
                     } else {
                         alpha = t_position->get_eval();
                     }
@@ -169,7 +171,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             }
 
             if (alpha >= beta) {
-                return alpha;
+                return t_position->get_eval();
             }
         }
 
@@ -181,16 +183,6 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
                 j++;
                 break;
             }
-        }
-    }
-
-    // move ordering: captures first
-    for (int i = j; i < move_count; i++) {
-        if (moves[i].is_capture()) {
-            Move temp_move = moves[j];
-            moves[j] = moves[i];
-            moves[i] = temp_move;
-            j++;
         }
     }
 
@@ -217,33 +209,34 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 
         if (pieces_involved[0].value() != KING) {
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-            next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+            // PV SEARCH
+            // Currently this improves search a lot in complex positions but slows down in the opening position
+            if (move_type == NodeType::EXACT && depth > 1) {
+                next_eval = -search(-alpha - 1, -alpha, depth - 1, temp_pv);
+
+                if (next_eval > alpha && next_eval < beta) {
+                    // Re-conduct full search
+                    next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+                }
+            } else {
+                next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+            }
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
             nnue.reset_nnue(pieces_involved[1], this->board);
-            next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+            // Copy pasting code, gross
+            if (move_type == NodeType::EXACT && depth > 1) {
+                next_eval = -search(-alpha - 1, -alpha, depth - 1, temp_pv);
+                if (next_eval > alpha && next_eval < beta) {
+                    next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+                }
+            } else {
+                next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
+            }
             board.unmake_move(moves[i]);
             nnue.reset_nnue(pieces_involved[1], this->board);
         }
-
-        board.make_move(moves[i]);
-
-        // PV SEARCH
-        // Currently this improves search a lot in complex positions but slows down in the opening position
-        // Should be better with improved move ordering
-        /*if (move_type == NodeType::EXACT && depth > 1) {
-            next_eval = -search(-alpha - 1, -alpha, depth - 1, temp_pv);
-
-            if (next_eval > alpha && next_eval < beta) {
-                // Re-conduct full search
-                next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
-            }
-        } else {
-            next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
-        }*/
-
-        board.unmake_move(moves[i]);
 
         // update best eval
         if (next_eval > best_eval) {

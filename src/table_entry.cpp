@@ -5,34 +5,36 @@
     https://www.chessprogramming.org/Transposition_Table
 */
 
+TableEntry::TableEntry() {}
+
 TableEntry::TableEntry(uint32_t hash, Move move, int16_t eval, NodeType type, uint8_t depth) {
-    this->hash = hash;
-    this->move = move;
-    this->eval = eval;
-    this->type = type;
-    this->depth = depth;
+  this->hash_ = hash;
+  this->move_ = move;
+  this->eval_ = eval;
+  this->type_ = type;
+  this->depth_ = depth;
 }
 
 std::ostream& operator<<(std::ostream& strm, const TableEntry& entry) {
-    return strm << " [" << entry.get_move() << ", " << entry.get_eval() << ", " << entry.get_depth() << "] ";
+  return strm << " [" << entry.get_move() << ", " << entry.get_eval() << ", " << entry.get_depth() << "] ";
 }
 
 uint32_t TableEntry::get_upper_hash() const {
-    return hash;
+  return hash_;
 }
 
 Move TableEntry::get_move() const {
-    return move;
+  return move_;
 }
 
 int16_t TableEntry::get_eval() const {
-    return eval;
+  return eval_;
 }
 
 NodeType TableEntry::get_type() const {
-    return type;
+  return type_;
 }
 
 int8_t TableEntry::get_depth() const {
-    return depth;
+  return depth_;
 }

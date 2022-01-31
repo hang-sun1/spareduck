@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ostream>
+#include <optional>
 
 #include "move.hpp"
 
@@ -12,6 +13,7 @@ typedef enum NodeType {
 
 class TableEntry {
    public:
+    TableEntry();
     TableEntry(uint32_t hash, Move move, int16_t eval, NodeType type, uint8_t depth);
 
     // to string
@@ -25,9 +27,9 @@ class TableEntry {
     int8_t get_depth() const;
 
    private:
-    uint32_t hash;
-    Move move;
-    int16_t eval;
-    NodeType type;
-    int8_t depth;
+    uint32_t hash_;
+    Move move_;
+    int16_t eval_;
+    NodeType type_;
+    int8_t depth_;
 };

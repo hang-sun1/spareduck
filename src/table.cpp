@@ -87,7 +87,7 @@ std::vector<Move> Table::get_variation(Board& position) {
 // does this work??
 void Table::clear() {
     for (int i = 0; i < TABLE_LENGTH; i++) {
-        table[i] = TableEntry(0, {}, 0, {}, 0);
+        table[i] = TableEntry();
     }
 }
 

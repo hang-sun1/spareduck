@@ -4,6 +4,7 @@
 
 #define TABLE_BITS 25
 #define TABLE_LENGTH (1 << TABLE_BITS)
+#define INDEX_MASK (TABLE_LENGTH - 1)
 
 /*
     Position / transposition table;
@@ -19,17 +20,17 @@ Table::Table() {
 }
 
 void Table::put(const Board& position, const TableEntry entry) {
-    uint32_t hash_index = position.get_hash() & (TABLE_LENGTH - 1);
+    uint32_t hash_index = position.get_hash() & INDEX_MASK;
     table[hash_index] = entry;
     return;
 }
 
 void Table::put(const Board& position, Move move, int16_t eval, NodeType type, uint8_t depth) {
     uint64_t hash = position.get_hash();
-    uint32_t hash_index = hash & (TABLE_LENGTH - 1);
+    uint32_t hash_index = hash & INDEX_MASK;
     uint32_t hash_upper = hash >> TABLE_BITS;
-    table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
-    return; // Short circuit random replace
+    //table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
+    //return; // Short circuit random replace
     int rand = fastrand();
     if (table[hash_index].get_upper_hash() > 0) {
         if (rand > 8000) {
@@ -45,7 +46,7 @@ void Table::put(const Board& position, Move move, int16_t eval, NodeType type, u
 
 std::optional<TableEntry> Table::get(const Board& position) {
     const uint64_t hash = position.get_hash();
-    uint32_t hash_index = hash & (TABLE_LENGTH - 1);
+    uint32_t hash_index = hash & INDEX_MASK;
     uint32_t hash_upper = hash >> TABLE_BITS;
     if (table[hash_index].get_upper_hash() == hash_upper) {
         return table[hash_index];
@@ -54,7 +55,7 @@ std::optional<TableEntry> Table::get(const Board& position) {
 }
 
 std::optional<TableEntry> Table::get(uint64_t hash) {
-    uint32_t hash_index = hash & (TABLE_LENGTH - 1);
+    uint32_t hash_index = hash & INDEX_MASK;
     uint32_t hash_upper = hash >> TABLE_BITS;
     if (table[hash_index].get_upper_hash() == hash_upper) {
         return table[hash_index];

@@ -21,23 +21,41 @@ Search::Search(Board &start_board, Evaluate &eval, NNUE &net) : board(start_boar
 }
 
 Move Search::get_engine_move() {
+    std::cout << "get_engine_move " << (board.get_side_to_move() ? "black" : "white") << std::endl;
+    auto start = std::chrono::steady_clock::now();
+
     Move final_move;
 
     auto unsorted_moves = board.get_moves();
     std::vector<Move> moves = sort_moves(unsorted_moves);
+
+    // print moves
     for (auto &m : moves) {
         std::cout << m << std::endl;
     }
     int move_count = moves.size();
 
-    std::cout << "get_engine_move " << (board.get_side_to_move() ? "black" : "white") << std::endl;
-    auto start = std::chrono::steady_clock::now();
+    if (principal_variation.size() > 1) {
+        Move pv_move = principal_variation[2];
+        for (int i = 0; i < move_count; i++) {
+            if (moves[i] == pv_move) {
+                moves[i] = moves[0];
+                moves[0] = pv_move;
+                break;
+            }
+        }
+    }
+    principal_variation.clear();
 
-    for (size_t depth = 1;;depth++) {
+    for (size_t depth = 1;; depth++) {
         std::cout << "depth: " << depth << std::endl;
+        for (Move move : principal_variation) {
+            std::cout << move << " ";
+        }
+        std::cout << std::endl;
         // Move last pv move to the front (if valid)
         if (principal_variation.size() > 1) {
-            Move pv_move = principal_variation[2];
+            Move pv_move = principal_variation[0];
             for (int i = 0; i < move_count; i++) {
                 if (moves[i] == pv_move) {
                     moves[i] = moves[0];
@@ -78,9 +96,6 @@ Move Search::get_engine_move() {
                 nnue.reset_nnue(pieces_involved[1], this->board);
             }
 
-            // board.make_move(moves[i]);
-            // int next_eval = -search(-100000, 100000, 1, temp_pv);
-            // board.unmake_move(moves[i]);
             std::cout << "next_eval " << moves[i] << " => " << next_eval << std::endl;
             // update bestEval
             if (next_eval > best_eval) {
@@ -94,31 +109,24 @@ Move Search::get_engine_move() {
                     principal_variation.push_back(temp_pv[j]);
                 }
             }
+
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() > SEARCH_TIME) {
+                final_move = best_move;
+                goto finish_search;
+            }
         }
-        std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() <<std::endl<<std::endl;
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() > SEARCH_TIME) {
-            final_move = best_move;
-            break;
-        }
+        std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << std::endl
+                  << std::endl;
     }
 
+finish_search:
     t_table.clear();
 
     return final_move;
 }
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
-    auto unsorted_moves = board.get_moves();
-    std::vector<Move> moves = sort_moves(unsorted_moves);
-    int move_count = moves.size();
-
-    // Mate or stalemate
-    if (move_count == 0) {
-        return evaluate.evaluate_cheap();
-    }
-
     if (depth <= 0) {
-        pv.clear();
         int curr_eval = quiesce(alpha, beta, pv, 0);
 
         // PV should only have size in the case where there is a non quiet position
@@ -138,24 +146,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         return curr_eval;
     }
 
-    // futility pruning
-    bool is_futile = false;
-    if (depth == 1) {
-        int curr_eval = evaluate.evaluate();
-        const int MINOR_VAL = 310;
-        if (curr_eval + MINOR_VAL < alpha) {
-            is_futile = true;
-        }
-    } else if (depth == 2) {
-        int curr_eval = evaluate.evaluate();
-        const int ROOK_VAL = 510;
-        if (curr_eval + ROOK_VAL < alpha) {
-            is_futile = true;
-        }
-    }
-    is_futile = !board.in_check() && is_futile;
-
-    int j = 0;  // move swap counter
+    int swap_count = 0;  // move swap counter
 
     // Check transposition table for current position.
     std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
@@ -163,15 +154,15 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         if (t_position->get_depth() >= depth) {
             switch (t_position->get_type()) {
                 case NodeType::UPPER:
-                    if (t_position->get_eval() > beta) {
-                        //return t_position->get_eval();
+                    if (t_position->get_eval() >= beta) {
+                        return t_position->get_eval();
                     } else {
-                        //beta = t_position->get_eval();
+                        beta = t_position->get_eval();
                     }
                     break;
                 case NodeType::LOWER:
-                    if (t_position->get_eval() < alpha) {
-                        //return alpha;
+                    if (t_position->get_eval() <= alpha) {
+                        return alpha;
                     } else {
                         alpha = t_position->get_eval();
                     }
@@ -185,17 +176,47 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
                 return t_position->get_eval();
             }
         }
+    }
 
-        // move ordering: transposition table first
+    auto unsorted_moves = board.get_moves();
+    int move_count = unsorted_moves.size();
+
+    // Mate or stalemate
+    if (move_count == 0) {
+        return evaluate.evaluate_cheap();
+    }
+
+    // sort moves
+    std::vector<Move> moves = sort_moves(unsorted_moves);
+
+    // move ordering: transposition table first
+    if (t_position.has_value()) {
         for (int i = 0; i < move_count; i++) {
             if (moves[i] == t_position->get_move()) {
                 moves[i] = moves[0];
                 moves[0] = t_position->get_move();
-                j++;
+                swap_count++;
                 break;
             }
         }
     }
+
+    // futility pruning
+    bool is_futile = false;
+    if (depth == 1) {
+        int curr_eval = evaluate.evaluate_cheap();
+        const int MINOR_VAL = 310;
+        if (curr_eval + MINOR_VAL < alpha) {
+            is_futile = true;
+        }
+    } else if (depth == 2) {
+        int curr_eval = evaluate.evaluate_cheap();
+        const int ROOK_VAL = 510;
+        if (curr_eval + ROOK_VAL < alpha) {
+            is_futile = true;
+        }
+    }
+    is_futile = !board.in_check() && is_futile;
 
     std::vector<Move> temp_pv;  // local pv
     int best_eval = INT_MIN;
@@ -228,9 +249,9 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
             nnue.reset_nnue(pieces_involved[1], this->board);
-            
+
             next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
-            
+
             board.unmake_move(moves[i]);
             nnue.reset_nnue(pieces_involved[1], this->board);
         }
@@ -267,18 +288,18 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 }
 
 int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vector<Move> &temp_pv) {
-  int next_eval = 0;
+    int next_eval = 0;
 
-  if (move_type == NodeType::EXACT && depth > 1) {
-    next_eval = -search(-alpha - 1, -alpha, depth - 1, temp_pv);
-    if (next_eval > alpha && next_eval < beta) {
-      return -search(-beta, -alpha, depth - 1, temp_pv);
+    if (move_type == NodeType::EXACT && depth > 1) {
+        next_eval = -search(-alpha - 1, -alpha, depth - 1, temp_pv);
+        if (next_eval > alpha && next_eval < beta) {
+            return -search(-beta, -alpha, depth - 1, temp_pv);
+        }
+    } else {
+        return -search(-beta, -alpha, depth - 1, temp_pv);
     }
-  } else {
-    return -search(-beta, -alpha, depth - 1, temp_pv);
-  }
 
-  return next_eval;
+    return next_eval;
 }
 
 int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
@@ -307,13 +328,18 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
 
     //generate all moves
     auto unsorted_moves = board.get_moves();
+    if (unsorted_moves.size() == 0) {
+        return evaluate.evaluate_cheap();
+    }
+
+    // sort moves
     std::vector<Move> moves = sort_moves(unsorted_moves);
     std::vector<Move> temp_pv;
     int best_eval = INT_MIN;
 
     for (size_t i = 0; i < moves.size(); i++) {
         // skip if move isn't capture
-        if (moves[i].is_capture() || board.in_check()) { // || moves[i].is_check()
+        if (moves[i].is_capture() || board.in_check()) {  // || moves[i].is_check()
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
             auto pieces_involved = board.make_move(moves[i]);
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;

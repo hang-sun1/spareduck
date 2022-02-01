@@ -130,7 +130,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    return board_evaluate.evaluate() * (game_board.get_side_to_move() ? -1 : 1);
+    return board_evaluate.evaluate();
 }
 }
 

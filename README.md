@@ -1,6 +1,6 @@
 # spareduck
 
-A chess engine using webassembly
+A chess engine that runs in the browser using webassembly. Searches via alpha-beta pruning and evaluates positions using an efficiently updateable neural network (NNUE). 
 
 ## Building with Docker
 

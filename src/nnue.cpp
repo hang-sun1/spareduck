@@ -22,6 +22,7 @@ int NNUE::evaluate(size_t piece_count, Side side_to_move) {
     if (!ready) {
         return 0;
     }
+    //
     // efficient updating should have already updated a1_white and a1_black.
     // however the bias and relu are not yet applied to them in order to facilitate
     // efficient updates
@@ -173,7 +174,6 @@ void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piec
 }
 
 void NNUE::reset_nnue(std::optional<Piece> captured, Board &b) {
-
     if (!ready) { 
         return;
     }
@@ -350,7 +350,7 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
     size_t temp_idx = idx;
     for (int i = 0; i < 8; ++i) {
         // weights are stored as int8_t so no multiplication needed for the size
-        std::memcpy(&w1[i*LAYER1_SIZE*LAYER2_SIZE*2], &fetch->data[temp_idx], 2*LAYER1_SIZE*LAYER2_SIZE);
+        std::memcpy(&w1[i*2*LAYER1_SIZE*LAYER2_SIZE], &fetch->data[temp_idx], 2*LAYER1_SIZE*LAYER2_SIZE);
         temp_idx += 2*LAYER1_SIZE*LAYER2_SIZE;
 
         std::memcpy(&b2[i*LAYER2_SIZE], &fetch->data[temp_idx], LAYER2_SIZE*4);
@@ -370,6 +370,7 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
 
         // temp_idx = idx;
     }
+    std::cout << temp_idx << std::endl;
     ready = true;
 }
 #endif

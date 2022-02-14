@@ -151,7 +151,7 @@ int Evaluate::evaluate_cheap() const {
     } else if (board.is_stalemate()) {
         return 0;
     } else {
-        value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
+        // value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
         value += piece_values(board.get_pawns(), piece[0]);
         value += piece_values(board.get_knights(), piece[1]);
         value += piece_values(board.get_bishops(), piece[2]);
@@ -187,7 +187,7 @@ int Evaluate::evaluate() const {
         piece_count += std::popcount(queens[0]) + std::popcount(queens[1]);
         piece_count += std::popcount(kings[0]) + std::popcount(kings[1]);
 
-        value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move())) * (board.get_side_to_move() ? -1 : 1);
+        value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move())) * (board.get_side_to_move() ? 1 : 1);
     }
 
 

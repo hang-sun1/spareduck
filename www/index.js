@@ -14,7 +14,7 @@ const init = async (init_config = {}) => {
   const { fen, side, playAi } = {
     fen: false,
     side: 'white',
-    playAi: false,
+    playAi: true,
     //
     ...init_config,
   };

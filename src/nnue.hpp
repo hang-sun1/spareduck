@@ -31,7 +31,9 @@ class NNUE {
    public:
     NNUE();
     ~NNUE();
+    #ifndef TESTING
     NNUE(Side current_to_move, emscripten_fetch_t* data);
+    #endif
     NNUE(const NNUE &nnue2);
     NNUE& operator=(const NNUE &nnue2);
 

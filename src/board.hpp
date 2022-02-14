@@ -14,10 +14,13 @@
 #include "side.hpp"
 #include "piece.hpp"
 
+#include "../magic-bits/include/magic_bits.hpp"
+
 using std::uint64_t;
 
 class Board {
    private:
+    magic_bits::Attacks* attacks;
     uint64_t hash;
     std::stack<History> history;
     std::array<std::array<uint64_t, 64>, 13> hash_helper;
@@ -52,6 +55,9 @@ class Board {
     uint64_t generate_king_moves(uint8_t square, uint64_t board_occ) const;
     uint64_t generate_pawn_moves(uint8_t square, uint64_t board_occ, Side side) const;
     uint64_t generate_pawn_attacks(uint8_t square, uint64_t board_occ, Side side) const;
+    static std::array<uint64_t, 64> generate_diagonal_mask_map();
+    static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
+    static std::array<uint64_t, 64> generate_rank_attacks();
     // std::vector<std::pair<uint64_t, uint8_t>> defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side) const;
     void defense_maps_for_piece(uint64_t piece_board, uint64_t board_occ, char move_type, Side side,
         std::vector<std::pair<uint64_t, uint8_t>> &maps_vec) const;
@@ -74,21 +80,19 @@ class Board {
     uint64_t nodes_evaluated = 0;
     // using enum Side;
     // initizlizes a board in the starting position
-    Board();
+    Board(magic_bits::Attacks* att);
     Board(std::string fen);
     // The below methods generate lookup tables that allow efficient determination of available moves
     // for the various pieces, as well as helper functions that assist in this
     static std::array<uint64_t, 64> generate_knight_lookup();
     static std::array<uint64_t, 64> generate_king_lookup();
-    static std::array<std::array<uint64_t, 64>, 8> generate_rank_attacks();
-    static std::array<uint64_t, 64> generate_diagonal_mask_map();
-    static std::array<uint64_t, 64> generate_antidiagonal_mask_map();
     static std::array<std::array<uint64_t, 64>, 13> initialize_hash();
     static std::array<std::array<uint64_t, 64>, 64> generate_in_between();
 
     // move and side functions
     std::array<std::optional<Piece>, 2> make_move(Move move);
     void unmake_move(Move move);
+    bool is_pos_valid();
     int get_side_to_move();
     std::vector<Move> get_moves();
     std::vector<uint16_t> get_moves_as_u16();

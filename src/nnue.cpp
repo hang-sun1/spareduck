@@ -18,6 +18,7 @@
 #endif
 
 int NNUE::evaluate(size_t piece_count, Side side_to_move) {
+    // return 1;
     if (!ready) {
         return 0;
     }
@@ -310,6 +311,8 @@ NNUE::NNUE() {
 
 }
 
+
+#ifndef TESTING
 NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
     w0 = new (std::align_val_t(16)) int16_t[INPUT_SIZE*LAYER1_SIZE];
     psqt_wts = new (std::align_val_t(16)) int32_t[INPUT_SIZE*8];
@@ -369,6 +372,7 @@ NNUE::NNUE(Side current_to_move, emscripten_fetch_t* fetch) {
     }
     ready = true;
 }
+#endif
 
 NNUE::NNUE(const NNUE &nnue2) {
     w0 = new (std::align_val_t(16)) int16_t[INPUT_SIZE*LAYER1_SIZE];

@@ -20,7 +20,8 @@ using namespace emscripten;
 #endif
 #include <immintrin.h>
 
-Board game_board;
+magic_bits::Attacks attacks;
+Board game_board(&attacks);
 NNUE nnue; //(static_cast<Side>(game_board.get_side_to_move()));
 Evaluate board_evaluate(game_board, nnue);
 Search search_engine(game_board, board_evaluate, nnue);
@@ -72,12 +73,12 @@ void make_move(int from, int to, bool promotion, int promote_to) {
                 std::cout << static_cast<uint16_t>(m.type()) << std::endl;
                 if (m.type() == promote_type || m.type() == capture_promote_type) {
                     std::cout << "sometihing happened!" << std::endl;
-                    mov = m;
+                    mov = Move(m.origin_square(), m.destination_square(), m.type());
                     break;
                 }
             } else {
-                mov = m;
-                break;
+                mov = Move(m.origin_square(), m.destination_square(), m.type());
+                break;                mov = Move(m.origin_square(), m.destination_square(), m.type());
             }
         }
     }
@@ -207,7 +208,6 @@ void on_fail(emscripten_fetch_t* fetch) {
 // Main function.
 #ifndef TESTING
 EMSCRIPTEN_KEEPALIVE
-#endif
 int main() {
     auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
     uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;
@@ -224,6 +224,7 @@ int main() {
     emscripten_fetch(&attr, "https://storage.googleapis.com/spareduck/network.bin");
 
 }
+#endif
 
 #ifndef TESTING
 EMSCRIPTEN_BINDINGS(module) {

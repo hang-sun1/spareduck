@@ -72,6 +72,10 @@ Move Search::get_engine_move() {
             std::vector<Move> temp_pv;
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
             auto pieces_involved = board.make_move(moves[i]);
+            if (!board.is_pos_valid()) {
+                board.unmake_move(moves[i]);
+                continue;
+            }
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
             assert(pieces_involved[0].has_value());
@@ -228,6 +232,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         }
         auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
         auto pieces_involved = board.make_move(moves[i]);
+        if (!board.is_pos_valid()) {
+            board.unmake_move(moves[i]);
+            continue;
+        }
         uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
         uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
         if (white_king_square >= 64 || black_king_square >= 64) {
@@ -342,6 +350,10 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
         if (moves[i].is_capture() || board.in_check()) {  // || moves[i].is_check()
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
             auto pieces_involved = board.make_move(moves[i]);
+            if (!board.is_pos_valid()) {
+                board.unmake_move(moves[i]);
+                continue;
+            }
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
             // std::cout << (unsigned int) white_king_square << (unsigned int) black_king_square << std::endl;
@@ -365,9 +377,6 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
             }
-            // board.make_move(moves[i]);
-            // int next_eval = -quiesce(-beta, -alpha, temp_pv);
-            // board.unmake_move(moves[i]);
 
             if (next_eval > best_eval) {
                 best_eval = next_eval;

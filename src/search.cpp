@@ -74,7 +74,7 @@ Move Search::get_engine_move() {
             std::vector<Move> temp_pv;
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
             auto pieces_involved = board.make_move(moves[i]);
-            if (!board.is_pos_valid()) {
+            if (!board.is_pos_valid(moves[i])) {
                 board.unmake_move(moves[i]);
                 continue;
             }
@@ -241,7 +241,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         }
         auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
         auto pieces_involved = board.make_move(moves[i]);
-        if (!board.is_pos_valid()) {
+        if (!board.is_pos_valid(moves[i])) {
             board.unmake_move(moves[i]);
             continue;
         }
@@ -359,7 +359,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
         if (moves[i].is_capture() || board.in_check()) {  // || moves[i].is_check()
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
             auto pieces_involved = board.make_move(moves[i]);
-            if (!board.is_pos_valid()) {
+            if (!board.is_pos_valid(moves[i])) {
                 board.unmake_move(moves[i]);
                 continue;
             }

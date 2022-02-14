@@ -14,13 +14,6 @@ struct History {
     std::array<uint64_t, 2> bishops;
     std::array<uint64_t, 2> pawns;
     std::array<uint64_t, 2> kings;
-    std::array<uint64_t, 2> queen_defends;
-    std::array<uint64_t, 2> rook_defends;
-    std::array<uint64_t, 2> knight_defends;
-    std::array<uint64_t, 2> bishop_defends;
-    std::array<uint64_t, 2> pawn_defends;
-    std::array<uint64_t, 2> king_defends;
-    std::array<uint64_t, 2> defense_maps;
     std::array<uint64_t, 2> attack_maps;
     std::array<bool, 2> short_castle_rights;
     std::array<bool, 2> long_castle_rights;

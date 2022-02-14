@@ -78,13 +78,13 @@ void make_move(int from, int to, bool promotion, int promote_to) {
                 }
             } else {
                 mov = Move(m.origin_square(), m.destination_square(), m.type());
-                break;                mov = Move(m.origin_square(), m.destination_square(), m.type());
+                break;                
             }
         }
     }
     auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
     auto pieces_involved = game_board.make_move(mov);
-    if (!game_board.is_pos_valid()) {
+    if (!game_board.is_pos_valid(mov)) {
         abort();
     }
     uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;

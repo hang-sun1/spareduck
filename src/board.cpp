@@ -257,8 +257,9 @@ uint64_t Board::generate_queen_moves(uint8_t square, uint64_t board_occ) const {
         return 0;
     }
     assert(square < 64);
-    uint64_t queen_attacks = attacks->Queen(board_occ, square);
-    return queen_attacks &= ~(1ULL << square);
+    uint64_t queen_attacks = (unsigned long long) attacks->Queen((uint64_t) board_occ, (int) square);
+    // std::cout << queen_attacks << ", " << (int)square << std::endl;
+    return queen_attacks;// &= ~(1ULL << square);
 }
 
 uint64_t Board::generate_knight_moves(uint8_t square, uint64_t board_occ) const {
@@ -820,6 +821,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
 
     
     this->side_to_move = static_cast<Side>(other_move);
+    //  TODO: MOVE THIS UNTIL MOVE LEGALITY IS VERIFIED TO SAVE TIME ON MOVEGEN
     this->moves = generate_moves();
 
     auto cap = captured >= 0 ? std::make_optional(piece_idents[captured]) : std::nullopt;
@@ -916,7 +918,7 @@ bool Board::is_pos_valid() {
     // check whether or not the king is under attack
 
     uint64_t board_occ = all_per_side[0] | all_per_side[1];
-    uint8_t king_pos = kings[other_move];
+    uint8_t king_pos = __builtin_ffsll(kings[other_move]) - 1;
     
     if (knight_lookup[king_pos] & knights[current_move]) {
         return false;
@@ -941,7 +943,6 @@ bool Board::is_pos_valid() {
     if (pawn & pawns[current_move]) {
         return false;
     }
-
     return true;
 }
 

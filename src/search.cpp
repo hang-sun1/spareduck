@@ -68,6 +68,8 @@ Move Search::get_engine_move() {
         int best_eval = -100000;
         Move best_move = moves[0];
 
+        bool valid_moves = false;
+        // TODO: in the case none of these moves are valid, make sure to handle check/stalemate
         for (int i = 0; i < move_count; i++) {
             std::vector<Move> temp_pv;
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
@@ -76,6 +78,7 @@ Move Search::get_engine_move() {
                 board.unmake_move(moves[i]);
                 continue;
             }
+            valid_moves = true;
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
             assert(pieces_involved[0].has_value());
@@ -119,9 +122,15 @@ Move Search::get_engine_move() {
                 goto finish_search;
             }
         }
+
+        if (!valid_moves) {
+            // TODO: do something to handle mate or stalemate, and do it in the other places moves are made as well!!
+        }
         std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << std::endl
                   << std::endl;
+    
     }
+
 
 finish_search:
     t_table.clear();

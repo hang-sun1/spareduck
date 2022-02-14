@@ -607,31 +607,31 @@ std::vector<Move> Board::generate_moves() {
     }
 
 
-    if (short_castle_rights[side]) {
-        uint64_t relevant_squares = side ? 0x7000000000000000ULL : 0x70ULL;
-        uint64_t to_be_vacated = side ? 0x6000000000000000ULL : 0x60ULL;
-        auto total_occ = all_per_side[side] | all_per_side[other_side];
-        if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
-            if (!side) {
-                vec_of_moves.push_back(Move(4, 6, MoveType::SHORT_CASTLES));
-            } else {
-                vec_of_moves.push_back(Move(60, 62, MoveType::SHORT_CASTLES));
-            }
-        }
-    }
-    if (long_castle_rights[side]) {
-        uint64_t relevant_squares = side ? 0x1c00000000000000ULL : 0x1cULL;
-        uint64_t to_be_vacated = side ? 0xe00000000000000ULL : 0xeULL;
-        auto total_occ = all_per_side[side] | all_per_side[other_side];
-        if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
-            // vec_of_moves.push_back(Move(0, 0, MoveType::LONG_CASTLES));
-            if (!side) {
-                vec_of_moves.push_back(Move(4, 2, MoveType::LONG_CASTLES));
-            } else {
-                vec_of_moves.push_back(Move(60, 58, MoveType::LONG_CASTLES));
-            }
-        }
-    }
+    // if (short_castle_rights[side]) {
+    //     uint64_t relevant_squares = side ? 0x7000000000000000ULL : 0x70ULL;
+    //     uint64_t to_be_vacated = side ? 0x6000000000000000ULL : 0x60ULL;
+    //     auto total_occ = all_per_side[side] | all_per_side[other_side];
+    //     if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
+    //         if (!side) {
+    //             vec_of_moves.push_back(Move(4, 6, MoveType::SHORT_CASTLES));
+    //         } else {
+    //             vec_of_moves.push_back(Move(60, 62, MoveType::SHORT_CASTLES));
+    //         }
+    //     }
+    // }
+    // if (long_castle_rights[side]) {
+    //     uint64_t relevant_squares = side ? 0x1c00000000000000ULL : 0x1cULL;
+    //     uint64_t to_be_vacated = side ? 0xe00000000000000ULL : 0xeULL;
+    //     auto total_occ = all_per_side[side] | all_per_side[other_side];
+    //     if (!(defense_maps[other_side] & relevant_squares) && (total_occ & to_be_vacated) == 0) {
+    //         // vec_of_moves.push_back(Move(0, 0, MoveType::LONG_CASTLES));
+    //         if (!side) {
+    //             vec_of_moves.push_back(Move(4, 2, MoveType::LONG_CASTLES));
+    //         } else {
+    //             vec_of_moves.push_back(Move(60, 58, MoveType::LONG_CASTLES));
+    //         }
+    //     }
+    // }
 
     // TODO add castles and pawn stuff (including en passant)
 
@@ -811,52 +811,15 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
     }
 
     // attack_maps[current_move] = 0;
-    defense_maps[current_move] = 0;
     all_per_side[current_move] = 0;
+    all_per_side[other_move] = 0;
     all_per_side[current_move] = rooks[current_move] | bishops[current_move] | knights[current_move] |
                                  queens[current_move] | kings[current_move] | pawns[current_move];
     all_per_side[other_move] = rooks[other_move] | bishops[other_move] | knights[other_move] |
                                queens[other_move] | kings[other_move] | pawns[other_move];
 
     
-    std::array<std::array<uint64_t, 2>*, 6> def_maps = { &bishop_defends, &knight_defends, 
-        &rook_defends, &queen_defends, &king_defends, &pawn_defends };
-    std::array<char, 6> gen_funcs = { 'b', 'n', 'r', 'q', 'k', 'P' };
-
-    for (size_t i = 0; i < 6; ++i) {
-        if (i == captured || ((*def_maps[i])[other_move] & move_bitboard)) {
-            piece_map_vec.clear();
-            defense_maps_for_piece((*arr[i])[other_move], all_per_side[current_move] | all_per_side[other_move],
-                gen_funcs[i], static_cast<Side>(other_move), piece_map_vec);
-            (*def_maps[i])[other_move] = 0;
-            for (auto &map: piece_map_vec) {
-                (*def_maps[i])[other_move] |= map.first;
-            }
-        }
-
-        if (i == moved || ((*def_maps[i])[current_move] & move_bitboard)) {
-            piece_map_vec.clear();
-            this->defense_maps_for_piece((*arr[i])[current_move], all_per_side[current_move] | all_per_side[other_move],
-                gen_funcs[i], side_to_move, piece_map_vec);
-            (*def_maps[i])[current_move] = 0;
-            for (auto &map: piece_map_vec) {
-                (*def_maps[i])[current_move] |= map.first;
-            }
-        }
-    }
-
-    // now flip whose turn it is
     this->side_to_move = static_cast<Side>(other_move);
-    // flip the side to move part of the hash
-    this->hash ^= hash_helper[13][0];
-    this->defense_maps[current_move] = pawn_defends[current_move] | rook_defends[current_move] |
-                                       knight_defends[current_move] | bishop_defends[current_move] | queen_defends[current_move] | king_defends[current_move];
-    this->defense_maps[other_move] = pawn_defends[other_move] | rook_defends[other_move] |
-                                     knight_defends[other_move] | bishop_defends[other_move] | queen_defends[other_move] | king_defends[other_move];
-    // this->attack_maps[current_move] = this->defense_maps[current_move] & all_per_side[current_move];
-    // this->attack_maps[other_move] = this->defense_maps[other_move] & all_per_side[other_move];
-    // generate the moves for the next side (which also updates attack and defenes maps for
-    // the new side to move)
     this->moves = generate_moves();
 
     auto cap = captured >= 0 ? std::make_optional(piece_idents[captured]) : std::nullopt;
@@ -951,7 +914,35 @@ bool Board::is_pos_valid() {
     size_t current_move = static_cast<size_t>(side_to_move);
     size_t other_move = 1 - current_move;
     // check whether or not the king is under attack
-    return (this->defense_maps[current_move] & kings[other_move]) == 0;
+
+    uint64_t board_occ = all_per_side[0] | all_per_side[1];
+    uint8_t king_pos = kings[other_move];
+    
+    if (knight_lookup[king_pos] & knights[current_move]) {
+        return false;
+    } else if (king_lookup[king_pos] & kings[current_move]) {
+        return false;
+    }
+
+    uint64_t queen = attacks->Queen(board_occ, king_pos);
+    if (queen & queens[current_move]) {
+        return false;
+    }
+    uint64_t bishop = attacks->Bishop(board_occ, king_pos);
+    if (bishop & bishops[current_move]) {
+        return false;
+    }
+    uint64_t rook = attacks->Rook(board_occ, king_pos);
+    if (rook & rooks[current_move]) {
+        return false;
+    }
+
+    uint64_t pawn = generate_pawn_attacks(king_pos, 0xffffffffffffffff, static_cast<Side>(other_move));
+    if (pawn & pawns[current_move]) {
+        return false;
+    }
+
+    return true;
 }
 
 void Board::parse_fen(std::string fen) {
@@ -1280,6 +1271,7 @@ std::vector<std::string> Board::get_moves_algebraic() {
     std::vector<std::string> l_moves(moves.size() * 2);
     int j = 0;
     for (int i = 0; i < moves.size(); i++) {
+        std::cout << moves.size() << std::endl;
         this->make_move(moves[i]);
         if (!is_pos_valid()) {
             this->unmake_move(moves[i]);

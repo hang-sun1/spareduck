@@ -94,8 +94,6 @@ class Board {
 
     uint64_t initial_hash() const;
     uint64_t get_hash() const;
-    bool in_check() const;
-    bool is_checkmate() const;
-    bool is_stalemate() const;
+    bool in_check(Side side);
     Piece piece_on_square(uint8_t square, Side s);
 };

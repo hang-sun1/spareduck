@@ -147,7 +147,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 bool in_check() {
-    return game_board.in_check();
+    return game_board.in_check((Side)game_board.get_side_to_move());
 }
 }
 
@@ -158,7 +158,7 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 void start_from_position(std::string fen) {
     game_board = Board(fen, &attacks);
-    //TODO figure out why this if this actually works
+    //TODO figure if this actually works
     nnue.reset_nnue(std::nullopt, game_board);
 }
 }

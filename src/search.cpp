@@ -229,11 +229,12 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             is_futile = true;
         }
     }
-    is_futile = !board.in_check() && is_futile;
+    is_futile = !board.in_check((Side) board.get_side_to_move()) && is_futile;
 
     std::vector<Move> temp_pv;  // local pv
     int best_eval = INT_MIN;
     NodeType move_type = NodeType::LOWER;
+    bool any_valid_moves = false;
 
     for (int i = 0; i < move_count; i++) {
         if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check()
@@ -245,6 +246,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
             board.unmake_move(moves[i]);
             continue;
         }
+        any_valid_moves = true;
         uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
         uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
         if (white_king_square >= 64 || black_king_square >= 64) {
@@ -298,6 +300,15 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
         }
     }
 
+    if (!any_valid_moves) {
+        // this position is checkmate
+        if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
+            return INT_MIN+1;
+        }
+        // this position is stalemate
+        return 0; 
+    }
+
     // Add new best move to hash table
     t_table.put(board, pv.front(), best_eval, move_type, static_cast<uint8_t>(depth));
 
@@ -325,7 +336,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
     }
 
     // TODO: handle loud positions
-    if (!board.in_check()) {
+    if (!board.in_check((Side) board.get_side_to_move())) {
         int stand_pat = evaluate.evaluate();
         if (stand_pat >= beta) {
             return stand_pat;
@@ -345,18 +356,19 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
 
     //generate all moves
     auto unsorted_moves = board.get_moves();
-    if (unsorted_moves.size() == 0) {
-        return evaluate.evaluate_cheap();
-    }
+    // if (unsorted_moves.size() == 0) {
+    //     return evaluate.evaluate_cheap();
+    // }
 
     // sort moves
     std::vector<Move> moves = sort_moves(unsorted_moves);
     std::vector<Move> temp_pv;
     int best_eval = INT_MIN;
+    bool any_valid_moves = false;
 
     for (size_t i = 0; i < moves.size(); i++) {
         // skip if move isn't capture
-        if (moves[i].is_capture() || board.in_check()) {  // || moves[i].is_check()
+        if (moves[i].is_capture() || board.in_check((Side) board.get_side_to_move())) {  // || moves[i].is_check()
             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
             auto pieces_involved = board.make_move(moves[i]);
             if (!board.is_pos_valid(moves[i])) {
@@ -405,6 +417,14 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 }
             }
         }
+    }
+    if (!any_valid_moves) {
+        // this position is checkmate
+        if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
+            return INT_MIN+1;
+        }
+        // this position is stalemate
+        return 0; 
     }
 
     return alpha;

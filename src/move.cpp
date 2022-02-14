@@ -49,7 +49,7 @@ MoveType Move::type() const {
 
 bool Move::is_capture() const {
     auto as_integer = static_cast<uint16_t>(t);
-    return as_integer == 2 || as_integer > 8;
+    return as_integer == 2 || as_integer > 8 || t == MoveType::EN_PASSANT;
 }
 
 bool Move::is_promotion() const {

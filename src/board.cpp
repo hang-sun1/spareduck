@@ -265,7 +265,7 @@ std::vector<Move> Board::generate_moves() {
     piece_map_vec.clear();
     defense_maps_for_piece(pawns[side], board_occ, 'P', side_to_move, piece_map_vec);
     for (auto &m: piece_map_vec) {
-        m.first &= all_per_side[other_side];
+        m.first &= all_per_side[other_side] | (1ULL << en_passant_target);
         m.first &= ~all_per_side[side];
         auto map = m.first;
         auto from = m.second;
@@ -275,6 +275,8 @@ std::vector<Move> Board::generate_moves() {
             MoveType type = MoveType::QUIET;
             if ((1ULL << dest) & all_per_side[other_side]) {
                 type = MoveType::CAPTURE;
+            } else if (dest == en_passant_target) {
+                type = MoveType::EN_PASSANT;
             }
             if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
                 Move promote_to_bishop = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP);
@@ -311,6 +313,10 @@ std::vector<Move> Board::generate_moves() {
             MoveType type = MoveType::QUIET;
             if ((1ULL << dest) & all_per_side[other_side]) {
                 type = MoveType::CAPTURE;
+            } else if (from >= 8 && from < 16 && dest >= 24 && dest < 32) {
+                type = MoveType::DOUBLE_PAWN_PUSH;
+            } else if (from >= 48 && from < 56 && dest >= 32 && dest < 40) {
+                type = MoveType::DOUBLE_PAWN_PUSH;
             }
             if (((1ULL << dest) & 0xff00000000000000) || ((1ULL << dest) & 0xff)) {
                 Move promote_to_bishop = Move(from, dest, MoveType::CAPTURE_AND_PROMOTE_TO_BISHOP);
@@ -416,7 +422,8 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
             en_passant_target = move.origin_square() + 8;
         }
     } else if (move.type() == MoveType::EN_PASSANT) {
-        pawns[other_move] &= ~(1 << en_passant_target);
+        int diff = current_move ? 8 : -8;
+        pawns[other_move] &= ~(1ULL << uint8_t((int) en_passant_target + diff));
         en_passant_target = 65;
     } else {
         en_passant_target = 65;
@@ -939,20 +946,12 @@ uint64_t Board::get_hash() const {
 
 // TODO create a field in the class for this
 // to reduce the number of calculations
-bool Board::in_check() const {
-    size_t to_move = static_cast<size_t>(side_to_move);
-    size_t other = 1 - to_move;
-    bool in_check = (kings[to_move] & defense_maps[other]) != 0;
-    return in_check;
+bool Board::in_check(Side side) {
+    uint8_t king_square = __builtin_ffsll(kings[(size_t) side]);
+    uint64_t board_occ = all_per_side[0] | all_per_side[1];
+    return king_attacked(king_square, board_occ, side);
 }
 
-bool Board::is_checkmate() const {
-    return in_check() && moves.size() == 0;
-}
-
-bool Board::is_stalemate() const {
-    return !in_check() && moves.size() == 0;
-}
 
 Piece Board::piece_on_square(uint8_t square, Side s) {
     auto side_index = static_cast<size_t>(s);

@@ -146,19 +146,13 @@ void Evaluate::initialize_pst() {
 int Evaluate::evaluate_cheap() const {
     int value = 0;
 
-    if (board.is_checkmate()) {
-        return INT32_MIN + 1;
-    } else if (board.is_stalemate()) {
-        return 0;
-    } else {
-        // value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
-        value += piece_values(board.get_pawns(), piece[0]);
-        value += piece_values(board.get_knights(), piece[1]);
-        value += piece_values(board.get_bishops(), piece[2]);
-        value += piece_values(board.get_rooks(), piece[3]);
-        value += piece_values(board.get_queens(), piece[4]);
-        value += piece_values(board.get_kings(), piece[5]);
-    }
+    // value = board.get_moves().size() * (board.get_side_to_move() ? -1 : 1);
+    value += piece_values(board.get_pawns(), piece[0]);
+    value += piece_values(board.get_knights(), piece[1]);
+    value += piece_values(board.get_bishops(), piece[2]);
+    value += piece_values(board.get_rooks(), piece[3]);
+    value += piece_values(board.get_queens(), piece[4]);
+    value += piece_values(board.get_kings(), piece[5]);
 
     return value * (board.get_side_to_move() ? -1 : 1);
 }
@@ -167,29 +161,22 @@ int Evaluate::evaluate_cheap() const {
 int Evaluate::evaluate() const {
     int value = 0;
 
-    if (board.is_checkmate()) {
-        return INT32_MIN + 1;
-    } else if (board.is_stalemate()) {
-        return 0;
-    } else {
-        auto pawns = board.get_pawns();
-        auto knights = board.get_knights();
-        auto bishops = board.get_bishops();
-        auto rooks = board.get_rooks();
-        auto queens = board.get_queens();
-        auto kings = board.get_kings();
+    auto pawns = board.get_pawns();
+    auto knights = board.get_knights();
+    auto bishops = board.get_bishops();
+    auto rooks = board.get_rooks();
+    auto queens = board.get_queens();
+    auto kings = board.get_kings();
 
-        size_t piece_count = 0;
-        piece_count += std::popcount(pawns[0]) + std::popcount(pawns[1]);
-        piece_count += std::popcount(knights[0]) + std::popcount(knights[1]);
-        piece_count += std::popcount(bishops[0]) + std::popcount(bishops[1]);
-        piece_count += std::popcount(rooks[0]) + std::popcount(rooks[1]);
-        piece_count += std::popcount(queens[0]) + std::popcount(queens[1]);
-        piece_count += std::popcount(kings[0]) + std::popcount(kings[1]);
+    size_t piece_count = 0;
+    piece_count += std::popcount(pawns[0]) + std::popcount(pawns[1]);
+    piece_count += std::popcount(knights[0]) + std::popcount(knights[1]);
+    piece_count += std::popcount(bishops[0]) + std::popcount(bishops[1]);
+    piece_count += std::popcount(rooks[0]) + std::popcount(rooks[1]);
+    piece_count += std::popcount(queens[0]) + std::popcount(queens[1]);
+    piece_count += std::popcount(kings[0]) + std::popcount(kings[1]);
 
-        value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move())) * (board.get_side_to_move() ? 1 : 1);
-    }
-
+    value = nnue.evaluate(piece_count, static_cast<Side>(board.get_side_to_move())) * (board.get_side_to_move() ? 1 : 1);
 
     return value; //  * (board.get_side_to_move() ? -1 : 1);
 }

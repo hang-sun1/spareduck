@@ -57,7 +57,8 @@ Board::Board(magic_bits::Attacks* att) {
     piece_map_vec.reserve(50);
 }
 
-Board::Board(std::string fen) {
+Board::Board(std::string fen, magic_bits::Attacks* att) {
+    this->attacks = att;
     this->history = std::stack<History>();
     piece_map_vec.reserve(50);
     parse_fen(fen);

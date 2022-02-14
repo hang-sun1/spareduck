@@ -65,7 +65,7 @@ class Board {
     // using enum Side;
     // initizlizes a board in the starting position
     Board(magic_bits::Attacks* att);
-    Board(std::string fen);
+    Board(std::string fen, magic_bits::Attacks* att);
     // The below methods generate lookup tables that allow efficient determination of available moves
     // for the various pieces, as well as helper functions that assist in this
     static std::array<uint64_t, 64> generate_knight_lookup();

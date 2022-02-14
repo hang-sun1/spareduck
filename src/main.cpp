@@ -157,8 +157,9 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 void start_from_position(std::string fen) {
-    game_board = Board(fen);
-    // nnue.reset_nnue(std::nullopt, game_board);
+    game_board = Board(fen, &attacks);
+    //TODO figure out why this if this actually works
+    nnue.reset_nnue(std::nullopt, game_board);
 }
 }
 

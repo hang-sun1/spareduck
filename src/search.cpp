@@ -166,34 +166,34 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int swap_count = 0;  // move swap counter
 
     // Check transposition table for current position.
-    // std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
-    // if (t_position.has_value()) {
-    //     if (t_position->get_depth() >= depth) {
-    //         switch (t_position->get_type()) {
-    //             case NodeType::UPPER:
-    //                 if (t_position->get_eval() >= beta) {
-    //                     return t_position->get_eval();
-    //                 } else {
-    //                     beta = t_position->get_eval();
-    //                 }
-    //                 break;
-    //             case NodeType::LOWER:
-    //                 if (t_position->get_eval() <= alpha) {
-    //                     return alpha;
-    //                 } else {
-    //                     alpha = t_position->get_eval();
-    //                 }
-    //                 break;
-    //             default:
-    //                 return t_position->get_eval();
-    //                 break;
-    //         }
+    std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
+    if (t_position.has_value()) {
+        if (t_position->get_depth() >= depth) {
+            switch (t_position->get_type()) {
+                case NodeType::UPPER:
+                    if (t_position->get_eval() >= beta) {
+                        return t_position->get_eval();
+                    } else {
+                        beta = t_position->get_eval();
+                    }
+                    break;
+                case NodeType::LOWER:
+                    if (t_position->get_eval() <= alpha) {
+                        return alpha;
+                    } else {
+                        alpha = t_position->get_eval();
+                    }
+                    break;
+                default:
+                    return t_position->get_eval();
+                    break;
+            }
 
-    //         if (alpha >= beta) {
-    //             return t_position->get_eval();
-    //         }
-    //     }
-    // }
+            if (alpha >= beta) {
+                return t_position->get_eval();
+            }
+        }
+    }
 
     auto unsorted_moves = board.get_moves();
     int move_count = unsorted_moves.size();
@@ -207,16 +207,16 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     std::vector<Move> moves = sort_moves(unsorted_moves);
 
     // move ordering: transposition table first
-    // if (t_position.has_value()) {
-    //     for (int i = 0; i < move_count; i++) {
-    //         if (moves[i] == t_position->get_move()) {
-    //             moves[i] = moves[0];
-    //             moves[0] = t_position->get_move();
-    //             swap_count++;
-    //             break;
-    //         }
-    //     }
-    // }
+    if (t_position.has_value()) {
+        for (int i = 0; i < move_count; i++) {
+            if (moves[i] == t_position->get_move()) {
+                moves[i] = moves[0];
+                moves[0] = t_position->get_move();
+                swap_count++;
+                break;
+            }
+        }
+    }
 
     // futility pruning
     bool is_futile = false;

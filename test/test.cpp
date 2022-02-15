@@ -1,4 +1,4 @@
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+#define CATCH_CONFIG_MAIN  
 #include "catch.hpp"
 
 #include <chrono>
@@ -112,7 +112,7 @@ TEST_CASE("proper moves are generated", "[board]") {
             std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
 
 
-        // REQUIRE(count == 197281);
+        REQUIRE(count == 197281);
     }
 
     // SECTION("fen parser works correctly") {

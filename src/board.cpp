@@ -575,6 +575,10 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
 
     auto cap = captured >= 0 ? std::make_optional(piece_idents[captured]) : std::nullopt;
 
+    if (move.type() == MoveType::EN_PASSANT) {
+        cap = std::make_optional(PAWN);  
+    }
+
     // if (captured >= 0) {
     //     assert(piece_idents[captured] != KING);
     // }

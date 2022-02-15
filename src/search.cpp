@@ -1,4 +1,5 @@
 #include "search.hpp"
+#include "evaluate.hpp"
 
 #include <assert.h>
 
@@ -123,9 +124,12 @@ Move Search::get_engine_move() {
             }
         }
 
-        if (!valid_moves) {
-            // TODO: do something to handle mate or stalemate, and do it in the other places moves are made as well!!
-        }
+        //         return INT_MIN+1;
+        //     }
+        //     // this position is stalemate
+        //     return 0; 
+        //     // TODO: do something to handle mate or stalemate, and do it in the other places moves are made as well!!
+        // }
         std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << std::endl
                   << std::endl;
     
@@ -141,7 +145,7 @@ finish_search:
 int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     if (depth <= 0) {
         int curr_eval = quiesce(alpha, beta, pv, 0);
-
+        // int curr_eval = evaluate.evaluate();
         // PV should only have size in the case where there is a non quiet position
         if (pv.size()) {
             NodeType type;
@@ -162,68 +166,68 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int swap_count = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
-    if (t_position.has_value()) {
-        if (t_position->get_depth() >= depth) {
-            switch (t_position->get_type()) {
-                case NodeType::UPPER:
-                    if (t_position->get_eval() >= beta) {
-                        return t_position->get_eval();
-                    } else {
-                        beta = t_position->get_eval();
-                    }
-                    break;
-                case NodeType::LOWER:
-                    if (t_position->get_eval() <= alpha) {
-                        return alpha;
-                    } else {
-                        alpha = t_position->get_eval();
-                    }
-                    break;
-                default:
-                    return t_position->get_eval();
-                    break;
-            }
+    // std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
+    // if (t_position.has_value()) {
+    //     if (t_position->get_depth() >= depth) {
+    //         switch (t_position->get_type()) {
+    //             case NodeType::UPPER:
+    //                 if (t_position->get_eval() >= beta) {
+    //                     return t_position->get_eval();
+    //                 } else {
+    //                     beta = t_position->get_eval();
+    //                 }
+    //                 break;
+    //             case NodeType::LOWER:
+    //                 if (t_position->get_eval() <= alpha) {
+    //                     return alpha;
+    //                 } else {
+    //                     alpha = t_position->get_eval();
+    //                 }
+    //                 break;
+    //             default:
+    //                 return t_position->get_eval();
+    //                 break;
+    //         }
 
-            if (alpha >= beta) {
-                return t_position->get_eval();
-            }
-        }
-    }
+    //         if (alpha >= beta) {
+    //             return t_position->get_eval();
+    //         }
+    //     }
+    // }
 
     auto unsorted_moves = board.get_moves();
     int move_count = unsorted_moves.size();
 
-    // Mate or stalemate
-    if (move_count == 0) {
-        return evaluate.evaluate_cheap();
-    }
+    // // Mate or stalemate
+    // if (move_count == 0) {
+    //     return evaluate.evaluate();
+    // }
 
     // sort moves
     std::vector<Move> moves = sort_moves(unsorted_moves);
 
     // move ordering: transposition table first
-    if (t_position.has_value()) {
-        for (int i = 0; i < move_count; i++) {
-            if (moves[i] == t_position->get_move()) {
-                moves[i] = moves[0];
-                moves[0] = t_position->get_move();
-                swap_count++;
-                break;
-            }
-        }
-    }
+    // if (t_position.has_value()) {
+    //     for (int i = 0; i < move_count; i++) {
+    //         if (moves[i] == t_position->get_move()) {
+    //             moves[i] = moves[0];
+    //             moves[0] = t_position->get_move();
+    //             swap_count++;
+    //             break;
+    //         }
+    //     }
+    // }
 
     // futility pruning
     bool is_futile = false;
     if (depth == 1) {
-        int curr_eval = evaluate.evaluate_cheap();
+        int curr_eval = evaluate.evaluate();
         const int MINOR_VAL = 310;
         if (curr_eval + MINOR_VAL < alpha) {
             is_futile = true;
         }
     } else if (depth == 2) {
-        int curr_eval = evaluate.evaluate_cheap();
+        int curr_eval = evaluate.evaluate();
         const int ROOK_VAL = 510;
         if (curr_eval + ROOK_VAL < alpha) {
             is_futile = true;
@@ -357,7 +361,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
     //generate all moves
     auto unsorted_moves = board.get_moves();
     // if (unsorted_moves.size() == 0) {
-    //     return evaluate.evaluate_cheap();
+    //     return evaluate.evaluate();
     // }
 
     // sort moves
@@ -375,6 +379,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 board.unmake_move(moves[i]);
                 continue;
             }
+            any_valid_moves = true;
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
             // std::cout << (unsigned int) white_king_square << (unsigned int) black_king_square << std::endl;
@@ -417,15 +422,23 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 }
             }
         }
+        // } else  {
+        //     board.make_move(moves[i]);
+        //     if (!board.is_pos_valid(moves[i])) {
+        //         board.unmake_move(moves[i]);
+        //         continue;
+        //     }
+        //     any_valid_moves = true;
+        // }
     }
-    if (!any_valid_moves) {
-        // this position is checkmate
-        if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
-            return INT_MIN+1;
-        }
-        // this position is stalemate
-        return 0; 
-    }
+    // if (!any_valid_moves) {
+    //     // this position is checkmate
+    //     if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
+    //         return INT_MIN+1;
+    //     }
+    //     // this position is stalemate
+    //     return 0; 
+    // }
 
     return alpha;
 }

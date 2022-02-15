@@ -110,7 +110,7 @@ int NNUE::evaluate(size_t piece_count, Side side_to_move) {
     // 5. calculate the output layer and return;
     auto eval = compute_activation<LAYER3_SIZE, 1>(a3, w3, b4, nullptr, piece_count);
     
-    return (eval * (static_cast<size_t>(side_to_move) ? -1 : 1) + ps[bucket] / 2) / 64;
+    return (eval * (static_cast<size_t>(side_to_move) ? 1 : 1) + ps[bucket] / 2) / 64;
 }
 
 void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piece> captured, std::optional<Piece> promoted, uint8_t white_king_square,
@@ -128,8 +128,19 @@ void NNUE::update_non_king_move(Move move, Piece moved_piece, std::optional<Piec
         } else {
             update_first_layer_add(origin_index_wpov, origin_index_bpov);
         }
-        
-        if (captured.has_value()) {
+        if (move.type() == MoveType::EN_PASSANT) {
+            int diff = size_t(side_that_moved) ? -8 : 8;
+            auto piece = captured.value();
+            auto dest = uint8_t(int(move.destination_square()) + diff);
+            
+            auto idx_wpov = halfka_index(true, white_king_square, dest, piece, other);
+            auto idx_bpov = halfka_index(false, black_king_square, dest, piece, other);
+            if (!reverse_move) {
+                update_first_layer_sub(idx_wpov, idx_bpov);
+            } else {
+                update_first_layer_add(idx_wpov, idx_bpov);
+            }
+        } else if (captured.has_value()) {
             auto piece = captured.value();
             auto idx_wpov = halfka_index(true, white_king_square, move.destination_square(), piece, other);
             auto idx_bpov = halfka_index(false, black_king_square, move.destination_square(), piece, other);

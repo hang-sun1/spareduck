@@ -506,9 +506,9 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
         // temp_beta = beta;
         if (child > 0) {
             if (alpha > 0) {
-                beta = alpha -1;
+                beta = alpha +1;
             } else {
-                beta = alpha + 1;
+                beta = alpha - 1;
             }
         }
 

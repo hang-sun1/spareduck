@@ -462,19 +462,20 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
         auto temp_beta = beta;
         
         // null move pruning
-        if (!board.in_check((Side) board.get_side_to_move()) && depth >= 3) {
+        if (!board.in_check((Side) board.get_side_to_move()) && depth >= 2) {
             int null_eval; 
+            size_t null_depth = depth >= 3 ? depth - 2 : 0;
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
                 board.make_null_move();
-                null_eval = -pvs(-alpha-1, -alpha, move_type, depth - 3, temp_pv, node_count);
+                null_eval = pvs(alpha, beta, move_type, null_depth, temp_pv, node_count);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
                 board.make_null_move();
-                null_eval = -pvs(-alpha-1, -alpha, move_type, depth - 3, temp_pv, node_count);
+                null_eval = pvs(alpha, beta, move_type, null_depth, temp_pv, node_count);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);

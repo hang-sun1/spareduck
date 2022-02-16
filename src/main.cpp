@@ -132,7 +132,7 @@ extern "C" {
 EMSCRIPTEN_KEEPALIVE
 #endif
 double get_engine_evaluation() {
-    return board_evaluate.evaluate();
+    return board_evaluate.evaluate() * (game_board.get_side_to_move() ? -1 : 1);
 }
 }
 
@@ -168,6 +168,14 @@ std::vector<std::string> test_position(std::string fen, std::string move) {
     start_from_position(fen);
     Move start_move = Move(move.substr(0, 2), move.substr(2, 4));  // BUG: this move representation doesnt work
     std::cout << "test_position " << move << " " << start_move << std::endl;
+    auto moves = game_board.get_moves();
+    for (int i = 0; i < moves.size(); ++i) {
+        auto m = moves[i];
+        if (m.origin_square() == start_move.origin_square() && m.destination_square() == start_move.destination_square()) {
+            start_move = m;
+            std::cout << start_move.origin_square() << start_move.destination_square() << std::endl;
+        }
+    }
     game_board.make_move(start_move);
 
     search_engine.get_engine_move();

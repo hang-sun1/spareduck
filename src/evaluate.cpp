@@ -159,7 +159,6 @@ int Evaluate::evaluate_cheap() const {
 
 // More expensive evaluation that calculates the score of the position based on the pst
 int Evaluate::evaluate() const {
-    // return evaluate_cheap();
     int value = 0;
 
     auto pawns = board.get_pawns();

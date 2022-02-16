@@ -649,7 +649,9 @@ bool Board::is_pos_valid(Move move) {
     size_t current_move = static_cast<size_t>(side_to_move);
     size_t other_move = 1 - current_move;
     // check whether or not the king is under attack
-
+    if (!kings[0] || !kings[1]) {
+        return false;
+    }
     uint64_t board_occ = all_per_side[0] | all_per_side[1];
     uint8_t king_pos = __builtin_ffsll(kings[other_move]) - 1;
     board_occ &= ~(1ULL << king_pos);

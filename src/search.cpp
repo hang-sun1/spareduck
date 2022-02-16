@@ -96,22 +96,18 @@ Move Search::get_engine_move() {
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
             assert(pieces_involved[0].has_value());
 
-            if (white_king_square >= 64 || black_king_square >= 64) {
-                board.unmake_move(moves[i]);
-                continue;
-            }
             assert(white_king_square < 64);
             assert(black_king_square < 64);
             int next_eval;
 
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count);
+                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
-                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count);
+                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
             }
@@ -329,7 +325,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     return best_eval;
 }
 
-int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vector<Move> &pv, size_t* node_count) {
+int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vector<Move> &pv, size_t* node_count, bool nullable) {
     if (depth <= 0) {
         // int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
        int curr_eval = evaluate.evaluate();
@@ -449,10 +445,6 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
         }
         uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
         uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
-        if (white_king_square >= 64 || black_king_square >= 64) {
-            board.unmake_move(moves[i]);
-            continue;
-        }
         assert(white_king_square < 64);
         assert(black_king_square < 64);
 
@@ -468,14 +460,14 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
                 board.make_null_move();
-                null_eval = pvs(alpha, beta, move_type, null_depth, temp_pv, node_count);
+                null_eval = pvs(beta, beta+1, move_type, null_depth, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
                 board.make_null_move();
-                null_eval = pvs(alpha, beta, move_type, null_depth, temp_pv, node_count);
+                null_eval = pvs(beta, beta+1, move_type, null_depth, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
@@ -495,13 +487,13 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
             !moves[i].is_promotion() && !board.in_check((Side) board.get_side_to_move())) {
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count);
+                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
 
-                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count);
+                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count, true);
 
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
@@ -529,13 +521,13 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
             // PV SEARCH
             // Currently this improves search a lot in complex positions but slows down in the opening position
             // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count);
+            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count, true);
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
             nnue.reset_nnue(pieces_involved[1], this->board);
 
-            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count);
+            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count, true);
             // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
 
             board.unmake_move(moves[i]);
@@ -551,13 +543,13 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
                 // PV SEARCH
                 // Currently this improves search a lot in complex positions but slows down in the opening position
                 // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, temp_pv, node_count);
+                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, temp_pv, node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
 
-                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, temp_pv, node_count);
+                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, temp_pv, node_count, true);
                 // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
 
                 board.unmake_move(moves[i]);
@@ -657,13 +649,6 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, s
             any_valid_moves = true;
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
-            // std::cout << (unsigned int) white_king_square << (unsigned int) black_king_square << std::endl;
-            // std::cout << "MOVECOUNT " << move_count << std::endl;
-            // FIXME ugly hack
-            if (white_king_square >= 64 || black_king_square >= 64) {
-                board.unmake_move(moves[i]);
-                continue;
-            }
 
             int next_eval;
 

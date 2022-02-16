@@ -327,9 +327,8 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
 
 int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vector<Move> &pv, size_t* node_count, bool nullable) {
     if (depth <= 0) {
-        // int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
-       int curr_eval = evaluate.evaluate();
-       //
+        // int curr_eval = -quiesce(-beta, -alpha, pv, 0, node_count);
+        int curr_eval = evaluate.evaluate();
         // PV should only have size in the case where there is a non quiet position
         if (pv.size()) {
             NodeType type;
@@ -454,20 +453,20 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
         auto temp_beta = beta;
         
         // null move pruning
-        if (!board.in_check((Side) board.get_side_to_move()) && depth >= 2) {
+        if (!board.in_check((Side) board.get_side_to_move()) && depth >= 2 && nullable) {
             int null_eval; 
             size_t null_depth = depth >= 3 ? depth - 2 : 0;
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
                 board.make_null_move();
-                null_eval = pvs(beta, beta+1, move_type, null_depth, temp_pv, node_count, false);
+                null_eval = -pvs(-beta, -beta+1, move_type, null_depth, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
                 board.make_null_move();
-                null_eval = pvs(beta, beta+1, move_type, null_depth, temp_pv, node_count, false);
+                null_eval = -pvs(-beta, -beta+1, move_type, null_depth, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);

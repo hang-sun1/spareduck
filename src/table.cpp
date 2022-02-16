@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#define TABLE_BITS 25
+#define TABLE_BITS 16
 #define TABLE_LENGTH (1 << TABLE_BITS)
 #define INDEX_MASK (TABLE_LENGTH - 1)
 

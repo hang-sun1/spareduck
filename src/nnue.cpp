@@ -67,8 +67,8 @@ int NNUE::evaluate(size_t piece_count, Side side_to_move) {
         a1_to_move = a1_white_with_bias;
         a1_other = a1_black_with_bias;
     } else {
-        psqtw_to_move = wps;
-        psqtw_other = bps;
+        psqtw_to_move = bps;
+        psqtw_other = wps;
         a1_to_move = a1_black_with_bias;
         a1_other = a1_white_with_bias;
     }

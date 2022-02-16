@@ -9,6 +9,8 @@
 #include "../src/board.hpp"
 #include "../src/move.hpp"
 #include "../src/nnue.hpp"
+#include "../src/evaluate.hpp"
+#include "../src/search.hpp"
 #include "../magic-bits/include/magic_bits.hpp"
 
 using namespace std::chrono;
@@ -85,36 +87,43 @@ TEST_CASE("proper moves are generated", "[board]") {
     }
 
     SECTION("generates correct number of moves to certain depth") {
-        Board b(&attacks);
-        Board c = b;
-        auto the_move = b.get_moves()[4];
-        b.make_move(the_move);
-        the_move = b.get_moves()[0];
-        b.make_move(the_move);
-        the_move = b.get_moves()[9];
-        for (auto &m: b.get_moves()) {
-            Board a = b;
-            std::cout << m.origin_square_algebraic() << m.destination_square_algebraic() << std::endl;
-            a.moves = std::vector<Move> {m};
-            auto start = high_resolution_clock::now();
-            uint64_t count = perft(4, &a);
-            auto stop = high_resolution_clock::now();
-            auto duration = duration_cast<milliseconds>(stop - start);
-            std::cout << count << " nodes searched in " << duration.count() << " ms\n";
-            // std::cout << captures << " captures" << std::endl;
-        }
+        // Board b(&attacks);
+        // Board c = b;
+        // auto the_move = b.get_moves()[4];
+        // b.make_move(the_move);
+        // the_move = b.get_moves()[0];
+        // b.make_move(the_move);
+        // the_move = b.get_moves()[9];
+        // for (auto &m: b.get_moves()) {
+        //     Board a = b;
+        //     std::cout << m.origin_square_algebraic() << m.destination_square_algebraic() << std::endl;
+        //     a.moves = std::vector<Move> {m};
+        //     auto start = high_resolution_clock::now();
+        //     uint64_t count = perft(4, &a);
+        //     auto stop = high_resolution_clock::now();
+        //     auto duration = duration_cast<milliseconds>(stop - start);
+        //     std::cout << count << " nodes searched in " << duration.count() << " ms\n";
+        //     // std::cout << captures << " captures" << std::endl;
+        // }
         
-        auto start = high_resolution_clock::now();
-        uint64_t count = perft(4, &c);
-        auto stop = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(stop - start);
-        std::cout << count << " nodes searched in " << duration.count() << " ms\n";
-            std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
+        // auto start = high_resolution_clock::now();
+        // uint64_t count = perft(4, &c);
+        // auto stop = high_resolution_clock::now();
+        // auto duration = duration_cast<milliseconds>(stop - start);
+        // std::cout << count << " nodes searched in " << duration.count() << " ms\n";
+        //     std::cout << ((double) count / (double) duration.count() * 1000.0) << " nps" << std::endl;
 
 
-        REQUIRE(count == 197281);
+        // REQUIRE(count == 197281);
     }
 
+    SECTION("search works correctly") {
+        Board game_board(&attacks);
+        NNUE nnue; //(static_cast<Side>(game_board.get_side_to_move()));
+        Evaluate board_evaluate(game_board, nnue);
+        Search search_engine(game_board, board_evaluate, nnue);
+        search_engine.get_engine_move();
+    }
     // SECTION("fen parser works correctly") {
     //     Board a;
     //     Board b("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");

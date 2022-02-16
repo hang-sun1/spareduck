@@ -49,6 +49,8 @@ Move Search::get_engine_move() {
     }
     principal_variation.clear();
 
+    size_t node_count = 0;
+
     for (size_t depth = 1;; depth++) {
         std::cout << "depth: " << depth << std::endl;
         for (Move move : principal_variation) {
@@ -79,6 +81,8 @@ Move Search::get_engine_move() {
                 board.unmake_move(moves[i]);
                 continue;
             }
+            ++node_count; 
+
             valid_moves = true;
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
@@ -94,12 +98,12 @@ Move Search::get_engine_move() {
 
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv);
+                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
-                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv);
+                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count);
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
             }
@@ -124,14 +128,9 @@ Move Search::get_engine_move() {
             }
         }
 
-        //         return INT_MIN+1;
-        //     }
-        //     // this position is stalemate
-        //     return 0; 
-        //     // TODO: do something to handle mate or stalemate, and do it in the other places moves are made as well!!
-        // }
         std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << std::endl
                   << std::endl;
+        std::cout << "Nodes searched: " << node_count << std::endl;
     
     }
 
@@ -144,8 +143,8 @@ finish_search:
 
 int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     if (depth <= 0) {
-        int curr_eval = quiesce(alpha, beta, pv, 0);
-        // int curr_eval = evaluate.evaluate();
+        // int curr_eval = -quiesce(-alpha, -beta, pv, 0);
+        int curr_eval = evaluate.evaluate();
         // PV should only have size in the case where there is a non quiet position
         if (pv.size()) {
             NodeType type;
@@ -166,34 +165,34 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     int swap_count = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
-    if (t_position.has_value()) {
-        if (t_position->get_depth() >= depth) {
-            switch (t_position->get_type()) {
-                case NodeType::UPPER:
-                    if (t_position->get_eval() >= beta) {
-                        return t_position->get_eval();
-                    } else {
-                        beta = t_position->get_eval();
-                    }
-                    break;
-                case NodeType::LOWER:
-                    if (t_position->get_eval() <= alpha) {
-                        return alpha;
-                    } else {
-                        alpha = t_position->get_eval();
-                    }
-                    break;
-                default:
-                    return t_position->get_eval();
-                    break;
-            }
+    // std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
+    // if (t_position.has_value()) {
+    //     if (t_position->get_depth() >= depth) {
+    //         switch (t_position->get_type()) {
+    //             case NodeType::UPPER:
+    //                 if (t_position->get_eval() >= beta) {
+    //                     return t_position->get_eval();
+    //                 } else {
+    //                     beta = t_position->get_eval();
+    //                 }
+    //                 break;
+    //             case NodeType::LOWER:
+    //                 if (t_position->get_eval() <= alpha) {
+    //                     return alpha;
+    //                 } else {
+    //                     alpha = t_position->get_eval();
+    //                 }
+    //                 break;
+    //             default:
+    //                 return t_position->get_eval();
+    //                 break;
+    //         }
 
-            if (alpha >= beta) {
-                return t_position->get_eval();
-            }
-        }
-    }
+    //         if (alpha >= beta) {
+    //             return t_position->get_eval();
+    //         }
+    //     }
+    // }
 
     auto unsorted_moves = board.get_moves();
     int move_count = unsorted_moves.size();
@@ -207,16 +206,16 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     std::vector<Move> moves = sort_moves(unsorted_moves);
 
     // move ordering: transposition table first
-    if (t_position.has_value()) {
-        for (int i = 0; i < move_count; i++) {
-            if (moves[i] == t_position->get_move()) {
-                moves[i] = moves[0];
-                moves[0] = t_position->get_move();
-                swap_count++;
-                break;
-            }
-        }
-    }
+    // if (t_position.has_value()) {
+    //     for (int i = 0; i < move_count; i++) {
+    //         if (moves[i] == t_position->get_move()) {
+    //             moves[i] = moves[0];
+    //             moves[0] = t_position->get_move();
+    //             swap_count++;
+    //             break;
+    //         }
+    //     }
+    // }
 
     // futility pruning
     bool is_futile = false;
@@ -322,11 +321,10 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     return best_eval;
 }
 
-int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vector<Move> &pv) {
+int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vector<Move> &pv, size_t* node_count) {
     if (depth <= 0) {
-        // int curr_eval = quiesce(alpha, beta, pv, 0);
-        int curr_eval = evaluate.evaluate();
-        // int curr_eval = evaluate.evaluate();
+        // int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
+       int curr_eval = evaluate.evaluate();
         // PV should only have size in the case where there is a non quiet position
         if (pv.size()) {
             NodeType type;
@@ -347,34 +345,34 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
     int swap_count = 0;  // move swap counter
 
     // Check transposition table for current position.
-    // std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
-    // if (t_position.has_value()) {
-    //     if (t_position->get_depth() >= depth) {
-    //         switch (t_position->get_type()) {
-    //             case NodeType::UPPER:
-    //                 if (t_position->get_eval() >= beta) {
-    //                     return t_position->get_eval();
-    //                 } else {
-    //                     beta = t_position->get_eval();
-    //                 }
-    //                 break;
-    //             case NodeType::LOWER:
-    //                 if (t_position->get_eval() <= alpha) {
-    //                     return alpha;
-    //                 } else {
-    //                     alpha = t_position->get_eval();
-    //                 }
-    //                 break;
-    //             default:
-    //                 return t_position->get_eval();
-    //                 break;
-    //         }
+    std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
+    if (t_position.has_value()) {
+        if (t_position->get_depth() >= depth) {
+            switch (t_position->get_type()) {
+                case NodeType::UPPER:
+                    if (t_position->get_eval() >= beta) {
+                        return t_position->get_eval();
+                    } else {
+                        beta = t_position->get_eval();
+                    }
+                    break;
+                case NodeType::LOWER:
+                    if (t_position->get_eval() <= alpha) {
+                        return alpha;
+                    } else {
+                        alpha = t_position->get_eval();
+                    }
+                    break;
+                default:
+                    return t_position->get_eval();
+                    break;
+            }
 
-    //         if (alpha >= beta) {
-    //             return t_position->get_eval();
-    //         }
-    //     }
-    // }
+            if (alpha >= beta) {
+                return t_position->get_eval();
+            }
+        }
+    }
 
     auto unsorted_moves = board.get_moves();
     int move_count = unsorted_moves.size();
@@ -385,19 +383,19 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
     // }
 
     // sort moves
-    std::vector<Move> moves = sort_moves(unsorted_moves);
-
+    // std::vector<Move> moves = sort_moves(unsorted_moves);
+    std::vector<Move> moves = unsorted_moves;
     // move ordering: transposition table first
-    // if (t_position.has_value()) {
-    //     for (int i = 0; i < move_count; i++) {
-    //         if (moves[i] == t_position->get_move()) {
-    //             moves[i] = moves[0];
-    //             moves[0] = t_position->get_move();
-    //             swap_count++;
-    //             break;
-    //         }
-    //     }
-    // }
+    if (t_position.has_value()) {
+        for (int i = 0; i < move_count; i++) {
+            if (moves[i] == t_position->get_move()) {
+                moves[i] = moves[0];
+                moves[0] = t_position->get_move();
+                swap_count++;
+                break;
+            }
+        }
+    }
 
     // futility pruning
     bool is_futile = false;
@@ -433,6 +431,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
             board.unmake_move(moves[i]);
             continue;
         }
+        *node_count += 1;
         any_valid_moves = true;
         uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
         uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
@@ -448,6 +447,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
         auto temp_beta = beta;
         if (child > 0) {
             beta = alpha;
+            alpha -= 1;
         }
 
         if (pieces_involved[0].value() != KING) {
@@ -455,32 +455,35 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
             // PV SEARCH
             // Currently this improves search a lot in complex positions but slows down in the opening position
             // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv);
+            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count);
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
             nnue.reset_nnue(pieces_involved[1], this->board);
 
-            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv);
+            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count);
             // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
 
             board.unmake_move(moves[i]);
             nnue.reset_nnue(pieces_involved[1], this->board);
         }
+        alpha = temp_alpha;
+        beta = temp_beta;
 
         if (child > 0 && next_eval > alpha && next_eval < beta) {
+            board.make_move(moves[i]);
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
                 // PV SEARCH
                 // Currently this improves search a lot in complex positions but slows down in the opening position
                 // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-                next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv);
+                next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
 
-                next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv);
+                next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count);
                 // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
 
                 board.unmake_move(moves[i]);
@@ -525,12 +528,12 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
     }
 
     // Add new best move to hash table
-    t_table.put(board, pv.front(), best_eval, move_type, static_cast<uint8_t>(depth));
+    // t_table.put(board, pv.front(), best_eval, move_type, static_cast<uint8_t>(depth));
 
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
+int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, size_t* node_count) {
     if (q_depth > 5) {
         return alpha;
     }
@@ -575,6 +578,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 board.unmake_move(moves[i]);
                 continue;
             }
+            *node_count += 1;
             any_valid_moves = true;
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
@@ -590,12 +594,12 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
 
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
-                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
             }
@@ -608,14 +612,15 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth) {
                 for (int j = 0; j < temp_pv.size(); j++) {
                     pv.push_back(temp_pv[j]);
                 }
+                
+                if (next_eval >= beta) {
+                    return next_eval;
+                }
 
                 if (next_eval > alpha) {
                     alpha = next_eval;
                 }
 
-                if (next_eval >= beta) {
-                    return beta;
-                }
             }
         }
         // } else  {

@@ -428,19 +428,6 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
     move_type = NodeType::LOWER;
     bool any_valid_moves = false;
 
-    // null move pruning
-    // if (!board.in_check((Side) board.get_side_to_move()) ) {
-    //     board.make_null_move();
-    //     // nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-    //     auto null_eval_depth = depth > 1 ? depth -2 : 0;
-    //     auto null_eval = -pvs(-beta, -alpha, move_type, null_eval_depth, temp_pv, node_count);
-    //     if (null_eval >= beta) {
-    //         return null_eval;
-    //     }
-    //     board.make_null_move();
-    //     // nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-    //     // reset the game to the original state by reforfeiting the turn
-    // }
 
 
     int child = 0;
@@ -470,18 +457,43 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
         assert(black_king_square < 64);
 
         int next_eval;
+        
         auto temp_alpha = alpha;
         auto temp_beta = beta;
         
+        // null move pruning
+        if (!board.in_check((Side) board.get_side_to_move()) && depth >= 3) {
+            int null_eval; 
+            if (pieces_involved[0].value() != KING) {
+                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+                board.make_null_move();
+                null_eval = -pvs(-alpha-1, -alpha, move_type, depth - 3, temp_pv, node_count);
+                board.unmake_move(Move(0, 0, MoveType::QUIET));
+                board.unmake_move(moves[i]);
+                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
+            } else {
+                nnue.reset_nnue(pieces_involved[1], this->board);
+                board.make_null_move();
+                null_eval = -pvs(-alpha-1, -alpha, move_type, depth - 3, temp_pv, node_count);
+                board.unmake_move(Move(0, 0, MoveType::QUIET));
+                board.unmake_move(moves[i]);
+                nnue.reset_nnue(pieces_involved[1], this->board);
+            } 
+
+            if (null_eval >= beta) {
+                next_eval = null_eval;
+                goto FINISH;
+            } else {
+                board.make_move(moves[i]);
+            }
+        }
+
         // late move reduction  
         moves_searched += 1;
         if (moves_searched >= 4 && depth >= 3 && !moves[i].is_capture() &&
             !moves[i].is_promotion() && !board.in_check((Side) board.get_side_to_move())) {
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                // PV SEARCH
-                // Currently this improves search a lot in complex positions but slows down in the opening position
-                // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
                 next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
@@ -489,7 +501,6 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
                 nnue.reset_nnue(pieces_involved[1], this->board);
 
                 next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count);
-                // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
 
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);

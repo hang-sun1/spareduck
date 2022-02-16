@@ -420,7 +420,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
         this->side_to_move = static_cast<Side>(other_move);
         en_passant_target = 65;
         this->moves = generate_moves();
-        return {std::nullopt, std::nullopt };
+        return {std::make_optional(PAWN), std::nullopt };
     }
 
     uint64_t move_bitboard = 0;
@@ -1017,4 +1017,5 @@ bool Board::make_null_move() {
     make_move(Move(0, 0, MoveType::QUIET));
     moves = generate_moves();
     null_move = false;
+    return true;
 }

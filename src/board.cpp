@@ -2,6 +2,7 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -17,10 +18,12 @@
 #include "piece.hpp"
 
 #include "../magic-bits/include/magic_bits.hpp"
+#include "side.hpp"
 
 using std::uint64_t;
 
 Board::Board(magic_bits::Attacks* att) {
+    this->null_move = false;
     this->attacks = att;
     this->history = std::stack<History>();
     this->all_per_side[0] = 0xffff;
@@ -58,6 +61,7 @@ Board::Board(magic_bits::Attacks* att) {
 }
 
 Board::Board(std::string fen, magic_bits::Attacks* att) {
+    this->null_move = false;
     this->attacks = att;
     this->history = std::stack<History>();
     piece_map_vec.reserve(50);
@@ -412,6 +416,12 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
     this->history.push(history);
     size_t current_move = static_cast<size_t>(side_to_move);
     size_t other_move = 1 - current_move;
+    if (null_move) {
+        this->side_to_move = static_cast<Side>(other_move);
+        en_passant_target = 65;
+        this->moves = generate_moves();
+        return {std::nullopt, std::nullopt };
+    }
 
     uint64_t move_bitboard = 0;
     if (move.type() == MoveType::DOUBLE_PAWN_PUSH) {
@@ -570,7 +580,6 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
 
     
     this->side_to_move = static_cast<Side>(other_move);
-    //  TODO: MOVE THIS UNTIL MOVE LEGALITY IS VERIFIED TO SAVE TIME ON MOVEGEN
     this->moves = generate_moves();
 
     auto cap = captured >= 0 ? std::make_optional(piece_idents[captured]) : std::nullopt;
@@ -1001,4 +1010,11 @@ std::vector<std::string> Board::get_moves_algebraic() {
         l_moves.at(j++) = moves[i].destination_square_algebraic();
     }
     return l_moves;
+}
+
+bool Board::make_null_move() {
+    null_move = true;
+    make_move(Move(0, 0, MoveType::QUIET));
+    moves = generate_moves();
+    null_move = false;
 }

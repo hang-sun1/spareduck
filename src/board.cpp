@@ -418,6 +418,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
     size_t other_move = 1 - current_move;
     if (null_move) {
         this->side_to_move = static_cast<Side>(other_move);
+        hash ^= hash_helper[13][0];
         en_passant_target = 65;
         this->moves = generate_moves();
         return {std::make_optional(PAWN), std::nullopt };
@@ -434,6 +435,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
     } else if (move.type() == MoveType::EN_PASSANT) {
         int diff = current_move ? 8 : -8;
         pawns[other_move] &= ~(1ULL << uint8_t((int) en_passant_target + diff));
+        hash ^= hash_helper[2*PAWN+other_move][uint8_t((int) en_passant_target + diff)];
         en_passant_target = 65;
     } else {
         en_passant_target = 65;
@@ -572,6 +574,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
 
     // attack_maps[current_move] = 0;
     all_per_side[current_move] = 0;
+    hash ^= hash_helper[13][0];
     all_per_side[other_move] = 0;
     all_per_side[current_move] = rooks[current_move] | bishops[current_move] | knights[current_move] |
                                  queens[current_move] | kings[current_move] | pawns[current_move];
@@ -607,7 +610,6 @@ void Board::unmake_move(Move move) {
     this->queens = pop.queens;
     this->kings = pop.kings;
     this->side_to_move = pop.side_to_move;
-    // this->attack_maps = pop.attack_maps;
     this->long_castle_rights = pop.long_castle_rights;
     this->short_castle_rights = pop.short_castle_rights;
     this->moves = pop.moves;

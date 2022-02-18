@@ -23,8 +23,12 @@ using namespace emscripten;
 magic_bits::Attacks attacks;
 Board game_board(&attacks);
 NNUE nnue; //(static_cast<Side>(game_board.get_side_to_move()));
-Evaluate board_evaluate(game_board, nnue);
+Evaluate board_evaluate(game_board, nnue, false);
+Evaluate cheap_evaluate(game_board, nnue, true);
 Search search_engine(game_board, board_evaluate, nnue);
+Search weak_engine(game_board, cheap_evaluate, nnue);
+
+bool strong_to_move = true;
 
 //dummy comment
 
@@ -113,6 +117,28 @@ std::vector<std::string> get_moves() {
 std::string get_engine_move() {
     //Search test = Search(game_board);
     Move move = search_engine.get_engine_move();
+    // game_board.make_move(move);
+    auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+    auto pieces_involved = game_board.make_move(move);
+    uint8_t white_king_square = __builtin_ffsll(game_board.get_kings()[0]) - 1;
+    uint8_t black_king_square = __builtin_ffsll(game_board.get_kings()[1]) - 1;
+    if (pieces_involved[0].value() != KING) {
+        nnue.update_non_king_move(move, pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+    } else {
+        nnue.reset_nnue(pieces_involved[1], game_board);
+    }
+    return move.origin_square_algebraic() + move.destination_square_algebraic();
+}
+
+std::string play_engines() {
+    //Search test = Search(game_board);
+    Move move;
+    if (strong_to_move) {
+        move = search_engine.get_engine_move();
+    } else {
+        move = weak_engine.get_engine_move();
+    }
+    strong_to_move = !strong_to_move;
     // game_board.make_move(move);
     auto side = game_board.get_side_to_move() ? Side::BLACK : Side::WHITE;
     auto pieces_involved = game_board.make_move(move);
@@ -237,6 +263,7 @@ EMSCRIPTEN_BINDINGS(module) {
     register_vector<Move>("vector<Move>");
     function("test_position", &test_position);
     function("start_from_position", &start_from_position);
+    function("play_engines", &play_engines);
 
     // MoveType and Move bindings
     enum_<MoveType>("MoveType")

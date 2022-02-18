@@ -126,7 +126,7 @@ short pst_black[6][8][8] = {
 static const short piece[6] = {100, 300, 300, 500, 900, 30000};
 
 // Evaluation constructor
-Evaluate::Evaluate(Board& start_board, NNUE& nnue) : board(start_board), nnue(nnue) {
+Evaluate::Evaluate(Board& start_board, NNUE& nnue, bool is_cheap) : board(start_board), nnue(nnue), is_cheap(is_cheap) {
     // this->board = start_board;
 }
 
@@ -159,7 +159,9 @@ int Evaluate::evaluate_cheap() const {
 
 // More expensive evaluation that calculates the score of the position based on the pst
 int Evaluate::evaluate() const {
-    // return evaluate_cheap();
+    if (is_cheap) {
+        return evaluate_cheap();
+    }
     int value = 0;
 
     auto pawns = board.get_pawns();

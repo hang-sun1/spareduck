@@ -87,7 +87,8 @@ export function playOtherSide(ground, chess) {
 }
 
 // play against ai
-export function aiPlay(ground, chess) {
+export function aiPlay(ground, chess, self_play) {
+  console.log('we are here')
   return async (from, to) => {
     let promotion = checkPromotion(ground, to); // returns false if no promote else q,r,n,b
     from = algebraicToIndex(from);
@@ -102,20 +103,25 @@ export function aiPlay(ground, chess) {
     console.log('ai making move for', await toColor(chess));
     setTimeout(async () => {
       console.time('get_engine_move');
-      const ai_move = await chess.get_engine_move();
+      const ai_move = self_play ? await chess.play_engines() : await chess.get_engine_move();
       console.timeEnd('get_engine_move');
 
       let ai_from = ai_move.substring(0, 2);
       let ai_to = ai_move.substring(2);
       ground.move(ai_from, ai_to);
-      ground.set({
-        turnColor: await toColor(chess),
-        movable: {
-          color: await toColor(chess),
-          dests: await toDests(chess),
-        },
-      });
-      ground.playPremove();
+      if (!self_play) {
+        ground.set({ turnColor: await toColor(chess),
+          movable: {
+            color: await toColor(chess),
+            dests: await toDests(chess),
+          },
+        });
+        ground.playPremove();
+      } else {
+        ground.set({
+          turnColor: await toColor(chess),
+        })
+      }
     }, 250);
   };
 }

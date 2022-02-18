@@ -1,5 +1,6 @@
 #include "search.hpp"
 #include "evaluate.hpp"
+#include "move.hpp"
 #include "table_entry.hpp"
 
 #include <assert.h>
@@ -30,7 +31,7 @@ Move Search::get_engine_move() {
     Move final_move;
 
     auto unsorted_moves = board.get_moves();
-    std::vector<Move> moves = sort_moves(unsorted_moves);
+    std::vector<Move> moves = sort_moves(unsorted_moves, 0);
 
     // print moves
     for (auto &m : moves) {
@@ -102,12 +103,12 @@ Move Search::get_engine_move() {
 
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count, true);
+                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, 1, temp_pv, &node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
-                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, temp_pv, &node_count, true);
+                next_eval = -pvs(-100000, 100000, NodeType::LOWER, depth, 1, temp_pv, &node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
             }
@@ -131,6 +132,10 @@ Move Search::get_engine_move() {
                 goto finish_search;
             }
         }
+        // if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() > SEARCH_TIME) {
+        //     final_move = best_move;
+        //     goto finish_search;
+        // }
 
         std::cout << "time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << std::endl
                   << std::endl;
@@ -207,7 +212,7 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     // }
 
     // sort moves
-    std::vector<Move> moves = sort_moves(unsorted_moves);
+    std::vector<Move> moves = sort_moves(unsorted_moves, 0);
 
     // move ordering: transposition table first
     // if (t_position.has_value()) {
@@ -325,9 +330,9 @@ int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
     return best_eval;
 }
 
-int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vector<Move> &pv, size_t* node_count, bool nullable) {
+int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t ply, std::vector<Move> &pv, size_t* node_count, bool nullable) {
     if (depth <= 0) {
-        // int curr_eval = -quiesce(-beta, -alpha, pv, 0, node_count);
+        // int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
         int curr_eval = evaluate.evaluate();
         // PV should only have size in the case where there is a non quiet position
         if (pv.size()) {
@@ -387,8 +392,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
     // }
 
     // sort moves
-    // std::vector<Move> moves = sort_moves(unsorted_moves);
-    std::vector<Move> moves = unsorted_moves;
+    std::vector<Move> moves = sort_moves(unsorted_moves, ply);
     // move ordering: transposition table first
     if (t_position.has_value()) {
         for (int i = 0; i < move_count; i++) {
@@ -431,6 +435,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
     for (int i = 0; i < move_count; i++) {
         auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
         auto pieces_involved = board.make_move(moves[i]);
+        auto is_in_check_before_move = board.in_check((Side) board.get_side_to_move());
         if (!board.is_pos_valid(moves[i])) {
             board.unmake_move(moves[i]);
             continue;
@@ -452,47 +457,49 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
         auto temp_alpha = alpha;
         auto temp_beta = beta;
         
-        // null move pruning
-        if (!board.in_check((Side) board.get_side_to_move()) && depth >= 2 && nullable) {
+        
+        // null move pruning (move this up before the move is actually made i'm dumb otherwise it makes no sense)
+        if (moves_searched < 1 && !board.in_check((Side) board.get_side_to_move()) && depth >= 3 && nullable) {
             int null_eval; 
-            size_t null_depth = depth >= 3 ? depth - 2 : 0;
+            board.unmake_move(moves[i]);
+            size_t null_depth = depth-3;
             if (pieces_involved[0].value() != KING) {
-                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+                // nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
                 board.make_null_move();
-                null_eval = -pvs(-beta, -beta+1, move_type, null_depth, temp_pv, node_count, false);
+                null_eval = -pvs(-beta, -beta+1, move_type, null_depth, ply+1, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
-                board.unmake_move(moves[i]);
-                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
+                // board.unmake_move(moves[i]);
+                // nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
-                nnue.reset_nnue(pieces_involved[1], this->board);
+                // nnue.reset_nnue(pieces_involved[1], this->board);
                 board.make_null_move();
-                null_eval = -pvs(-beta, -beta+1, move_type, null_depth, temp_pv, node_count, false);
+                null_eval = -pvs(-beta, -beta+1, move_type, null_depth, ply+1, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
-                board.unmake_move(moves[i]);
-                nnue.reset_nnue(pieces_involved[1], this->board);
+                // board.unmake_move(moves[i]);
+                // nnue.reset_nnue(pieces_involved[1], this->board);
             } 
 
             if (null_eval >= beta) {
-                next_eval = null_eval;
-                goto FINISH;
+                return null_eval;
+                // goto FINISH;
             } else {
                 board.make_move(moves[i]);
             }
         }
+        moves_searched += 1;
 
         // late move reduction  
-        moves_searched += 1;
         if (moves_searched >= 4 && depth >= 3 && !moves[i].is_capture() &&
             !moves[i].is_promotion() && !board.in_check((Side) board.get_side_to_move())) {
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count, true);
+                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, ply+1, temp_pv, node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
 
-                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, temp_pv, node_count, true);
+                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, ply+1, temp_pv, node_count, true);
 
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
@@ -520,13 +527,13 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
             // PV SEARCH
             // Currently this improves search a lot in complex positions but slows down in the opening position
             // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count, true);
+            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, ply+1, temp_pv, node_count, true);
             board.unmake_move(moves[i]);
             nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
         } else {
             nnue.reset_nnue(pieces_involved[1], this->board);
 
-            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, temp_pv, node_count, true);
+            next_eval = -pvs(-beta, -alpha, move_type, depth - 1, ply+1, temp_pv, node_count, true);
             // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
 
             board.unmake_move(moves[i]);
@@ -542,13 +549,13 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
                 // PV SEARCH
                 // Currently this improves search a lot in complex positions but slows down in the opening position
                 // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, temp_pv, node_count, true);
+                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, ply+1, temp_pv, node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
 
-                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, temp_pv, node_count, true);
+                next_eval = -pvs(-beta, -next_eval, move_type, depth - 1, ply+1, temp_pv, node_count, true);
                 // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
 
                 board.unmake_move(moves[i]);
@@ -556,7 +563,6 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
             }
 
         }
-
         FINISH:
         // update best eval
         if (next_eval > best_eval) {
@@ -576,6 +582,14 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
 
             // return position if better than current max
             if (best_eval >= beta) {
+                if (moves[i].type() == MoveType::QUIET || moves[i].type() == MoveType::DOUBLE_PAWN_PUSH) {
+                    if (killers[ply][0].origin_square() != moves[i].origin_square()
+                        || killers[ply][0].destination_square() != moves[i].destination_square()
+                        || killers[ply][0].type() != moves[i].type()) {
+                            killers[ply][1] = killers[ply][0];
+                            killers[ply][0] = moves[i];
+                    }
+                }
                 move_type = NodeType::UPPER;
                 break;
             }
@@ -599,118 +613,122 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, std::vect
     return best_eval;
 }
 
-int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, size_t* node_count) {
-    if (q_depth > 5) {
-        return alpha;
-    }
+// int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, size_t* node_count) {
+//     // if (q_depth > 5) {
+//     //     return evaluate.evaluate();
+//     // }
 
-    // TODO: handle loud positions
-    if (!board.in_check((Side) board.get_side_to_move())) {
-        int stand_pat = evaluate.evaluate();
-        if (stand_pat >= beta) {
-            return stand_pat;
-        }
+//     // TODO: handle loud positions
+//     // if (!board.in_check((Side) board.get_side_to_move())) {
+//         int stand_pat = evaluate.evaluate();
+//         if (stand_pat >= beta) {
+//             // return stand_pat;
+//             return beta;
+//         }
 
-        // Delta pruning - TODO: handle promotion
-        const int DELTA = 900;  // queen / max material swing value
-        if (stand_pat + DELTA < alpha) {
-            return alpha;
-        }
+//         // Delta pruning - TODO: handle promotion
+//         const int DELTA = 900;  // queen / max material swing value
+//         if (stand_pat + DELTA < alpha) {
+//             return alpha;
+//         }
 
-        // Null move assumption
-        if (stand_pat > alpha) {
-            alpha = stand_pat;
-        }
-    }
+//         // Null move assumption
+//         if (stand_pat > alpha) {
+//             alpha = stand_pat;
+//         }
+//     // }
 
-    //generate all moves
-    auto unsorted_moves = board.get_moves();
-    // if (unsorted_moves.size() == 0) {
-    //     return evaluate.evaluate();
-    // }
+//     //generate all moves
+//     auto unsorted_moves = board.get_moves();
+//     // if (unsorted_moves.size() == 0) {
+//     //     return evaluate.evaluate();
+//     // }
 
-    // sort moves
-    std::vector<Move> moves = sort_moves(unsorted_moves);
-    std::vector<Move> temp_pv;
-    int best_eval = INT_MIN;
-    bool any_valid_moves = false;
+//     // sort moves
+//     std::vector<Move> moves = sort_moves(unsorted_moves);
+//     std::vector<Move> temp_pv;
+//     int best_eval = INT_MIN;
+//     bool any_valid_moves = false;
 
-    for (size_t i = 0; i < moves.size(); i++) {
-        // skip if move isn't capture
-        if (moves[i].is_capture() || board.in_check((Side) board.get_side_to_move())) {  // || moves[i].is_check()
-            auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
-            auto pieces_involved = board.make_move(moves[i]);
-            if (!board.is_pos_valid(moves[i])) {
-                board.unmake_move(moves[i]);
-                continue;
-            }
-            *node_count += 1;
-            any_valid_moves = true;
-            uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
-            uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+//     for (size_t i = 0; i < moves.size(); i++) {
+//         // skip if move isn't capture
+//         if (moves[i].is_capture() || board.in_check((Side) board.get_side_to_move())) {  // || moves[i].is_check()
+//             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+//             auto pieces_involved = board.make_move(moves[i]);
+//             if (!board.is_pos_valid(moves[i])) {
+//                 board.unmake_move(moves[i]);
+//                 continue;
+//             }
+//             *node_count += 1;
+//             any_valid_moves = true;
+//             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
+//             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
 
-            int next_eval;
+//             int next_eval;
 
-            if (pieces_involved[0].value() != KING) {
-                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
-                board.unmake_move(moves[i]);
-                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
-            } else {
-                nnue.reset_nnue(pieces_involved[1], this->board);
-                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
-                board.unmake_move(moves[i]);
-                nnue.reset_nnue(pieces_involved[1], this->board);
-            }
+//             if (pieces_involved[0].value() != KING) {
+//                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+//                 next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
+//                 board.unmake_move(moves[i]);
+//                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
+//             } else {
+//                 nnue.reset_nnue(pieces_involved[1], this->board);
+//                 next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
+//                 board.unmake_move(moves[i]);
+//                 nnue.reset_nnue(pieces_involved[1], this->board);
+//             }
 
-            if (next_eval > best_eval) {
-                best_eval = next_eval;
+//             // if (next_eval > best_eval) {
+//             //     best_eval = next_eval;
 
-                pv.clear();  // k1rr4/8/8/8/3R4/3R4/8/7K b - - 0 1
-                pv.push_back(moves[i]);
-                for (int j = 0; j < temp_pv.size(); j++) {
-                    pv.push_back(temp_pv[j]);
-                }
+//             //     pv.clear();  // k1rr4/8/8/8/3R4/3R4/8/7K b - - 0 1
+//             //     pv.push_back(moves[i]);
+//             //     for (int j = 0; j < temp_pv.size(); j++) {
+//             //         pv.push_back(temp_pv[j]);
+//             //     }
                 
-                if (next_eval >= beta) {
-                    return next_eval;
-                }
+//                 if (next_eval >= beta) {
+//                     return next_eval;
+//                 }
 
-                if (next_eval > alpha) {
-                    alpha = next_eval;
-                }
+//                 if (next_eval > alpha) {
+//                     alpha = next_eval;
+//                 }
+// // 
+//             // }
+//         } 
+//         // else  {
+//         //     board.make_move(moves[i]);
+//         //     if (!board.is_pos_valid(moves[i])) {
+//         //         board.unmake_move(moves[i]);
+//         //         continue;
+//         //     }
+//         //     board.unmake_move(moves[i]);
+//         //     any_valid_moves = true;
+//         // }
+//     }
+//     // if (!any_valid_moves) {
+//     //     // this position is checkmate
+//     //     if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
+//     //         return -99999;
+//     //     }
+//     //     // this position is stalemate
+//     //     return 0; 
+//     // }
 
-            }
-        }
-        // } else  {
-        //     board.make_move(moves[i]);
-        //     if (!board.is_pos_valid(moves[i])) {
-        //         board.unmake_move(moves[i]);
-        //         continue;
-        //     }
-        //     any_valid_moves = true;
-        // }
-    }
-    // if (!any_valid_moves) {
-    //     // this position is checkmate
-    //     if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
-    //         return INT_MIN+1;
-    //     }
-    //     // this position is stalemate
-    //     return 0; 
-    // }
-
-    return alpha;
-}
+//     return alpha;
+// }
 
 // bucket sorting captures using Most Valuable Victim - Least Valuable Aggressor
-std::vector<Move> Search::sort_moves(std::vector<Move> &moves) {
+std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {
     // 400-800
     std::vector<Move> high;
     // 200-300
     std::vector<Move> mid;
     // 0 - 100
     std::vector<Move> low;
+
+    std::vector<Move> killer_moves;
     // -100 - -300
     std::vector<Move> lower;
     // < -300
@@ -739,7 +757,17 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves) {
                 lowest.push_back(moves[i]);
             }
         } else {
-            others.push_back(moves[i]);
+            if (killers[ply][0].origin_square() != moves[i].origin_square()
+                || killers[ply][0].destination_square() != moves[i].destination_square()
+                || killers[ply][0].type() != moves[i].type()) {
+                    killer_moves.push_back(moves[i]);
+            } else if (killers[ply][1].origin_square() != moves[i].origin_square()
+                || killers[ply][1].destination_square() != moves[i].destination_square()
+                || killers[ply][1].type() != moves[i].type()) {
+                    killer_moves.push_back(moves[i]);
+            } else {
+                others.push_back(moves[i]);
+            }
         }
     }
 
@@ -748,6 +776,7 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves) {
     sorted_moves.insert(sorted_moves.end(), high.begin(), high.end());
     sorted_moves.insert(sorted_moves.end(), mid.begin(), mid.end());
     sorted_moves.insert(sorted_moves.end(), low.begin(), low.end());
+    sorted_moves.insert(sorted_moves.end(), killer_moves.begin(), killer_moves.end());
     sorted_moves.insert(sorted_moves.end(), others.begin(), others.end());
     sorted_moves.insert(sorted_moves.end(), lower.begin(), lower.end());
     sorted_moves.insert(sorted_moves.end(), lowest.begin(), lowest.end());

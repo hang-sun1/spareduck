@@ -26,6 +26,11 @@ class EngineWorker {
   get_engine_move() {
     return this._chess.get_engine_move();
   }
+
+  play_engines() {
+    return this._chess.play_engines();
+  }
+
   get_principal_variation() {
     let pv = this._chess.get_principal_variation();
     let pv_list = new Array(pv.size());

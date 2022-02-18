@@ -11,10 +11,11 @@ const data = require('./db/db');
 */
 const init = async (init_config = {}) => {
   // combine fixed params
-  const { fen, side, playAi } = {
+  const { fen, side, playAi, engines_only} = {
     fen: false,
     side: 'white',
     playAi: true,
+    engines_only: false,
     //
     ...init_config,
   };
@@ -56,33 +57,56 @@ const init = async (init_config = {}) => {
   );
 
   let after = playAi ? aiPlay : playOtherSide;
-  ground.set({
-    movable: {
-      events: {
-        after: after(ground, engine_worker),
-      },
-    },
-  });
-
-  if (side === 'black') {
-    const open_book = [
-      ['e2', 'e4'],
-      ['d2', 'd4'],
-      ['c2', 'c4'],
-      ['g1', 'f3'],
-      ['a2', 'a4'],
-    ];
-    const open_move = open_book[Math.floor(Math.random() * open_book.length)];
-    await engine_worker.make_move(open_move[0], open_move[1], false, 1);
-    ground.move(open_move[0], open_move[1]);
+  if (!engines_only) {
     ground.set({
-      turnColor: await toColor(engine_worker),
       movable: {
-        color: await toColor(engine_worker),
-        dests: await toDests(engine_worker),
+        events: {
+          after: after(ground, engine_worker, false),
+        },
       },
     });
   }
+
+  if (engines_only) {
+    ground.set( {
+      movable: {
+        color: undefined,
+      },
+    })
+
+    setInterval(async () => {
+      console.time('get_engine_move');
+      const ai_move = await engine_worker.play_engines();
+      console.timeEnd('get_engine_move');
+
+      let ai_from = ai_move.substring(0, 2);
+      let ai_to = ai_move.substring(2);
+      ground.move(ai_from, ai_to);
+      ground.set({
+        turnColor: await toColor(engine_worker),
+      });
+    }, 3500);
+  }
+
+  // if (side === 'black') {
+  //   const open_book = [
+  //     ['e2', 'e4'],
+  //     ['d2', 'd4'],
+  //     ['c2', 'c4'],
+  //     ['g1', 'f3'],
+  //     ['a2', 'a4'],
+  //   ];
+  //   const open_move = open_book[Math.floor(Math.random() * open_book.length)];
+  //   await engine_worker.make_move(open_move[0], open_move[1], false, 1);
+  //   ground.move(open_move[0], open_move[1]);
+  //   ground.set({
+  //     turnColor: await toColor(engine_worker),
+  //     movable: {
+  //       color: await toColor(engine_worker),
+  //       dests: await toDests(engine_worker),
+  //     },
+  //   });
+  // }
 
   // initialize buttons
   init_buttons(engine_worker, worker);
@@ -133,7 +157,7 @@ const init_buttons = (engine_worker, worker) => {
   let handle_self = () => {
     worker.terminate();
     destroy_buttons({ playAi: false });
-    init();
+    init({ playAi: false });
   };
   document.getElementById('self-button').addEventListener('click', handle_self);
 
@@ -153,6 +177,16 @@ const init_buttons = (engine_worker, worker) => {
     run_tests(engine_worker);
   };
   document.getElementById('test-button').addEventListener('click', handle_test);
+  
+  let handle_engines_vs_engines = () => {
+    destroy_buttons();
+    worker.terminate();
+    destroy_buttons();
+    const default_fen =
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0';
+    init({ engines_only: true , fen: prompt('Input FEN', default_fen)});
+  };
+  document.getElementById('engine-self-play-button').addEventListener('click', handle_engines_vs_engines);
 
   // remove button listeners
   const destroy_buttons = () => {
@@ -171,6 +205,9 @@ const init_buttons = (engine_worker, worker) => {
     document
       .getElementById('test-button')
       .removeEventListener('click', handle_test);
+    document
+      .getElementById('engine-self-play-button')
+      .removeEventListener('click', handle_engines_vs_engines);
   };
 };
 

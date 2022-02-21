@@ -25,7 +25,7 @@ void Table::put(const Board& position, const TableEntry entry) {
     return;
 }
 
-void Table::put(const Board& position, Move move, int16_t eval, NodeType type, uint8_t depth) {
+void Table::put(const Board& position, Move move, int32_t eval, NodeType type, uint8_t depth) {
     uint64_t hash = position.get_hash();
     uint32_t hash_index = hash & INDEX_MASK;
     uint32_t hash_upper = hash >> TABLE_BITS;
@@ -72,11 +72,12 @@ std::vector<Move> Table::get_variation(Board& position) {
     std::optional<TableEntry> node = this->get(position);
     while (node && count < 5) {  // RANDOMLY CHOSEN PV DEPTH CUTOFF
         count++;
-        std::cout << node->get_move() << std::endl;
+        std::cout << node->get_move() << " ";
         variation.push_back(node->get_move());
         position.make_move(node->get_move());
         node = this->get(position);
     }
+    std::cout << std::endl;
 
     while (count--) {
         position.unmake_move(Move());
@@ -88,7 +89,8 @@ std::vector<Move> Table::get_variation(Board& position) {
 // does this work??
 void Table::clear() {
     for (int i = 0; i < TABLE_LENGTH; i++) {
-        table[i] = TableEntry();
+        // table[i] = TableEntry();
+        table[i] = TableEntry(0, {}, 0, {}, 0);
     }
 }
 

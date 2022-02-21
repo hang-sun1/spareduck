@@ -59,6 +59,10 @@ Move Search::get_engine_move() {
             std::cout << move << " ";
         }
         std::cout << std::endl;
+        std::cout << "begin t_table variation" << std::endl; 
+        t_table.get_variation(board);
+        std::cout << "end t_table variation" << std::endl; 
+        std::cout << std::endl;
         // Move last pv move to the front (if valid)
         if (principal_variation.size() > 1) {
             Move pv_move = principal_variation[0];
@@ -73,6 +77,7 @@ Move Search::get_engine_move() {
 
         int best_eval = -100000;
         Move best_move = moves[0];
+        int best_move_index = 0;
 
         bool valid_moves = false;
         int moves_searched = 0;
@@ -117,6 +122,7 @@ Move Search::get_engine_move() {
             // update bestEval
             if (next_eval > best_eval) {
                 best_eval = next_eval;
+                best_move_index = i;
                 best_move = moves[i];
 
                 // copy temporary variation onto principal variation with new best move
@@ -128,10 +134,12 @@ Move Search::get_engine_move() {
             }
 
             if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() > SEARCH_TIME) {
-                final_move = best_move;
                 goto finish_search;
             }
+
         }
+        t_table.put(board, best_move, best_eval, NodeType::EXACT, static_cast<uint8_t>(depth));
+        final_move = best_move;
         // if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() > SEARCH_TIME) {
         //     final_move = best_move;
         //     goto finish_search;
@@ -150,185 +158,6 @@ finish_search:
     return final_move;
 }
 
-int Search::search(int alpha, int beta, int depth, std::vector<Move> &pv) {
-    if (depth <= 0) {
-        // int curr_eval = -quiesce(-alpha, -beta, pv, 0);
-        int curr_eval = evaluate.evaluate();
-        // PV should only have size in the case where there is a non quiet position
-        if (pv.size()) {
-            NodeType type;
-            if (curr_eval <= alpha) {
-                type = NodeType::UPPER;
-            } else if (curr_eval >= beta) {
-                type = NodeType::LOWER;
-            } else {
-                type = NodeType::EXACT;
-            }
-
-            t_table.put(board, pv.front(), curr_eval, type, 0);  // Null move?
-        }
-
-        return curr_eval;
-    }
-
-    int swap_count = 0;  // move swap counter
-
-    // Check transposition table for current position.
-    // std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
-    // if (t_position.has_value()) {
-    //     if (t_position->get_depth() >= depth) {
-    //         switch (t_position->get_type()) {
-    //             case NodeType::UPPER:
-    //                 if (t_position->get_eval() >= beta) {
-    //                     return t_position->get_eval();
-    //                 } else {
-    //                     beta = t_position->get_eval();
-    //                 }
-    //                 break;
-    //             case NodeType::LOWER:
-    //                 if (t_position->get_eval() <= alpha) {
-    //                     return alpha;
-    //                 } else {
-    //                     alpha = t_position->get_eval();
-    //                 }
-    //                 break;
-    //             default:
-    //                 return t_position->get_eval();
-    //                 break;
-    //         }
-
-    //         if (alpha >= beta) {
-    //             return t_position->get_eval();
-    //         }
-    //     }
-    // }
-
-    auto unsorted_moves = board.get_moves();
-    int move_count = unsorted_moves.size();
-
-    // // Mate or stalemate
-    // if (move_count == 0) {
-    //     return evaluate.evaluate();
-    // }
-
-    // sort moves
-    std::vector<Move> moves = sort_moves(unsorted_moves, 0);
-
-    // move ordering: transposition table first
-    // if (t_position.has_value()) {
-    //     for (int i = 0; i < move_count; i++) {
-    //         if (moves[i] == t_position->get_move()) {
-    //             moves[i] = moves[0];
-    //             moves[0] = t_position->get_move();
-    //             swap_count++;
-    //             break;
-    //         }
-    //     }
-    // }
-
-    // futility pruning
-    bool is_futile = false;
-    if (depth == 1) {
-        int curr_eval = evaluate.evaluate();
-        const int MINOR_VAL = 310;
-        if (curr_eval + MINOR_VAL < alpha) {
-            is_futile = true;
-        }
-    } else if (depth == 2) {
-        int curr_eval = evaluate.evaluate();
-        const int ROOK_VAL = 510;
-        if (curr_eval + ROOK_VAL < alpha) {
-            is_futile = true;
-        }
-    }
-    is_futile = !board.in_check((Side) board.get_side_to_move()) && is_futile;
-
-    std::vector<Move> temp_pv;  // local pv
-    int best_eval = INT_MIN;
-    NodeType move_type = NodeType::LOWER;
-    bool any_valid_moves = false;
-
-    for (int i = 0; i < move_count; i++) {
-        if (is_futile && !moves[i].is_capture() && !moves[i].is_promotion() && i > 0) {  // && !moves[i].is_check()
-            continue;
-        }
-        auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
-        auto pieces_involved = board.make_move(moves[i]);
-        if (!board.is_pos_valid(moves[i])) {
-            board.unmake_move(moves[i]);
-            continue;
-        }
-        any_valid_moves = true;
-        uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
-        uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
-        if (white_king_square >= 64 || black_king_square >= 64) {
-            board.unmake_move(moves[i]);
-            continue;
-        }
-        assert(white_king_square < 64);
-        assert(black_king_square < 64);
-
-        int next_eval;
-
-        if (pieces_involved[0].value() != KING) {
-            nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-            // PV SEARCH
-            // Currently this improves search a lot in complex positions but slows down in the opening position
-            // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-            next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
-
-            board.unmake_move(moves[i]);
-            nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
-        } else {
-            nnue.reset_nnue(pieces_involved[1], this->board);
-
-            next_eval = -search(-beta, -alpha, depth - 1, temp_pv);
-            // next_eval = pvs(alpha, beta, move_type, depth, temp_pv);
-
-            board.unmake_move(moves[i]);
-            nnue.reset_nnue(pieces_involved[1], this->board);
-        }
-
-        // update best eval
-        if (next_eval > best_eval) {
-            best_eval = next_eval;
-
-            // Add new move to front of p_var and copy temp onto p_var
-            pv.clear();
-            pv.push_back(moves[i]);
-            for (int j = 0; j < temp_pv.size(); j++) {
-                pv.push_back(temp_pv[j]);
-            }
-
-            // tighten window
-            if (best_eval > alpha) {
-                alpha = best_eval;
-                move_type = NodeType::EXACT;
-            }
-
-            // return position if better than current max
-            if (best_eval >= beta) {
-                move_type = NodeType::UPPER;
-                break;
-            }
-        }
-    }
-
-    if (!any_valid_moves) {
-        // this position is checkmate
-        if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
-            return -100000;
-            // return INT_MIN+1;
-        }
-        // this position is stalemate
-        return 0; 
-    }
-
-    // Add new best move to hash table
-    t_table.put(board, pv.front(), best_eval, move_type, static_cast<uint8_t>(depth));
-
-    return best_eval;
-}
 
 int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t ply, std::vector<Move> &pv, size_t* node_count, bool nullable) {
     if (depth <= 0) {
@@ -360,14 +189,14 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
             switch (t_position->get_type()) {
                 case NodeType::UPPER:
                     if (t_position->get_eval() >= beta) {
-                        return t_position->get_eval();
+                        // return t_position->get_eval();
                     } else {
                         beta = t_position->get_eval();
                     }
                     break;
                 case NodeType::LOWER:
                     if (t_position->get_eval() <= alpha) {
-                        return alpha;
+                        // return alpha;
                     } else {
                         alpha = t_position->get_eval();
                     }
@@ -378,7 +207,8 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
             }
 
             if (alpha >= beta) {
-                return t_position->get_eval();
+                // return t_position->get_eval();
+                return alpha;
             }
         }
     }
@@ -393,12 +223,20 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
 
     // sort moves
     std::vector<Move> moves = sort_moves(unsorted_moves, ply);
+    std::vector<Move> temp_moves;
     // move ordering: transposition table first
-    if (t_position.has_value()) {
+    if (t_position.has_value() && t_position->get_depth() == depth && t_position->get_type() == NodeType::EXACT) {
+        std::cout << "it should probably never reach here" << std::endl;
         for (int i = 0; i < move_count; i++) {
-            if (moves[i] == t_position->get_move()) {
-                moves[i] = moves[0];
-                moves[0] = t_position->get_move();
+            if (moves[i].origin_square() == t_position->get_move().origin_square() && moves[i].destination_square() == t_position->get_move().destination_square()
+                && moves[i].type() == t_position->get_move().type()) {
+                temp_moves.push_back(moves[i]);
+                for (int j = 0; j < move_count; ++j) {
+                    if (j != i) {
+                        temp_moves.push_back(moves[i]);
+                    }
+                }
+                moves = temp_moves;
                 swap_count++;
                 break;
             }
@@ -458,28 +296,22 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
         auto temp_beta = beta;
         
         
-        // null move pruning (move this up before the move is actually made i'm dumb otherwise it makes no sense)
         if (moves_searched < 1 && !board.in_check((Side) board.get_side_to_move()) && depth >= 3 && nullable) {
             int null_eval; 
             board.unmake_move(moves[i]);
             size_t null_depth = depth-3;
             if (pieces_involved[0].value() != KING) {
-                // nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
                 board.make_null_move();
                 null_eval = -pvs(-beta, -beta+1, move_type, null_depth, ply+1, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
-                // board.unmake_move(moves[i]);
-                // nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
-                // nnue.reset_nnue(pieces_involved[1], this->board);
                 board.make_null_move();
                 null_eval = -pvs(-beta, -beta+1, move_type, null_depth, ply+1, temp_pv, node_count, false);
                 board.unmake_move(Move(0, 0, MoveType::QUIET));
-                // board.unmake_move(moves[i]);
-                // nnue.reset_nnue(pieces_involved[1], this->board);
             } 
 
             if (null_eval >= beta) {
+                
                 return null_eval;
                 // goto FINISH;
             } else {
@@ -608,116 +440,111 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
     }
 
     // Add new best move to hash table
-    // t_table.put(board, pv.front(), best_eval, move_type, static_cast<uint8_t>(depth));
+    t_table.put(board, pv.front(), best_eval, move_type, static_cast<uint8_t>(depth));
 
     return best_eval;
 }
 
-// int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, size_t* node_count) {
-//     // if (q_depth > 5) {
-//     //     return evaluate.evaluate();
-//     // }
+int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, size_t* node_count) {
+    if (q_depth > 5) {
+        return evaluate.evaluate();
+    }
 
-//     // TODO: handle loud positions
-//     // if (!board.in_check((Side) board.get_side_to_move())) {
-//         int stand_pat = evaluate.evaluate();
-//         if (stand_pat >= beta) {
-//             // return stand_pat;
-//             return beta;
-//         }
+    // TODO: handle loud positions
+    // if (!board.in_check((Side) board.get_side_to_move())) {
+        int stand_pat = evaluate.evaluate();
+        if (stand_pat >= beta) {
+            // return stand_pat;
+            return stand_pat;
+        }
 
-//         // Delta pruning - TODO: handle promotion
-//         const int DELTA = 900;  // queen / max material swing value
-//         if (stand_pat + DELTA < alpha) {
-//             return alpha;
-//         }
+        // Delta pruning - TODO: handle promotion
+        const int DELTA = 900;  // queen / max material swing value
+        if (stand_pat + DELTA < alpha) {
+            return alpha;
+        }
 
-//         // Null move assumption
-//         if (stand_pat > alpha) {
-//             alpha = stand_pat;
-//         }
-//     // }
+        // Null move assumption
+        if (stand_pat > alpha) {
+            alpha = stand_pat;
+        }
+    // }
 
-//     //generate all moves
-//     auto unsorted_moves = board.get_moves();
-//     // if (unsorted_moves.size() == 0) {
-//     //     return evaluate.evaluate();
-//     // }
+    //generate all moves
+    auto unsorted_moves = board.get_moves();
 
-//     // sort moves
-//     std::vector<Move> moves = sort_moves(unsorted_moves);
-//     std::vector<Move> temp_pv;
-//     int best_eval = INT_MIN;
-//     bool any_valid_moves = false;
+    // sort moves
+    std::vector<Move> moves = sort_moves(unsorted_moves, 99);
+    std::vector<Move> temp_pv;
+    int best_eval = INT_MIN;
+    bool any_valid_moves = false;
 
-//     for (size_t i = 0; i < moves.size(); i++) {
-//         // skip if move isn't capture
-//         if (moves[i].is_capture() || board.in_check((Side) board.get_side_to_move())) {  // || moves[i].is_check()
-//             auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
-//             auto pieces_involved = board.make_move(moves[i]);
-//             if (!board.is_pos_valid(moves[i])) {
-//                 board.unmake_move(moves[i]);
-//                 continue;
-//             }
-//             *node_count += 1;
-//             any_valid_moves = true;
-//             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
-//             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
+    for (size_t i = 0; i < moves.size(); i++) {
+        // skip if move isn't capture
+        if (moves[i].is_capture() || board.in_check((Side) board.get_side_to_move())) {  // || moves[i].is_check()
+            auto side = board.get_side_to_move() ? Side::BLACK : Side::WHITE;
+            auto pieces_involved = board.make_move(moves[i]);
+            if (!board.is_pos_valid(moves[i])) {
+                board.unmake_move(moves[i]);
+                continue;
+            }
+            *node_count += 1;
+            any_valid_moves = true;
+            uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
+            uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
 
-//             int next_eval;
+            int next_eval;
 
-//             if (pieces_involved[0].value() != KING) {
-//                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-//                 next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
-//                 board.unmake_move(moves[i]);
-//                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
-//             } else {
-//                 nnue.reset_nnue(pieces_involved[1], this->board);
-//                 next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
-//                 board.unmake_move(moves[i]);
-//                 nnue.reset_nnue(pieces_involved[1], this->board);
-//             }
+            if (pieces_involved[0].value() != KING) {
+                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
+                board.unmake_move(moves[i]);
+                nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
+            } else {
+                nnue.reset_nnue(pieces_involved[1], this->board);
+                next_eval = -quiesce(-beta, -alpha, temp_pv, q_depth + 1, node_count);
+                board.unmake_move(moves[i]);
+                nnue.reset_nnue(pieces_involved[1], this->board);
+            }
 
-//             // if (next_eval > best_eval) {
-//             //     best_eval = next_eval;
+            if (next_eval > best_eval) {
+                best_eval = next_eval;
 
-//             //     pv.clear();  // k1rr4/8/8/8/3R4/3R4/8/7K b - - 0 1
-//             //     pv.push_back(moves[i]);
-//             //     for (int j = 0; j < temp_pv.size(); j++) {
-//             //         pv.push_back(temp_pv[j]);
-//             //     }
+                pv.clear();  // k1rr4/8/8/8/3R4/3R4/8/7K b - - 0 1
+                pv.push_back(moves[i]);
+                for (int j = 0; j < temp_pv.size(); j++) {
+                    pv.push_back(temp_pv[j]);
+                }
                 
-//                 if (next_eval >= beta) {
-//                     return next_eval;
-//                 }
+                if (next_eval >= beta) {
+                    return next_eval;
+                }
 
-//                 if (next_eval > alpha) {
-//                     alpha = next_eval;
-//                 }
-// // 
-//             // }
-//         } 
-//         // else  {
-//         //     board.make_move(moves[i]);
-//         //     if (!board.is_pos_valid(moves[i])) {
-//         //         board.unmake_move(moves[i]);
-//         //         continue;
-//         //     }
-//         //     board.unmake_move(moves[i]);
-//         //     any_valid_moves = true;
-//         // }
-//     }
-//     // if (!any_valid_moves) {
-//     //     // this position is checkmate
-//     //     if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
-//     //         return -99999;
-//     //     }
-//     //     // this position is stalemate
-//     //     return 0; 
-//     // }
+                if (next_eval > alpha) {
+                    alpha = next_eval;
+                }
+            }
+        } else  {
+            board.make_move(moves[i]);
+            if (!board.is_pos_valid(moves[i])) {
+                board.unmake_move(moves[i]);
+                continue;
+            }
+            board.unmake_move(moves[i]);
+            any_valid_moves = true;
+        }
+    }
+    if (!any_valid_moves) {
+        // this position is checkmate
+        if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
+            return -99999;
+        }
+        // this position is stalemate
+        return 0; 
+    }
 
-//     return alpha;
-// }
+    return std::max(best_eval, stand_pat);
+}
 
 // bucket sorting captures using Most Valuable Victim - Least Valuable Aggressor
 std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {

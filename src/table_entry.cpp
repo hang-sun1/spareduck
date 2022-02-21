@@ -7,7 +7,7 @@
 
 TableEntry::TableEntry() {}
 
-TableEntry::TableEntry(uint32_t hash, Move move, int16_t eval, NodeType type, uint8_t depth) {
+TableEntry::TableEntry(uint32_t hash, Move move, int32_t eval, NodeType type, uint8_t depth) {
   this->hash_ = hash;
   this->move_ = move;
   this->eval_ = eval;
@@ -27,7 +27,7 @@ Move TableEntry::get_move() const {
   return move_;
 }
 
-int16_t TableEntry::get_eval() const {
+int32_t TableEntry::get_eval() const {
   return eval_;
 }
 

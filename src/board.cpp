@@ -419,7 +419,10 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
     if (null_move) {
         this->side_to_move = static_cast<Side>(other_move);
         hash ^= hash_helper[13][0];
-        en_passant_target = 65;
+        if (en_passant_target != 65) {
+            hash ^= hash_helper[13][6+(en_passant_target & 7)];
+            en_passant_target = 65;
+        }
         this->moves = generate_moves();
         return {std::make_optional(PAWN), std::nullopt };
     }
@@ -429,16 +432,23 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
         // the current side to move is black
         if (current_move) {
             en_passant_target = move.origin_square() - 8;
+            hash ^= hash_helper[13][6+(en_passant_target & 7)];
         } else {
             en_passant_target = move.origin_square() + 8;
+            hash ^= hash_helper[13][6+(en_passant_target & 7)];
         }
     } else if (move.type() == MoveType::EN_PASSANT) {
         int diff = current_move ? 8 : -8;
         pawns[other_move] &= ~(1ULL << uint8_t((int) en_passant_target + diff));
         hash ^= hash_helper[2*PAWN+other_move][uint8_t((int) en_passant_target + diff)];
+        hash ^= hash_helper[13][6+(en_passant_target & 7)];
+        // hash ^= hash_helper[2*PAWN+other_move][en_passant_target];
         en_passant_target = 65;
     } else {
-        en_passant_target = 65;
+        if (en_passant_target != 65) {
+            hash ^= hash_helper[13][6+(en_passant_target & 7)];
+            en_passant_target = 65;
+        }
     }
 
     int moved = -1;
@@ -456,6 +466,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
             hash ^= hash_helper[2*ROOK][7];
             hash ^= hash_helper[2*ROOK][5];
             move_bitboard = 0xf0;
+            hash ^= hash_helper[13][1];
         } else {
             kings[current_move] = 0x4000000000000000;
             rooks[current_move] &= ~0x8000000000000000;
@@ -465,6 +476,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
             hash ^= hash_helper[2*ROOK+1][63];
             hash ^= hash_helper[2*ROOK+1][61];
             move_bitboard = 0xf000000000000000;
+            hash ^= hash_helper[13][2];
         }
         moved = 4;
         short_castle_rights[current_move] = false;
@@ -478,6 +490,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
             hash ^= hash_helper[2*ROOK][0];
             hash ^= hash_helper[2*ROOK][3];
             move_bitboard = 0x1f;
+            hash ^= hash_helper[13][3];
         } else {
             kings[current_move] = 0x400000000000000;
             rooks[current_move] &= ~0x100000000000000;
@@ -487,6 +500,7 @@ std::array<std::optional<Piece>, 2> Board::make_move(Move move) {
             hash ^= hash_helper[2*ROOK+1][56];
             hash ^= hash_helper[2*ROOK+1][59];
             move_bitboard = 0x1f00000000000000;
+            hash ^= hash_helper[13][4];
         }
         moved = 4;
         long_castle_rights[current_move] = false;

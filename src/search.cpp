@@ -228,22 +228,23 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
     std::vector<Move> temp_moves;
     // move ordering: transposition table first
     if (enable_tt) {
-        // if (t_position.has_value() && (t_position->get_type() == NodeType::EXACT || t_position->get_type() == NodeType::UPPER)) {
-        //     for (int i = 0; i < moves.size(); i++) {
-        //         if (moves[i].origin_square() == t_position->get_move().origin_square() && moves[i].destination_square() == t_position->get_move().destination_square()
-        //             && moves[i].type() == t_position->get_move().type()) {
-        //             temp_moves.push_back(moves[i]);
-        //             for (int j = 0; j < moves.size(); ++j) {
-        //                 if (j != i) {
-        //                     temp_moves.push_back(moves[j]);
-        //                 }
-        //             }
-        //             moves = temp_moves;
-        //             swap_count++;
-        //             break;
-        //         }
-        //     }
-        // }
+        if (t_position.has_value() && (t_position->get_type() == NodeType::EXACT || t_position->get_type() == NodeType::UPPER) &&
+            t_position->get_depth() >= depth) {
+            for (int i = 0; i < moves.size(); i++) {
+                if (moves[i].origin_square() == t_position->get_move().origin_square() && moves[i].destination_square() == t_position->get_move().destination_square()
+                    && moves[i].type() == t_position->get_move().type()) {
+                    temp_moves.push_back(moves[i]);
+                    for (int j = 0; j < moves.size(); ++j) {
+                        if (j != i) {
+                            temp_moves.push_back(moves[j]);
+                        }
+                    }
+                    moves = temp_moves;
+                    swap_count++;
+                    break;
+                }
+            }
+        }
     }
 
     // futility pruning

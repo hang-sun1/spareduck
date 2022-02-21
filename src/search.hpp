@@ -12,7 +12,7 @@
 #include "table.hpp"
 #include "table_entry.hpp"
 
-#define SEARCH_TIME 2000
+#define SEARCH_TIME 60000
 #define KILLERS 2
 #define MAX_DEPTH 100
 
@@ -22,7 +22,7 @@ class Search {
     Move get_engine_move();
     std::vector<Move> get_principal_variation();
     bool enable_tt = true;
-
+   
    private:
     Board& board;
     Evaluate& evaluate;

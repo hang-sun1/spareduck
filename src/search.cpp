@@ -59,10 +59,6 @@ Move Search::get_engine_move() {
             std::cout << move << " ";
         }
         std::cout << std::endl;
-        std::cout << "begin t_table variation" << std::endl; 
-        t_table.get_variation(board);
-        std::cout << "end t_table variation" << std::endl; 
-        std::cout << std::endl;
         // Move last pv move to the front (if valid)
         if (principal_variation.size() > 1) {
             Move pv_move = principal_variation[0];
@@ -183,32 +179,38 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
     int swap_count = 0;  // move swap counter
 
     // Check transposition table for current position.
-    std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
-    if (t_position.has_value()) {
-        if (t_position->get_depth() >= depth) {
-            switch (t_position->get_type()) {
-                case NodeType::UPPER:
-                    if (t_position->get_eval() >= beta) {
-                        // return t_position->get_eval();
-                    } else {
-                        beta = t_position->get_eval();
-                    }
-                    break;
-                case NodeType::LOWER:
-                    if (t_position->get_eval() <= alpha) {
-                        // return alpha;
-                    } else {
-                        alpha = t_position->get_eval();
-                    }
-                    break;
-                default:
-                    return t_position->get_eval();
-                    break;
-            }
 
-            if (alpha >= beta) {
-                // return t_position->get_eval();
-                return alpha;
+    std::optional<TableEntry> t_position = t_table.get(board);  //6k1/5p2/6p1/2P5/7p/8/7P/6K1 b - - 0 1
+    if (enable_tt) {
+        if (t_position.has_value()) {
+            if (t_position->get_depth() >= depth) {
+                switch (t_position->get_type()) {
+                    case NodeType::UPPER:
+                        if (t_position->get_eval() >= beta) {
+                            return t_position->get_eval();
+                        } else {
+                            // beta = t_position->get_eval();
+                            alpha = std::max(alpha, t_position->get_eval());
+                        }
+                        break;
+                    case NodeType::LOWER:
+                        if (t_position->get_eval() <= alpha) {
+                            return t_position->get_eval();
+                            // return alpha;
+                        } else {
+                            // alpha = t_position->get_eval();
+                            beta = std::min(beta, t_position->get_eval());
+                        }
+                        break;
+                    default:
+                        return t_position->get_eval();
+                        break;
+                }
+
+                if (alpha >= beta) {
+                    // return t_position->get_eval();
+                    return alpha;
+                }
             }
         }
     }
@@ -225,22 +227,23 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
     std::vector<Move> moves = sort_moves(unsorted_moves, ply);
     std::vector<Move> temp_moves;
     // move ordering: transposition table first
-    if (t_position.has_value() && t_position->get_depth() == depth && t_position->get_type() == NodeType::EXACT) {
-        std::cout << "it should probably never reach here" << std::endl;
-        for (int i = 0; i < move_count; i++) {
-            if (moves[i].origin_square() == t_position->get_move().origin_square() && moves[i].destination_square() == t_position->get_move().destination_square()
-                && moves[i].type() == t_position->get_move().type()) {
-                temp_moves.push_back(moves[i]);
-                for (int j = 0; j < move_count; ++j) {
-                    if (j != i) {
-                        temp_moves.push_back(moves[i]);
-                    }
-                }
-                moves = temp_moves;
-                swap_count++;
-                break;
-            }
-        }
+    if (enable_tt) {
+        // if (t_position.has_value() && (t_position->get_type() == NodeType::EXACT || t_position->get_type() == NodeType::UPPER)) {
+        //     for (int i = 0; i < moves.size(); i++) {
+        //         if (moves[i].origin_square() == t_position->get_move().origin_square() && moves[i].destination_square() == t_position->get_move().destination_square()
+        //             && moves[i].type() == t_position->get_move().type()) {
+        //             temp_moves.push_back(moves[i]);
+        //             for (int j = 0; j < moves.size(); ++j) {
+        //                 if (j != i) {
+        //                     temp_moves.push_back(moves[j]);
+        //                 }
+        //             }
+        //             moves = temp_moves;
+        //             swap_count++;
+        //             break;
+        //         }
+        //     }
+        // }
     }
 
     // futility pruning
@@ -264,6 +267,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
     int best_eval = INT_MIN;
     move_type = NodeType::LOWER;
     bool any_valid_moves = false;
+    int best_eval_idx = 0;
 
 
 
@@ -399,6 +403,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
         // update best eval
         if (next_eval > best_eval) {
             best_eval = next_eval;
+            best_eval_idx = i;
             // Add new move to front of p_var and copy temp onto p_var
             pv.clear();
             pv.push_back(moves[i]);
@@ -428,7 +433,6 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
         }
         child += 1;
     }
-
     if (!any_valid_moves) {
         // this position is checkmate
         if (board.in_check(static_cast<Side>(board.get_side_to_move()))) {
@@ -439,8 +443,10 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
         return 0; 
     }
 
-    // Add new best move to hash table
-    t_table.put(board, pv.front(), best_eval, move_type, static_cast<uint8_t>(depth));
+    if (enable_tt) {
+        // Add new best move to hash table
+        t_table.put(board, moves[best_eval_idx], best_eval, move_type, static_cast<uint8_t>(depth));
+    }
 
     return best_eval;
 }
@@ -597,7 +603,6 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {
             }
         }
     }
-
     std::vector<Move> sorted_moves;
     sorted_moves.reserve(high.size() + mid.size() + low.size() + lower.size() + lowest.size() + others.size());
     sorted_moves.insert(sorted_moves.end(), high.begin(), high.end());

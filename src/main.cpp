@@ -24,11 +24,11 @@ magic_bits::Attacks attacks;
 Board game_board(&attacks);
 NNUE nnue; //(static_cast<Side>(game_board.get_side_to_move()));
 Evaluate board_evaluate(game_board, nnue, false);
-Evaluate cheap_evaluate(game_board, nnue, true);
+Evaluate cheap_evaluate(game_board, nnue, false);
 Search search_engine(game_board, board_evaluate, nnue);
 Search weak_engine(game_board, cheap_evaluate, nnue);
 
-bool strong_to_move = true;
+bool strong_to_move = false;
 
 //dummy comment
 
@@ -132,6 +132,7 @@ std::string get_engine_move() {
 
 std::string play_engines() {
     //Search test = Search(game_board);
+    weak_engine.enable_tt = false;
     Move move;
     if (strong_to_move) {
         move = search_engine.get_engine_move();

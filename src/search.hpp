@@ -21,6 +21,7 @@ class Search {
     Search(Board& board, Evaluate& eval, NNUE& net);
     Move get_engine_move();
     std::vector<Move> get_principal_variation();
+    bool enable_tt = true;
 
    private:
     Board& board;

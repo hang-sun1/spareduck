@@ -29,6 +29,7 @@ class Search {
     NNUE& nnue;
     Table t_table;
     Move killers[MAX_DEPTH][KILLERS];
+    int history[2][64][64];
     std::vector<Move> principal_variation;
     int search(int alpha, int beta, int depth, std::vector<Move>& p_var);
     int quiesce(int alpha, int beta, std::vector<Move>& p_var, short q_depth, size_t* node_count);

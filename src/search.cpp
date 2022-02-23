@@ -8,6 +8,7 @@
 #include <climits>
 #include <cstddef>
 #include <iostream>
+#include <cstring>
 
 /*
     A simple implementation of fail-soft negamax alpha-beta search.
@@ -22,6 +23,7 @@ Search::Search(Board &start_board, Evaluate &eval, NNUE &net) : board(start_boar
     Table t_table;
     std::vector<Move> principal_variation;
     principal_variation.reserve(12);
+    std::memset(history, 0, sizeof(int)*64*64*2);
 }
 
 Move Search::get_engine_move() {
@@ -328,16 +330,18 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
         // late move reduction  
         if (moves_searched >= 4 && depth >= 3 && !moves[i].is_capture() &&
             !moves[i].is_promotion() && !board.in_check((Side) board.get_side_to_move())) {
+            auto reduced_depth = depth-1;
+            // if (moves_searched >= 20 && depth >= 4) {
+            //     reduced_depth--;
+            // }
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
-                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, ply+1, temp_pv, node_count, true);
+                next_eval = -pvs(-alpha-1, -alpha, move_type, reduced_depth - 1, ply+1, temp_pv, node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, true);
             } else {
                 nnue.reset_nnue(pieces_involved[1], this->board);
-
-                next_eval = -pvs(-alpha-1, -alpha, move_type, depth - 2, ply+1, temp_pv, node_count, true);
-
+                next_eval = -pvs(-alpha-1, -alpha, move_type, reduced_depth - 1, ply+1, temp_pv, node_count, true);
                 board.unmake_move(moves[i]);
                 nnue.reset_nnue(pieces_involved[1], this->board);
             } 
@@ -427,6 +431,8 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
                             killers[ply][1] = killers[ply][0];
                             killers[ply][0] = moves[i];
                     }
+
+                    history[board.get_side_to_move()][moves[i].origin_square()][moves[i].destination_square()] += depth*depth;
                 }
                 move_type = NodeType::UPPER;
                 break;
@@ -604,6 +610,38 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {
             }
         }
     }
+
+    auto capture_sort = [this](Move a, Move b) {
+        auto side = static_cast<Side>(board.get_side_to_move());
+        auto other_side = static_cast<Side>(1 - board.get_side_to_move());
+        auto a_captured = board.piece_on_square(a.destination_square(), other_side);
+        // assert(moves[i].get_captured().has_value());
+        auto a_captured_value = piece_to_value(a_captured);
+        auto a_moved_value = piece_to_value(board.piece_on_square(a.origin_square(), side));
+        auto a_diff = a_captured_value - a_moved_value;
+        
+        auto b_captured = board.piece_on_square(a.destination_square(), other_side);
+        // assert(moves[i].get_captured().has_value());
+        auto b_captured_value = piece_to_value(b_captured);
+        auto b_moved_value = piece_to_value(board.piece_on_square(a.origin_square(), side));
+        auto b_diff = b_captured_value - b_moved_value;
+        
+        return a_diff > b_diff;
+    };
+
+    std::sort(high.begin(), high.end(), capture_sort);
+    std::sort(mid.begin(), mid.end(), capture_sort);
+    std::sort(low.begin(), low.end(), capture_sort);
+    std::sort(lower.begin(), lower.end(), capture_sort);
+    std::sort(lowest.begin(), lowest.end(), capture_sort);
+
+    std::sort(others.begin(), others.end(), [this](Move a, Move b) {
+        auto side = board.get_side_to_move();
+        auto a_hist = history[side][a.origin_square()][a.destination_square()];
+        auto b_hist = history[side][b.origin_square()][b.destination_square()];
+        return a_hist > b_hist;
+    });
+
     std::vector<Move> sorted_moves;
     sorted_moves.reserve(high.size() + mid.size() + low.size() + lower.size() + lowest.size() + others.size());
     sorted_moves.insert(sorted_moves.end(), high.begin(), high.end());

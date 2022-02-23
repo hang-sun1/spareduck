@@ -332,7 +332,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
             !moves[i].is_promotion() && !board.in_check((Side) board.get_side_to_move())) {
             auto reduced_depth = depth-1;
             // if (moves_searched >= 20 && depth >= 4) {
-            //     reduced_depth--;
+            //     reduced_depth = depth - depth / 3;
             // }
             if (pieces_involved[0].value() != KING) {
                 nnue.update_non_king_move(moves[i], pieces_involved[0].value(), pieces_involved[1], std::nullopt, white_king_square, black_king_square, side, false);
@@ -597,13 +597,13 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {
                 lowest.push_back(moves[i]);
             }
         } else {
-            if (killers[ply][0].origin_square() != moves[i].origin_square()
-                || killers[ply][0].destination_square() != moves[i].destination_square()
-                || killers[ply][0].type() != moves[i].type()) {
+            if (killers[ply][0].origin_square() == moves[i].origin_square()
+                && killers[ply][0].destination_square() == moves[i].destination_square()
+                && killers[ply][0].type() == moves[i].type()) {
                     killer_moves.push_back(moves[i]);
-            } else if (killers[ply][1].origin_square() != moves[i].origin_square()
-                || killers[ply][1].destination_square() != moves[i].destination_square()
-                || killers[ply][1].type() != moves[i].type()) {
+            } else if (killers[ply][1].origin_square() == moves[i].origin_square()
+                && killers[ply][1].destination_square() == moves[i].destination_square()
+                && killers[ply][1].type() == moves[i].type()) {
                     killer_moves.push_back(moves[i]);
             } else {
                 others.push_back(moves[i]);

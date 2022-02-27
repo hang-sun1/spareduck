@@ -159,8 +159,8 @@ finish_search:
 
 int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t ply, std::vector<Move> &pv, size_t* node_count, bool nullable) {
     if (depth <= 0) {
-        // int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
-        int curr_eval = evaluate.evaluate();
+        int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
+        // int curr_eval = evaluate.evaluate();
         // PV should only have size in the case where there is a non quiet position
         if (pv.size()) {
             NodeType type;

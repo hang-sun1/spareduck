@@ -14,7 +14,7 @@
 #include "side.hpp"
 #include "piece.hpp"
 
-#include "../magic-bits/include/magic_bits.hpp"
+#include "../include/magic_bits.hpp"
 
 using std::uint64_t;
 

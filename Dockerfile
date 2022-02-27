@@ -14,7 +14,7 @@ COPY test ./test
 COPY test.sh ./
 COPY CMakeLists.txt ./
 COPY src ./src
-COPY magic-bits ./magic-bits
+COPY include ./include
 RUN rm -rf build/ && mkdir build
 WORKDIR  /usr/src/spareduck/build
 RUN emcmake cmake .. && cmake --build . --target spareduck -j

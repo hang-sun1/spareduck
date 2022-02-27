@@ -17,7 +17,7 @@
 #include "board.hpp"
 #include "piece.hpp"
 
-#include "../magic-bits/include/magic_bits.hpp"
+#include "../include/magic_bits.hpp"
 #include "side.hpp"
 
 using std::uint64_t;

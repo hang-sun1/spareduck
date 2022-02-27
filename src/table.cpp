@@ -33,9 +33,12 @@ void Table::put(const Board& position, Move move, int32_t eval, NodeType type, u
     //return; // Short circuit random replace
     int rand = fastrand();
     if (table[hash_index].get_upper_hash() > 0) {
-        if (rand > 8000) {
-            table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
-        } else if (depth > table[hash_index].get_depth()) {
+        // if (rand > 8000) {
+        //     table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
+        // } else if (depth > table[hash_index].get_depth()) {
+        //     table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
+        // }
+        if (depth > table[hash_index].get_depth()) {
             table[hash_index] = TableEntry(hash_upper, move, eval, type, depth);
         }
     } else {

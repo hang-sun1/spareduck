@@ -659,6 +659,58 @@ bool Board::king_attacked(uint8_t king_pos, uint64_t board_occ, Side side) {
     return false;
 }
 
+std::vector<std::pair<Piece, uint8_t>> piece_attacking_pos(Piece piece_type, uint64_t attackers) {
+    int a_idx_plus_one = __builtin_ffsll(attackers);
+    std::vector<std::pair<Piece, uint8_t>> avec;
+    while (a_idx_plus_one) {
+        int a_idx = a_idx_plus_one - 1;
+        avec.push_back(std::pair(piece_type, uint8_t(a_idx)));
+    }
+}
+
+std::vector<std::pair<Piece, uint8_t>> Board::attackers_of_square(uint8_t king_pos, uint64_t board_occ, Side side) {
+    size_t current_move = static_cast<size_t>(side);
+    size_t other_move = 1 - current_move;
+    std::vector<std::pair<Piece, uint8_t>> attackers;
+    
+    uint64_t pawn = generate_pawn_attacks(king_pos, 0xffffffffffffffff, static_cast<Side>(current_move));
+    if (pawn & pawns[other_move]) {
+        auto a = piece_attacking_pos(ROOK, pawn & pawns[other_move]);
+        attackers.insert(attackers.end(), a.begin(), a.end());
+    }
+    
+    if (knight_lookup[king_pos] & knights[other_move]) {
+        auto a = piece_attacking_pos(KNIGHT, knight_lookup[king_pos] & knights[other_move]);
+        attackers.insert(attackers.end(), a.begin(), a.end());
+    }
+
+    uint64_t bishop = attacks->Bishop(board_occ, king_pos);
+    if (bishop & bishops[other_move]) {
+        auto a = piece_attacking_pos(BISHOP, bishop & bishops[other_move]);
+        attackers.insert(attackers.end(), a.begin(), a.end());
+    }
+    
+    uint64_t rook = attacks->Rook(board_occ, king_pos);
+    if (rook & rooks[other_move]) {
+        auto a = piece_attacking_pos(ROOK, rook & rooks[other_move]);
+        attackers.insert(attackers.end(), a.begin(), a.end());
+    }
+    
+    uint64_t queen = attacks->Queen(board_occ, king_pos);
+    if (queen & queens[other_move]) {
+        auto a = piece_attacking_pos(KNIGHT, queen & queens[other_move]);
+        attackers.insert(attackers.end(), a.begin(), a.end());
+    }
+    
+    if (king_lookup[king_pos] & kings[other_move]) {
+        auto a = piece_attacking_pos(KNIGHT, king_lookup[king_pos] & kings[other_move]);
+        attackers.insert(attackers.end(), a.begin(), a.end());
+    }
+    return attackers;
+}
+
+
+
 bool Board::is_pos_valid(Move move) {
     size_t current_move = static_cast<size_t>(side_to_move);
     size_t other_move = 1 - current_move;
@@ -993,7 +1045,7 @@ Piece Board::piece_on_square(uint8_t square, Side s) {
         }
     } 
     // it should never reach here
-    assert(true);
+    // assert(false);
 }
 
 std::vector<Move> Board::get_moves() {
@@ -1034,4 +1086,78 @@ bool Board::make_null_move() {
     moves = generate_moves();
     null_move = false;
     return true;
+}
+
+int m(Side side) {
+    return side == Side::WHITE ? 1 : -1;
+}
+
+int Board::static_exchange_evaluation(Move move) {
+    auto current_side = side_to_move;
+    auto other_side = static_cast<Side>(1-size_t(current_side));
+
+    auto temp_queens = queens;
+    auto temp_bishops = bishops;
+    auto temp_rooks = rooks;
+    auto temp_pawns = pawns;
+    auto temp_knights = knights;
+    auto temp_kings = kings;
+    auto temp_all_per_side = all_per_side;
+
+    std::array<std::array<uint64_t, 2>*, 6> a = { &pawns, &knights, &bishops, &rooks, &queens, &kings };
+    auto attacking_piece = m(current_side) * piece_to_value(piece_on_square(move.origin_square(), current_side));
+    auto attacked_piece_value = m(other_side) * piece_to_value(piece_on_square(move.destination_square(), other_side));
+
+    current_side = static_cast<Side>(1 - size_t(current_side));
+    
+    std::vector<int> scores;
+    scores.push_back(attacked_piece_value);
+
+    attacked_piece_value = attacking_piece;
+    (*a[piece_on_square(move.destination_square(), other_side)])[size_t(other_side)] &= ~(1ULL << move.destination_square());
+    (*a[piece_on_square(move.origin_square(), current_side)])[size_t(current_side)] &= (1ULL << move.destination_square());
+    (*a[piece_on_square(move.origin_square(), current_side)])[size_t(current_side)] &= ~(1ULL << move.origin_square());
+    current_side = static_cast<Side>(1- size_t(current_side));
+    // a[]
+
+    all_per_side[0] = pawns[0] | rooks[0] | queens[0] | knights[0] | bishops[0] | kings[0];
+    all_per_side[1] = pawns[1] | rooks[1] | queens[1] | knights[1] | bishops[1] | kings[1];
+
+    auto attackers = attackers_of_square(move.destination_square(), all_per_side[0] |  all_per_side[1], current_side);
+
+    int score_index = 1;
+
+    while (attackers.size()) {
+        auto current_other_side = static_cast<Side>(1- size_t(current_side));
+        std::sort(attackers.begin(), attackers.end(), [](std::pair<Piece, uint8_t> a, std::pair<Piece, uint8_t> b) {
+            return piece_to_value(a.first) > piece_to_value(b.first);
+        });
+        attacking_piece = m(current_side) * piece_to_value(attackers[0].first);
+        scores.push_back(attacked_piece_value - scores[score_index-1]);
+        attacked_piece_value = attacking_piece;
+        (*a[piece_on_square(move.destination_square(), current_other_side)])[size_t(current_other_side)] &= ~(1ULL << move.destination_square());
+        (*a[piece_on_square(attackers[0].second, current_side)])[size_t(current_side)] &= (1ULL << move.destination_square());
+        (*a[piece_on_square(attackers[0].second, current_side)])[size_t(current_side)] &= ~(1ULL << attackers[0].second);
+
+        all_per_side[0] = pawns[0] | rooks[0] | queens[0] | knights[0] | bishops[0] | kings[0];
+        all_per_side[1] = pawns[1] | rooks[1] | queens[1] | knights[1] | bishops[1] | kings[1];
+        current_side = current_other_side;
+        attackers = attackers_of_square(move.destination_square(), all_per_side[0] |  all_per_side[1], current_side);
+        ++score_index;
+    }
+    this->queens = temp_queens;
+    this->bishops = temp_bishops;
+    this->rooks = temp_rooks;
+    this->pawns = temp_pawns;
+    this->knights = temp_knights;
+    this->kings = temp_kings;
+    this->all_per_side = temp_all_per_side;
+    
+    while (score_index > 1) {
+        --score_index;
+        if (scores[score_index-1] > -scores[score_index]) {
+            scores[score_index-1] = -scores[score_index];
+        }
+    }
+    return scores[0] * m(side_to_move);
 }

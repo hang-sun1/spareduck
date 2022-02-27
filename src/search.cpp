@@ -24,6 +24,7 @@ Search::Search(Board &start_board, Evaluate &eval, NNUE &net) : board(start_boar
     std::vector<Move> principal_variation;
     principal_variation.reserve(12);
     std::memset(history, 0, sizeof(int)*64*64*2);
+    std::memset(butterfly, 0, sizeof(int)*64*64*2);
 }
 
 Move Search::get_engine_move() {
@@ -152,6 +153,8 @@ Move Search::get_engine_move() {
 
 finish_search:
     t_table.clear();
+    std::memset(history, 0, sizeof(int)*64*64*2);
+    std::memset(butterfly, 0, sizeof(int)*64*64*2);
 
     return final_move;
 }
@@ -159,8 +162,9 @@ finish_search:
 
 int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t ply, std::vector<Move> &pv, size_t* node_count, bool nullable) {
     if (depth <= 0) {
-        int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
-        // int curr_eval = evaluate.evaluate();
+        // int curr_eval = quiesce(alpha, beta, pv, 0, node_count);
+        int curr_eval = evaluate.evaluate();
+        //
         // PV should only have size in the case where there is a non quiet position
         if (pv.size()) {
             NodeType type;
@@ -326,7 +330,8 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
             }
         }
         moves_searched += 1;
-
+        // update the butterfly board
+        butterfly[board.get_side_to_move()][moves[i].origin_square()][moves[i].destination_square()] += 1;
         // late move reduction  
         if (moves_searched >= 4 && depth >= 3 && !moves[i].is_capture() &&
             !moves[i].is_promotion() && !board.in_check((Side) board.get_side_to_move())) {
@@ -432,7 +437,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
                             killers[ply][0] = moves[i];
                     }
 
-                    history[board.get_side_to_move()][moves[i].origin_square()][moves[i].destination_square()] += depth*depth;
+                    history[board.get_side_to_move()][moves[i].origin_square()][moves[i].destination_square()] += 1; //depth * depth; 
                 }
                 move_type = NodeType::UPPER;
                 break;
@@ -459,6 +464,7 @@ int Search::pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t pl
 }
 
 int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, size_t* node_count) {
+    *node_count += 1;
     if (q_depth > 5) {
         return evaluate.evaluate();
     }
@@ -487,6 +493,7 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, s
     auto unsorted_moves = board.get_moves();
 
     // sort moves
+    // std::vector<Move> moves = sort_quiescence_moves(unsorted_moves);
     std::vector<Move> moves = sort_moves(unsorted_moves, 99);
     std::vector<Move> temp_pv;
     int best_eval = INT_MIN;
@@ -501,7 +508,6 @@ int Search::quiesce(int alpha, int beta, std::vector<Move> &pv, short q_depth, s
                 board.unmake_move(moves[i]);
                 continue;
             }
-            *node_count += 1;
             any_valid_moves = true;
             uint8_t white_king_square = __builtin_ffsll(board.get_kings()[0]) - 1;
             uint8_t black_king_square = __builtin_ffsll(board.get_kings()[1]) - 1;
@@ -638,8 +644,14 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {
     std::sort(others.begin(), others.end(), [this](Move a, Move b) {
         auto side = board.get_side_to_move();
         auto a_hist = history[side][a.origin_square()][a.destination_square()];
+        auto a_butterfly = butterfly[side][a.origin_square()][a.destination_square()];
         auto b_hist = history[side][b.origin_square()][b.destination_square()];
-        return a_hist > b_hist;
+        auto b_butterfly = butterfly[side][b.origin_square()][b.destination_square()];
+        if (a_butterfly == 0 || b_butterfly == 0) {
+            return a_hist > b_hist;
+        }
+        return (a_hist / a_butterfly) > (b_hist / b_butterfly);
+        // return a_hist > b_hist;
     });
 
     std::vector<Move> sorted_moves;
@@ -652,6 +664,25 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {
     sorted_moves.insert(sorted_moves.end(), lower.begin(), lower.end());
     sorted_moves.insert(sorted_moves.end(), lowest.begin(), lowest.end());
 
+    return sorted_moves;
+}
+
+std::vector<Move> Search::sort_quiescence_moves(std::vector<Move>& moves) {
+    std::vector<Move> sorted_moves;
+    std::vector<Move> non_captures;
+    for (auto move : moves) {
+        if (move.is_capture() && board.static_exchange_evaluation(move) >= 0) {
+            sorted_moves.push_back(move);
+        } else {
+            non_captures.push_back(move);
+        }
+    }
+
+    std::sort(sorted_moves.begin(), sorted_moves.end(), [this](Move a, Move b) {
+        return board.static_exchange_evaluation(a) > board.static_exchange_evaluation(b);
+    });
+
+    sorted_moves.insert(sorted_moves.end(), non_captures.begin(), non_captures.end());
     return sorted_moves;
 }
 

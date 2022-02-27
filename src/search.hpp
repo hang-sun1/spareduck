@@ -29,10 +29,12 @@ class Search {
     NNUE& nnue;
     Table t_table;
     Move killers[MAX_DEPTH][KILLERS];
-    int history[2][64][64];
+    float history[2][64][64];
+    float butterfly[2][64][64];
     std::vector<Move> principal_variation;
     int search(int alpha, int beta, int depth, std::vector<Move>& p_var);
     int quiesce(int alpha, int beta, std::vector<Move>& p_var, short q_depth, size_t* node_count);
     int pvs(int alpha, int beta, NodeType move_type, size_t depth, size_t ply, std::vector<Move> &temp_pv, size_t* node_count, bool nullable);
     std::vector<Move> sort_moves(std::vector<Move>& moves, size_t ply);
+    std::vector<Move> sort_quiescence_moves(std::vector<Move>& moves);
 };

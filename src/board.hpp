@@ -76,6 +76,7 @@ class Board {
     std::array<std::optional<Piece>, 2> make_move(Move move);
     void unmake_move(Move move);
     bool king_attacked(uint8_t king_square, uint64_t board_occ, Side side);
+    std::vector<std::pair<Piece, uint8_t>> attackers_of_square(uint8_t square, uint64_t board_occ, Side side);
     bool is_pos_valid(Move move);
     int get_side_to_move();
     std::vector<Move> get_moves();
@@ -97,4 +98,5 @@ class Board {
     bool in_check(Side side);
     Piece piece_on_square(uint8_t square, Side s);
     bool make_null_move();
+    int static_exchange_evaluation(Move move);
 };

@@ -583,7 +583,7 @@ std::vector<Move> Search::sort_moves(std::vector<Move> &moves, size_t ply) {
     std::vector<Move> others;
 
     for (int i = 0; i < moves.size(); i++) {
-        if (moves[i].is_capture()) {
+        if (moves[i].is_capture() && moves[i].type() != MoveType::EN_PASSANT) {
             auto side = static_cast<Side>(board.get_side_to_move());
             auto other_side = static_cast<Side>(1 - board.get_side_to_move());
             auto captured = board.piece_on_square(moves[i].destination_square(), other_side);

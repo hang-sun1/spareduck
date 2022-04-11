@@ -4,6 +4,7 @@ A chess engine that runs in the browser using webassembly. Searches via alpha-be
 
 ## Example Game
 Below is a sped up recording of spareduck (playing black) vs. a much simpler material based evaluation function (playing white).
+
 ![example game](https://cdn.discordapp.com/attachments/402551252824883216/962886510829522984/spareduck_game.gif)
 
 ## Building with Docker

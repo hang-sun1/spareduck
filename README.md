@@ -2,9 +2,9 @@
 
 A chess engine that runs in the browser using webassembly. Searches via alpha-beta pruning and evaluates positions using an efficiently updateable neural network (NNUE). 
 
+## Example Game
+Below is a sped up recording of spareduck (playing black) vs. a much simpler material based evaluation function (playing white).
 ![example game](https://cdn.discordapp.com/attachments/402551252824883216/962886510829522984/spareduck_game.gif)
-
-Spareduck using neural net evaluation (black) defeating a much simpler material based evaluation function (white).
 
 ## Building with Docker
 
